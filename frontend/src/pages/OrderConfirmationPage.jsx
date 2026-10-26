@@ -5,7 +5,8 @@ import {
   Store,
   MapPin,
   ShieldCheck,
-  FileText
+  FileText,
+  ArrowLeft
 } from 'lucide-react';
 import { api } from '../services/api';
 import { useLanguage } from '../context/LanguageContext';
@@ -74,8 +75,19 @@ export default function OrderConfirmationPage() {
   const currentStepIndex = orderSteps.findIndex((s) => s.key === order.status);
 
   return (
-    <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-8">
+    <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
       
+      {/* Back Link */}
+      <div>
+        <Link
+          to="/orders"
+          className="inline-flex items-center gap-1.5 text-xs font-semibold text-stone-600 dark:text-stone-400 hover:text-amber-800 dark:hover:text-amber-300 transition-colors"
+        >
+          <ArrowLeft className="w-3.5 h-3.5" />
+          <span>{language === 'te' ? 'ఆర్డర్‌ల జాబితాకు తిరిగి వెళ్ళండి' : 'Back to Orders'}</span>
+        </Link>
+      </div>
+
       {/* Top Success Banner if just placed */}
       {justPlaced && (
         <div className="bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-300 dark:border-emerald-700/60 rounded-3xl p-6 text-center space-y-2 animate-in fade-in zoom-in-95">

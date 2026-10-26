@@ -5,6 +5,7 @@ import {
   ShieldCheck,
   Store,
   ArrowRight,
+  ArrowLeft,
   Activity,
   UserPlus,
   X,
@@ -261,6 +262,17 @@ export default function AdminDashboard() {
         </div>
       )}
       
+      {/* Back Link */}
+      <div>
+        <Link
+          to="/"
+          className="inline-flex items-center gap-1.5 text-xs font-semibold text-stone-600 dark:text-stone-400 hover:text-amber-800 dark:hover:text-amber-300 transition-colors"
+        >
+          <ArrowLeft className="w-3.5 h-3.5" />
+          <span>Back to Marketplace</span>
+        </Link>
+      </div>
+
       {/* Admin Header */}
       <div className="bg-stone-900 text-white rounded-3xl p-6 sm:p-8 flex flex-col md:flex-row md:items-center justify-between gap-6 shadow-xl border border-stone-800">
         <div className="flex items-start gap-4">

@@ -24,7 +24,7 @@ class Product(TimeStampedUUIDModel):
     description: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     alcohol_by_volume: Mapped[Optional[str]] = mapped_column(String(20), nullable=True)
     country_of_origin: Mapped[str] = mapped_column(String(100), default="India", nullable=False)
-    is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False, index=True)
     is_demo_data: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
 
     category = relationship("Category", back_populates="products")
@@ -36,7 +36,7 @@ class ProductImage(TimeStampedUUIDModel):
 
     product_id: Mapped[str] = mapped_column(String(36), ForeignKey("products.id", ondelete="CASCADE"), nullable=False, index=True)
     image_url: Mapped[str] = mapped_column(String(500), nullable=False)
-    is_primary: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    is_primary: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False, index=True)
 
     product = relationship("Product", back_populates="images")
 
@@ -49,10 +49,10 @@ class Inventory(TimeStampedUUIDModel):
 
     retailer_id: Mapped[str] = mapped_column(String(36), ForeignKey("retailers.id", ondelete="CASCADE"), nullable=False, index=True)
     product_id: Mapped[str] = mapped_column(String(36), ForeignKey("products.id", ondelete="CASCADE"), nullable=False, index=True)
-    bottle_size: Mapped[str] = mapped_column(String(50), nullable=False)
-    price: Mapped[Decimal] = mapped_column(Numeric(10, 2), nullable=False)
+    bottle_size: Mapped[str] = mapped_column(String(50), nullable=False, index=True)
+    price: Mapped[Decimal] = mapped_column(Numeric(10, 2), nullable=False, index=True)
     stock_quantity: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
-    is_available: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    is_available: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False, index=True)
     low_stock_threshold: Mapped[int] = mapped_column(Integer, default=5, nullable=False)
     version: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
 

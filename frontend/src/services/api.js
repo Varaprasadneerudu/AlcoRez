@@ -46,15 +46,64 @@ export async function apiRequest(endpoint, options = {}) {
   return data;
 }
 
+// In-memory cache & in-flight promise deduplication to eliminate redundant network roundtrips
+const requestCache = new Map();
+const inflightRequests = new Map();
+
+export async function cachedApiRequest(endpoint, ttlMs = 60000) {
+  const now = Date.now();
+  const cached = requestCache.get(endpoint);
+  if (cached && (now - cached.timestamp < ttlMs)) {
+    return cached.data;
+  }
+
+  // Deduplicate in-flight promises so concurrent requests share a single network call
+  if (inflightRequests.has(endpoint)) {
+    return inflightRequests.get(endpoint);
+  }
+
+  const promise = apiRequest(endpoint)
+    .then((data) => {
+      requestCache.set(endpoint, { data, timestamp: Date.now() });
+      inflightRequests.delete(endpoint);
+      return data;
+    })
+    .catch((err) => {
+      inflightRequests.delete(endpoint);
+      throw err;
+    });
+
+  inflightRequests.set(endpoint, promise);
+  return promise;
+}
+
+export function invalidateCache(endpointPrefix) {
+  if (!endpointPrefix) {
+    requestCache.clear();
+    return;
+  }
+  for (const key of requestCache.keys()) {
+    if (key.startsWith(endpointPrefix)) {
+      requestCache.delete(key);
+    }
+  }
+}
+
 export const api = {
   // Auth
-  login: (credentials) => apiRequest('/auth/login', { method: 'POST', body: JSON.stringify(credentials) }),
-  register: (userData) => apiRequest('/auth/register', { method: 'POST', body: JSON.stringify(userData) }),
+  login: (credentials) => {
+    invalidateCache();
+    return apiRequest('/auth/login', { method: 'POST', body: JSON.stringify(credentials) });
+  },
+  register: (userData) => {
+    invalidateCache();
+    return apiRequest('/auth/register', { method: 'POST', body: JSON.stringify(userData) });
+  },
   getMe: () => apiRequest('/auth/me'),
 
   // Catalog
-  getCategories: () => apiRequest('/categories'),
-  getCategory: (slug) => apiRequest(`/categories/${slug}`),
+  getCategories: () => cachedApiRequest('/categories', 120000), // 2 min cache
+  getCategory: (slug) => cachedApiRequest(`/categories/${slug}`, 120000),
   getProducts: (params = {}) => {
     const query = new URLSearchParams();
     Object.entries(params).forEach(([key, val]) => {
@@ -67,8 +116,8 @@ export const api = {
   getProduct: (id) => apiRequest(`/products/${id}`),
 
   // Retailers public
-  getRetailers: () => apiRequest('/retailers'),
-  getRetailer: (id) => apiRequest(`/retailers/${id}`),
+  getRetailers: () => cachedApiRequest('/retailers', 60000), // 1 min cache
+  getRetailer: (id) => cachedApiRequest(`/retailers/${id}`, 30000),
 
   // Cart
   getCart: () => apiRequest('/cart'),
@@ -140,10 +189,13 @@ export const api = {
     method: 'PATCH',
     body: JSON.stringify(statusData),
   }),
-  submitRetailerApplication: (appData) => apiRequest('/retailer/applications', {
-    method: 'POST',
-    body: JSON.stringify(appData),
-  }),
+  submitRetailerApplication: (appData) => {
+    invalidateCache('/retailers');
+    return apiRequest('/retailer/applications', {
+      method: 'POST',
+      body: JSON.stringify(appData),
+    });
+  },
 
   // Admin Portal
   getAdminDashboard: () => apiRequest('/admin/dashboard'),
@@ -163,10 +215,13 @@ export const api = {
   }),
   getPendingRetailers: () => apiRequest('/admin/retailers/pending'),
   getAllRetailers: (status) => apiRequest(`/admin/retailers${status ? `?status=${status}` : ''}`),
-  reviewRetailer: (id, reviewData) => apiRequest(`/admin/retailers/${id}/review`, {
-    method: 'PATCH',
-    body: JSON.stringify(reviewData),
-  }),
+  reviewRetailer: (id, reviewData) => {
+    invalidateCache('/retailers');
+    return apiRequest(`/admin/retailers/${id}/review`, {
+      method: 'PATCH',
+      body: JSON.stringify(reviewData),
+    });
+  },
   getComplianceChecklist: () => apiRequest('/admin/compliance'),
   getAuditLogs: (page = 1, limit = 50) => apiRequest(`/admin/audit-logs?page=${page}&limit=${limit}`),
   getAllOrders: (page = 1, limit = 50) => apiRequest(`/admin/orders?page=${page}&limit=${limit}`),

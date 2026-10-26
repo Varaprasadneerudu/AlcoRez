@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { useSearchParams } from 'react-router-dom';
-import { Filter, SlidersHorizontal, Search } from 'lucide-react';
+import { useSearchParams, Link } from 'react-router-dom';
+import { Filter, SlidersHorizontal, Search, ArrowLeft } from 'lucide-react';
 import { api } from '../services/api';
 import ProductCard from '../components/ProductCard';
 import { useLanguage } from '../context/LanguageContext';
 
 export default function CatalogPage() {
   const [searchParams, setSearchParams] = useSearchParams();
-  const { t, tc, tr, ts } = useLanguage();
+  const { t, tc, tr, ts, language } = useLanguage();
 
   const [products, setProducts] = useState([]);
   const [total, setTotal] = useState(0);
@@ -78,6 +78,17 @@ export default function CatalogPage() {
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6 transition-colors duration-200">
       
+      {/* Back Link */}
+      <div>
+        <Link
+          to="/"
+          className="inline-flex items-center gap-1.5 text-xs font-semibold text-stone-600 dark:text-stone-400 hover:text-amber-800 dark:hover:text-amber-300 transition-colors"
+        >
+          <ArrowLeft className="w-3.5 h-3.5" />
+          <span>{language === 'te' ? 'హోమ్‌పేజీకి తిరిగి వెళ్ళండి' : 'Back to Home'}</span>
+        </Link>
+      </div>
+
       {/* Page Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-stone-200 dark:border-stone-800 pb-5">
         <div>

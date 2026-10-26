@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Wine, Lock, Mail, Sparkles, ArrowRight, AlertCircle, ShieldCheck } from 'lucide-react';
+import { Wine, Lock, Mail, Sparkles, ArrowRight, ArrowLeft, AlertCircle, ShieldCheck } from 'lucide-react';
 import { useAuth, DEMO_ACCOUNTS } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
 
@@ -52,6 +52,17 @@ export default function LoginPage() {
   return (
     <div className="max-w-md mx-auto px-4 py-12 space-y-6">
       
+      {/* Back Link */}
+      <div>
+        <Link
+          to="/"
+          className="inline-flex items-center gap-1.5 text-xs font-semibold text-stone-600 dark:text-stone-400 hover:text-amber-800 dark:hover:text-amber-300 transition-colors"
+        >
+          <ArrowLeft className="w-3.5 h-3.5" />
+          <span>{language === 'te' ? 'స్టోర్‌కు తిరిగి వెళ్ళండి' : 'Back to Store'}</span>
+        </Link>
+      </div>
+
       {/* Brand Header */}
       <div className="text-center space-y-2">
         <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-amber-600 to-amber-900 text-white flex items-center justify-center mx-auto shadow-md">

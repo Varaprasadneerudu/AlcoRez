@@ -1,6 +1,6 @@
 from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, Request, Query, status
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from app.core.database import get_db
 from app.api.deps import get_current_user, get_current_retailer_user
 from app.models.user import User
@@ -23,15 +23,25 @@ router = APIRouter(tags=["Retailer Portal & Operations"])
 # Public endpoints
 @router.get("/retailers", response_model=List[RetailerOut])
 def list_approved_retailers(db: Session = Depends(get_db)):
-    retailers = db.query(Retailer).filter(Retailer.status == RetailerStatus.APPROVED).all()
+    retailers = (
+        db.query(Retailer)
+        .options(joinedload(Retailer.licenses))
+        .filter(Retailer.status == RetailerStatus.APPROVED)
+        .all()
+    )
     return [RetailerService.to_retailer_out(db, r) for r in retailers]
 
 @router.get("/retailers/{retailer_id}", response_model=RetailerOut)
 def get_retailer_public(retailer_id: str, db: Session = Depends(get_db)):
-    r = db.query(Retailer).filter(
-        Retailer.id == retailer_id,
-        Retailer.status == RetailerStatus.APPROVED
-    ).first()
+    r = (
+        db.query(Retailer)
+        .options(joinedload(Retailer.licenses))
+        .filter(
+            Retailer.id == retailer_id,
+            Retailer.status == RetailerStatus.APPROVED
+        )
+        .first()
+    )
     if not r:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,

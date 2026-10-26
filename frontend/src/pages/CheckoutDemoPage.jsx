@@ -6,6 +6,7 @@ import {
   ShieldAlert,
   CheckCircle2,
   AlertTriangle,
+  ArrowLeft,
   Plus
 } from 'lucide-react';
 import { api } from '../services/api';
@@ -126,8 +127,19 @@ export default function CheckoutDemoPage() {
   }
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
       
+      {/* Back Link */}
+      <div>
+        <Link
+          to="/cart"
+          className="inline-flex items-center gap-1.5 text-xs font-semibold text-stone-600 dark:text-stone-400 hover:text-amber-800 dark:hover:text-amber-300 transition-colors"
+        >
+          <ArrowLeft className="w-3.5 h-3.5" />
+          <span>{language === 'te' ? 'కార్ట్‌కు తిరిగి వెళ్ళండి' : 'Back to Cart'}</span>
+        </Link>
+      </div>
+
       {/* Header */}
       <div>
         <h1 className="text-2xl font-extrabold text-stone-900 dark:text-stone-100 tracking-tight">

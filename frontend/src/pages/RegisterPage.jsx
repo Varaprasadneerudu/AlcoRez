@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Wine, Store, Shield, Lock, Mail, User, Calendar, Phone, AlertCircle, ShieldCheck } from 'lucide-react';
+import { Wine, Store, Shield, Lock, Mail, User, Calendar, Phone, AlertCircle, ShieldCheck, ArrowLeft } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../services/api';
 import { useLanguage } from '../context/LanguageContext';
@@ -98,6 +98,17 @@ export default function RegisterPage() {
   return (
     <div className="max-w-xl mx-auto px-4 py-12 space-y-6">
       
+      {/* Back Link */}
+      <div>
+        <Link
+          to="/login"
+          className="inline-flex items-center gap-1.5 text-xs font-semibold text-stone-600 dark:text-stone-400 hover:text-amber-800 dark:hover:text-amber-300 transition-colors"
+        >
+          <ArrowLeft className="w-3.5 h-3.5" />
+          <span>{language === 'te' ? 'లాగిన్‌కు తిరిగి వెళ్ళండి' : 'Back to Login'}</span>
+        </Link>
+      </div>
+
       {/* Header */}
       <div className="text-center space-y-2">
         <div className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${selectedRole.color} text-white flex items-center justify-center mx-auto shadow-lg transition-all`}>

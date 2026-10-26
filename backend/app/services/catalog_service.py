@@ -16,10 +16,22 @@ class CatalogService:
         return [CategoryOut.model_validate(c) for c in categories]
 
     @staticmethod
+    def get_brands(db: Session) -> List[str]:
+        rows = (
+            db.query(Product.brand)
+            .filter(Product.is_active == True, Product.brand != None, Product.brand != "")
+            .distinct()
+            .order_by(Product.brand.asc())
+            .all()
+        )
+        return [r[0] for r in rows if r[0]]
+
+    @staticmethod
     def get_products(
         db: Session,
         search: Optional[str] = None,
         category_slug: Optional[str] = None,
+        brand: Optional[str] = None,
         retailer_id: Optional[str] = None,
         bottle_size: Optional[str] = None,
         min_price: Optional[Decimal] = None,
@@ -69,6 +81,9 @@ class CatalogService:
         if category_slug:
             query = query.filter(Category.slug == category_slug)
 
+        if brand and brand.strip():
+            query = query.filter(Product.brand.ilike(brand.strip()))
+
         if bottle_size:
             query = query.filter(Inventory.bottle_size == bottle_size)
 
@@ -92,36 +107,57 @@ class CatalogService:
             query = query.order_by(Product.name.asc())
 
         total = query.count()
-        products = query.offset(skip).limit(limit).all()
+        products = query.options(joinedload(Product.category)).offset(skip).limit(limit).all()
 
+        if not products:
+            return [], total
+
+        product_ids = [p.id for p in products]
+
+        # 1. Batch fetch primary & secondary images for all products in 1 query
+        images = (
+            db.query(ProductImage)
+            .filter(ProductImage.product_id.in_(product_ids))
+            .order_by(ProductImage.is_primary.desc())
+            .all()
+        )
+        images_by_product: Dict[str, str] = {}
+        for img in images:
+            if img.product_id not in images_by_product:
+                images_by_product[img.product_id] = img.image_url
+
+        # 2. Batch fetch active inventory from approved retailers in 1 query
+        inv_query = (
+            db.query(Inventory)
+            .join(Retailer, Inventory.retailer_id == Retailer.id)
+            .filter(
+                Inventory.product_id.in_(product_ids),
+                Inventory.is_available == True,
+                Retailer.status == RetailerStatus.APPROVED
+            )
+        )
+        if retailer_id:
+            inv_query = inv_query.filter(Inventory.retailer_id == retailer_id)
+
+        all_invs = inv_query.all()
+        inv_by_product: Dict[str, List[Inventory]] = {pid: [] for pid in product_ids}
+        for inv in all_invs:
+            inv_by_product[inv.product_id].append(inv)
+
+        # 3. Assemble response objects in-memory with 0 extra DB roundtrips
         results = []
         for p in products:
-            # Fetch primary image
-            primary_img = db.query(ProductImage).filter(
-                ProductImage.product_id == p.id,
-                ProductImage.is_primary == True
-            ).first()
-            if not primary_img:
-                primary_img = db.query(ProductImage).filter(ProductImage.product_id == p.id).first()
-
-            # Fetch approved inventories
-            inv_list = (
-                db.query(Inventory)
-                .join(Retailer, Inventory.retailer_id == Retailer.id)
-                .filter(
-                    Inventory.product_id == p.id,
-                    Inventory.is_available == True,
-                    Retailer.status == RetailerStatus.APPROVED
-                )
-                .all()
-            )
-
+            inv_list = inv_by_product.get(p.id, [])
             min_price_val = min([inv.price for inv in inv_list]) if inv_list else None
             sizes = sorted(list(set([inv.bottle_size for inv in inv_list])))
             has_stock = any([inv.stock_quantity > 0 for inv in inv_list])
 
             category_name = p.category.name if p.category else None
             category_slug_val = p.category.slug if p.category else None
+            primary_url = images_by_product.get(
+                p.id,
+                "https://images.unsplash.com/photo-1527061011665-3652c757a4d4?auto=format&fit=crop&w=600&q=80"
+            )
 
             results.append(
                 ProductOut(
@@ -136,7 +172,7 @@ class CatalogService:
                     country_of_origin=p.country_of_origin,
                     is_active=p.is_active,
                     is_demo_data=p.is_demo_data,
-                    primary_image_url=primary_img.image_url if primary_img else "https://images.unsplash.com/photo-1527061011665-3652c757a4d4?auto=format&fit=crop&w=600&q=80",
+                    primary_image_url=primary_url,
                     starting_price=min_price_val,
                     available_sizes=sizes,
                     in_stock=has_stock
@@ -147,7 +183,12 @@ class CatalogService:
 
     @staticmethod
     def get_product_details(db: Session, product_id: str) -> Optional[ProductDetailOut]:
-        product = db.query(Product).filter(Product.id == product_id, Product.is_active == True).first()
+        product = (
+            db.query(Product)
+            .options(joinedload(Product.category))
+            .filter(Product.id == product_id, Product.is_active == True)
+            .first()
+        )
         if not product:
             return None
 
@@ -164,6 +205,7 @@ class CatalogService:
         # Inventories from approved retailers that are active
         inventories = (
             db.query(Inventory)
+            .options(joinedload(Inventory.retailer))
             .join(Retailer, Inventory.retailer_id == Retailer.id)
             .filter(
                 Inventory.product_id == product.id,

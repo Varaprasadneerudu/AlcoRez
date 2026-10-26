@@ -13,6 +13,10 @@ router = APIRouter(tags=["Catalog & Products"])
 def list_categories(db: Session = Depends(get_db)):
     return CatalogService.get_categories(db, active_only=True)
 
+@router.get("/brands", response_model=List[str])
+def list_brands(db: Session = Depends(get_db)):
+    return CatalogService.get_brands(db)
+
 @router.get("/categories/{slug}", response_model=CategoryOut)
 def get_category_by_slug(slug: str, db: Session = Depends(get_db)):
     cat = db.query(Category).filter(Category.slug == slug, Category.is_active == True).first()
@@ -24,13 +28,14 @@ def get_category_by_slug(slug: str, db: Session = Depends(get_db)):
 def list_products(
     search: Optional[str] = Query(None, description="Search by product name or brand"),
     category: Optional[str] = Query(None, description="Category slug"),
+    brand: Optional[str] = Query(None, description="Filter by brand name"),
     retailer_id: Optional[str] = Query(None, description="Filter by licensed retailer ID"),
     bottle_size: Optional[str] = Query(None, description="e.g. 750ml, 375ml"),
     min_price: Optional[Decimal] = Query(None, description="Minimum price filter"),
     max_price: Optional[Decimal] = Query(None, description="Maximum price filter"),
     sort_by: str = Query("name_asc", description="name_asc, name_desc, price_asc, price_desc"),
     page: int = Query(1, ge=1),
-    limit: int = Query(24, ge=1, le=100),
+    limit: int = Query(24, ge=1, le=250),
     db: Session = Depends(get_db)
 ):
     skip = (page - 1) * limit
@@ -38,6 +43,7 @@ def list_products(
         db=db,
         search=search,
         category_slug=category,
+        brand=brand,
         retailer_id=retailer_id,
         bottle_size=bottle_size,
         min_price=min_price,

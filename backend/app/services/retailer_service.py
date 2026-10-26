@@ -709,7 +709,10 @@ class RetailerService:
 
     @staticmethod
     def to_retailer_out(db: Session, retailer: Retailer) -> RetailerOut:
-        lic = db.query(RetailerLicense).filter(RetailerLicense.retailer_id == retailer.id).first()
+        if "licenses" in retailer.__dict__ and retailer.licenses:
+            lic = retailer.licenses[0]
+        else:
+            lic = db.query(RetailerLicense).filter(RetailerLicense.retailer_id == retailer.id).first()
         lic_out = RetailerLicenseOut.model_validate(lic) if lic else None
         return RetailerOut(
             id=retailer.id,

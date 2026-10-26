@@ -9,6 +9,7 @@ import {
   Clock,
   Layers,
   ArrowRight,
+  ArrowLeft,
   History,
   Boxes,
   RefreshCw,
@@ -81,6 +82,16 @@ export default function RetailerDashboard() {
             {t('retailerDash.submitApplication')}
           </Link>
         </div>
+
+        <div className="pt-2">
+          <Link
+            to="/"
+            className="inline-flex items-center gap-1.5 text-xs font-semibold text-stone-600 dark:text-stone-400 hover:text-amber-800 dark:hover:text-amber-300 transition-colors"
+          >
+            <ArrowLeft className="w-3.5 h-3.5" />
+            <span>{language === 'te' ? 'మార్కెట్‌ప్లేస్‌కు తిరిగి వెళ్ళండి' : 'Return to Marketplace'}</span>
+          </Link>
+        </div>
       </div>
     );
   }
@@ -126,6 +137,17 @@ export default function RetailerDashboard() {
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6 transition-colors duration-200">
       
+      {/* Back Link */}
+      <div>
+        <Link
+          to="/"
+          className="inline-flex items-center gap-1.5 text-xs font-semibold text-stone-600 dark:text-stone-400 hover:text-amber-800 dark:hover:text-amber-300 transition-colors"
+        >
+          <ArrowLeft className="w-3.5 h-3.5" />
+          <span>{language === 'te' ? 'మార్కెట్‌ప్లేస్‌కు తిరిగి వెళ్ళండి' : 'Back to Marketplace'}</span>
+        </Link>
+      </div>
+
       {/* 1. Critical License Alerts */}
       {isLicenseExpired && (
         <div className="p-4 sm:p-5 rounded-3xl bg-rose-50 dark:bg-rose-950/50 border border-rose-200 dark:border-rose-900 flex items-start gap-3.5 shadow-sm">
