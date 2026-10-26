@@ -434,3 +434,78 @@ def test_order_reference_soft_deactivation(client, db_session):
     inv_db = db_session.query(Inventory).filter(Inventory.id == inv2_id).first()
     assert inv_db is not None
     assert inv_db.is_available is False
+
+
+def test_automatic_stock_deduction_on_order_acceptance(client, db_session):
+    # 1. Setup retailer and product inventory with 20 bottles
+    headers, retailer_id = get_auth_retailer(client, "stock_deduct_owner")
+    cat_res = client.get("/api/v1/products")
+    p_id = cat_res.json()["items"][0]["id"]
+
+    inv_res = client.post("/api/v1/retailer/inventory", json={
+        "product_id": p_id,
+        "bottle_size": "750ml",
+        "price": 1800.00,
+        "stock_quantity": 20
+    }, headers=headers)
+    assert inv_res.status_code == 201
+    inv_id = inv_res.json()["id"]
+
+    # 2. Register & login customer
+    cust_email = f"cust_stock_{uuid.uuid4().hex[:6]}@demo.mock"
+    client.post("/api/v1/auth/register", json={
+        "email": cust_email,
+        "password": "Password@123",
+        "full_name": "Stock Test Customer",
+        "role": "customer"
+    })
+    cust_login = client.post("/api/v1/auth/login", json={"email": cust_email, "password": "Password@123"})
+    cust_headers = {"Authorization": f"Bearer {cust_login.json()['access_token']}"}
+
+    # 3. Customer adds 4 units to cart and checks out
+    client.post("/api/v1/cart/items", json={"inventory_id": inv_id, "quantity": 4}, headers=cust_headers)
+    checkout_res = client.post("/api/v1/test-orders", json={"simulate_payment_success": True}, headers=cust_headers)
+    assert checkout_res.status_code == 201
+    order_id = checkout_res.json()[0]["id"]
+    assert checkout_res.json()[0]["status"] == "created"
+
+    # 4. Before retailer accepts order: stock is still 20 (held, not yet deducted)
+    inv_list = client.get("/api/v1/retailer/inventory", headers=headers).json()["items"]
+    inv_check = next(i for i in inv_list if i["id"] == inv_id)
+    assert inv_check["stock_quantity"] == 20
+
+    # 5. Retailer ACCEPTS the order -> status transitions to 'confirmed'
+    accept_res = client.patch(
+        f"/api/v1/retailer/orders/{order_id}/status",
+        json={"status": "confirmed", "notes": "Order accepted and packing started"},
+        headers=headers
+    )
+    assert accept_res.status_code == 200
+    assert accept_res.json()["status"] == "confirmed"
+
+    # 6. Verify inventory stock is AUTOMATICALLY decreased from 20 -> 16 (20 - 4)
+    inv_list_after = client.get("/api/v1/retailer/inventory", headers=headers).json()["items"]
+    inv_after = next(i for i in inv_list_after if i["id"] == inv_id)
+    assert inv_after["stock_quantity"] == 16
+
+    # 7. Verify InventoryMovement history was recorded automatically
+    movements_res = client.get(f"/api/v1/retailer/inventory/{inv_id}/movements", headers=headers)
+    assert movements_res.status_code == 200
+    movements = movements_res.json()
+    fulfillment_m = next((m for m in movements if m["reason"] == "ORDER_FULFILLMENT"), None)
+    assert fulfillment_m is not None
+    assert fulfillment_m["change_quantity"] == -4
+    assert fulfillment_m["previous_quantity"] == 20
+    assert fulfillment_m["new_quantity"] == 16
+
+    # 8. Test cancellation restoration: If order is cancelled, stock is restored automatically to 20
+    cancel_res = client.patch(
+        f"/api/v1/retailer/orders/{order_id}/status",
+        json={"status": "cancelled", "notes": "Customer requested cancellation"},
+        headers=headers
+    )
+    assert cancel_res.status_code == 200
+    inv_list_restored = client.get("/api/v1/retailer/inventory", headers=headers).json()["items"]
+    inv_restored = next(i for i in inv_list_restored if i["id"] == inv_id)
+    assert inv_restored["stock_quantity"] == 20
+
