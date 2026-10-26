@@ -161,12 +161,13 @@ class CatalogService:
                 is_primary=True
             )]
 
-        # Inventories from approved retailers
+        # Inventories from approved retailers that are active
         inventories = (
             db.query(Inventory)
             .join(Retailer, Inventory.retailer_id == Retailer.id)
             .filter(
                 Inventory.product_id == product.id,
+                Inventory.is_available == True,
                 Retailer.status == RetailerStatus.APPROVED
             )
             .all()

@@ -59,10 +59,18 @@ class RetailerReviewRequest(BaseModel):
     review_notes: Optional[str] = None
     verify_license: bool = True
 
+from app.schemas.catalog import InventoryMovementOut
+
 class RetailerDashboardOut(BaseModel):
     retailer: RetailerOut
     total_listings: int
     active_inventory_count: int
     low_stock_count: int
+    out_of_stock_count: int = 0
+    total_units: int = 0
     test_orders_count: int
     compliance_status: str
+    license_days_remaining: Optional[int] = None
+    is_license_expired: bool = False
+    is_license_expiring_soon: bool = False
+    recent_movements: List[InventoryMovementOut] = []

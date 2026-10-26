@@ -1,6 +1,6 @@
 from decimal import Decimal
-from typing import Optional
-from sqlalchemy import String, Text, Boolean, Numeric, Integer, ForeignKey
+from typing import Optional, List
+from sqlalchemy import String, Text, Boolean, Numeric, Integer, ForeignKey, UniqueConstraint, CheckConstraint
 from sqlalchemy.orm import relationship, Mapped, mapped_column
 from app.models.base import TimeStampedUUIDModel
 
@@ -42,6 +42,10 @@ class ProductImage(TimeStampedUUIDModel):
 
 class Inventory(TimeStampedUUIDModel):
     __tablename__ = "inventory"
+    __table_args__ = (
+        UniqueConstraint("retailer_id", "product_id", "bottle_size", name="uq_retailer_product_size"),
+        CheckConstraint("stock_quantity >= 0", name="ck_inventory_stock_non_negative"),
+    )
 
     retailer_id: Mapped[str] = mapped_column(String(36), ForeignKey("retailers.id", ondelete="CASCADE"), nullable=False, index=True)
     product_id: Mapped[str] = mapped_column(String(36), ForeignKey("products.id", ondelete="CASCADE"), nullable=False, index=True)
@@ -50,7 +54,27 @@ class Inventory(TimeStampedUUIDModel):
     stock_quantity: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     is_available: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
     low_stock_threshold: Mapped[int] = mapped_column(Integer, default=5, nullable=False)
+    version: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
 
     retailer = relationship("Retailer", back_populates="inventories")
     product = relationship("Product", back_populates="inventories")
     cart_items = relationship("CartItem", back_populates="inventory")
+    movements = relationship("InventoryMovement", back_populates="inventory", cascade="all, delete-orphan", order_by="desc(InventoryMovement.created_at)")
+
+class InventoryMovement(TimeStampedUUIDModel):
+    __tablename__ = "inventory_movements"
+
+    inventory_id: Mapped[str] = mapped_column(String(36), ForeignKey("inventory.id", ondelete="CASCADE"), nullable=False, index=True)
+    retailer_id: Mapped[str] = mapped_column(String(36), ForeignKey("retailers.id", ondelete="CASCADE"), nullable=False, index=True)
+    previous_quantity: Mapped[int] = mapped_column(Integer, nullable=False)
+    new_quantity: Mapped[int] = mapped_column(Integer, nullable=False)
+    change_quantity: Mapped[int] = mapped_column(Integer, nullable=False)
+    reason: Mapped[str] = mapped_column(String(100), nullable=False)
+    notes: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    actor_user_id: Mapped[Optional[str]] = mapped_column(String(36), ForeignKey("users.id", ondelete="SET NULL"), nullable=True, index=True)
+    actor_name: Mapped[Optional[str]] = mapped_column(String(150), nullable=True)
+    actor_role: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
+
+    inventory = relationship("Inventory", back_populates="movements")
+    retailer = relationship("Retailer")
+    actor = relationship("User")

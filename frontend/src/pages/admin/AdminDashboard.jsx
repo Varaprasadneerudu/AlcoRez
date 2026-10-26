@@ -1077,7 +1077,7 @@ export default function AdminDashboard() {
                 Delete User Account?
               </h3>
               <p className="text-xs text-stone-500 mt-1 leading-relaxed">
-                You are about to permanently remove this user account from the Telangana Liquor Marketplace database under Excise Regulatory Oversight.
+                You are about to permanently remove this user account from the AlcoDelivery database under Excise Regulatory Oversight.
               </p>
             </div>
 

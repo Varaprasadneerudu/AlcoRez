@@ -4,7 +4,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 from pydantic import field_validator
 
 class Settings(BaseSettings):
-    PROJECT_NAME: str = "Telangana Liquor Marketplace Platform"
+    PROJECT_NAME: str = "AlcoDelivery Platform"
     API_V1_STR: str = "/api/v1"
     ENVIRONMENT: str = "development"
     DEBUG: bool = True

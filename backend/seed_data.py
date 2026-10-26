@@ -13,10 +13,11 @@ from app.models.retailer import Retailer, RetailerStatus, RetailerLicense, Retai
 from app.models.product import Category, Product, ProductImage, Inventory
 from app.models.compliance import ComplianceApproval, ServiceArea
 
-def seed_database():
+def seed_database(target_engine=None, target_session=None):
     print("Initializing tables...")
-    Base.metadata.create_all(bind=engine)
-    db = SessionLocal()
+    eng = target_engine or engine
+    Base.metadata.create_all(bind=eng)
+    db = target_session() if target_session else SessionLocal()
 
     try:
         # Check if already seeded

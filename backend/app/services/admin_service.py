@@ -44,12 +44,33 @@ class AdminService:
         retailer.status = review_in.status
         retailer.review_notes = review_in.review_notes or f"Updated to {review_in.status.value} by Admin {admin_user.full_name}"
 
-        # Update license if requested
+        # Update license status
         license_obj = db.query(RetailerLicense).filter(RetailerLicense.retailer_id == retailer.id).first()
-        if license_obj and review_in.verify_license:
-            license_obj.is_verified = (review_in.status == RetailerStatus.APPROVED)
-            license_obj.verified_at = datetime.now(timezone.utc)
-            license_obj.verified_by_user_id = admin_user.id
+        if license_obj:
+            if review_in.status == RetailerStatus.APPROVED:
+                if review_in.verify_license:
+                    license_obj.is_verified = True
+                    license_obj.verified_at = datetime.now(timezone.utc)
+                    license_obj.verified_by_user_id = admin_user.id
+            else:
+                # If suspended or rejected, immediately unverify excise license
+                license_obj.is_verified = False
+
+        # If suspended or rejected, immediately deactivate all inventory items so they are hidden from customers
+        if review_in.status != RetailerStatus.APPROVED:
+            db.query(Inventory).filter(Inventory.retailer_id == retailer.id).update(
+                {"is_available": False},
+                synchronize_session=False
+            )
+        elif old_status == RetailerStatus.SUSPENDED and review_in.status == RetailerStatus.APPROVED:
+            # When re-approving a previously suspended retailer, restore availability for items with stock
+            db.query(Inventory).filter(
+                Inventory.retailer_id == retailer.id,
+                Inventory.stock_quantity > 0
+            ).update(
+                {"is_available": True},
+                synchronize_session=False
+            )
 
         db.commit()
         db.refresh(retailer)

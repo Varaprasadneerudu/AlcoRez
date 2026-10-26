@@ -28,7 +28,9 @@ export default function HomePage() {
         ]);
         setCategories(cats || []);
         setFeaturedProducts(prods?.items || []);
-        setRetailers(rets || []);
+        const approvedStores = (rets || []).filter((r) => r.status === 'approved');
+        const uniqueStores = Array.from(new Map(approvedStores.map((item) => [item.shop_name, item])).values());
+        setRetailers(uniqueStores);
       } catch (err) {
         console.error('Failed to load homepage data:', err);
       } finally {

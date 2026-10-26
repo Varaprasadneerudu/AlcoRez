@@ -124,3 +124,131 @@ def test_create_retailer_linked_to_existing_store(client):
     assert dash_res.status_code == 200
     assert dash_res.json()["retailer"]["id"] == target_store["id"]
     assert dash_res.json()["retailer"]["shop_name"] == target_store["shop_name"]
+
+
+def test_duplicate_retailer_application_rejected(client):
+    # Register user
+    email = f"dup_applicant_{uuid.uuid4().hex[:6]}@demo.mock"
+    client.post("/api/v1/auth/register", json={
+        "email": email,
+        "password": "Password@123",
+        "full_name": "Duplicate Tester",
+        "role": "retailer"
+    })
+    login_res = client.post("/api/v1/auth/login", json={"email": email, "password": "Password@123"})
+    token = login_res.json()["access_token"]
+    headers = {"Authorization": f"Bearer {token}"}
+
+    # Attempt to apply with an already existing shop name and city (case-insensitive test)
+    # 'Madhapur Premium Wines & Spirits' is seeded in Hyderabad
+    res = client.post("/api/v1/retailer/applications", json={
+        "shop_name": "madhapur premium wines & spirits",
+        "contact_person": "Duplicate Tester",
+        "phone": "+91-9988776655",
+        "email": email,
+        "address_line": "Hitech City Road",
+        "city": "hyderabad",
+        "state": "Telangana",
+        "postal_code": "500081",
+        "license_number": f"TS-DUP-{uuid.uuid4().hex[:6].upper()}",
+        "license_type": "A4 Retail Wine Shop",
+        "issuing_authority": "Prohibition & Excise Department, Govt of Telangana",
+        "issued_date": "2024-04-01",
+        "expiry_date": "2027-03-31",
+        "document_url": "https://mock-storage.telangana.gov/licenses/dup.pdf"
+    }, headers=headers)
+
+    assert res.status_code == 400
+    assert "already registered" in res.json()["detail"].lower()
+
+
+def test_suspended_store_hidden_from_customer(client):
+    # 1. Register retailer
+    email = f"suspend_owner_{uuid.uuid4().hex[:6]}@demo.mock"
+    client.post("/api/v1/auth/register", json={
+        "email": email,
+        "password": "Password@123",
+        "full_name": "Suspendable Owner",
+        "role": "retailer"
+    })
+    login_res = client.post("/api/v1/auth/login", json={"email": email, "password": "Password@123"})
+    token = login_res.json()["access_token"]
+    r_headers = {"Authorization": f"Bearer {token}"}
+
+    # 2. Apply with unique store name
+    unique_shop = f"Kondapur Cellars {uuid.uuid4().hex[:6]}"
+    app_res = client.post("/api/v1/retailer/applications", json={
+        "shop_name": unique_shop,
+        "contact_person": "Suspendable Owner",
+        "phone": "+91-9123456789",
+        "email": email,
+        "address_line": "Kondapur Main Road",
+        "city": "Hyderabad",
+        "state": "Telangana",
+        "postal_code": "500084",
+        "license_number": f"TS-KON-{uuid.uuid4().hex[:6].upper()}",
+        "license_type": "A4 Retail Wine Shop",
+        "issuing_authority": "Prohibition & Excise Department, Govt of Telangana",
+        "issued_date": "2024-04-01",
+        "expiry_date": "2027-03-31",
+        "document_url": "https://mock-storage.telangana.gov/licenses/kon.pdf"
+    }, headers=r_headers)
+    assert app_res.status_code == 201
+    retailer_id = app_res.json()["id"]
+
+    # 3. Admin logs in and approves
+    admin_login = client.post("/api/v1/auth/login", json={
+        "email": "admin@telanganaliquor.gov.mock",
+        "password": "Admin@123456"
+    })
+    admin_headers = {"Authorization": f"Bearer {admin_login.json()['access_token']}"}
+
+    client.patch(
+        f"/api/v1/admin/retailers/{retailer_id}/review",
+        json={"status": "approved", "review_notes": "Valid test store", "verify_license": True},
+        headers=admin_headers
+    )
+
+    # 4. Retailer adds inventory
+    cat_res = client.get("/api/v1/products")
+    product_id = cat_res.json()["items"][0]["id"]
+    inv_res = client.post("/api/v1/retailer/inventory", json={
+        "product_id": product_id,
+        "bottle_size": "750ml",
+        "price": 3200.00,
+        "stock_quantity": 25
+    }, headers=r_headers)
+    assert inv_res.status_code == 201
+    inv_id = inv_res.json()["id"]
+
+    # 5. Customer can see store and its offers
+    store_res = client.get(f"/api/v1/retailers/{retailer_id}")
+    assert store_res.status_code == 200
+    assert store_res.json()["shop_name"] == unique_shop
+
+    list_res = client.get("/api/v1/retailers")
+    assert any(r["id"] == retailer_id for r in list_res.json())
+
+    # 6. Admin SUSPENDS the retailer
+    suspend_res = client.patch(
+        f"/api/v1/admin/retailers/{retailer_id}/review",
+        json={"status": "suspended", "review_notes": "Violation of excise guidelines"},
+        headers=admin_headers
+    )
+    assert suspend_res.status_code == 200
+    assert suspend_res.json()["status"] == "suspended"
+    assert suspend_res.json()["license"]["is_verified"] is False
+
+    # 7. Customer views MUST NOT show the suspended store
+    hidden_store_res = client.get(f"/api/v1/retailers/{retailer_id}")
+    assert hidden_store_res.status_code == 404
+
+    refreshed_list = client.get("/api/v1/retailers")
+    assert not any(r["id"] == retailer_id for r in refreshed_list.json())
+
+    # 8. Check inventory item is marked unavailable
+    my_inv = client.get("/api/v1/retailer/inventory", headers=r_headers)
+    items = my_inv.json()["items"]
+    item = next(i for i in items if i["id"] == inv_id)
+    assert item["is_available"] is False
+

@@ -105,7 +105,20 @@ export const api = {
 
   // Retailer Portal
   getRetailerDashboard: () => apiRequest('/retailer/dashboard'),
-  getRetailerInventory: () => apiRequest('/retailer/inventory'),
+  getRetailerInventory: (params = {}) => {
+    const query = new URLSearchParams();
+    if (params.search) query.set('search', params.search);
+    if (params.category_id) query.set('category_id', params.category_id);
+    if (params.brand) query.set('brand', params.brand);
+    if (params.stock_status) query.set('stock_status', params.stock_status);
+    if (params.listing_status) query.set('listing_status', params.listing_status);
+    if (params.sort_by) query.set('sort_by', params.sort_by);
+    if (params.sort_order) query.set('sort_order', params.sort_order);
+    if (params.page) query.set('page', params.page);
+    if (params.page_size) query.set('page_size', params.page_size);
+    const qs = query.toString();
+    return apiRequest(`/retailer/inventory${qs ? `?${qs}` : ''}`);
+  },
   createInventoryItem: (invData) => apiRequest('/retailer/inventory', {
     method: 'POST',
     body: JSON.stringify(invData),
@@ -113,6 +126,14 @@ export const api = {
   updateInventoryItem: (id, updateData) => apiRequest(`/retailer/inventory/${id}`, {
     method: 'PATCH',
     body: JSON.stringify(updateData),
+  }),
+  adjustInventoryStock: (id, adjustmentData) => apiRequest(`/retailer/inventory/${id}/adjust-stock`, {
+    method: 'POST',
+    body: JSON.stringify(adjustmentData),
+  }),
+  getInventoryMovements: (id) => apiRequest(`/retailer/inventory/${id}/movements`),
+  deleteInventoryItem: (id) => apiRequest(`/retailer/inventory/${id}`, {
+    method: 'DELETE',
   }),
   getRetailerOrders: () => apiRequest('/retailer/orders'),
   updateOrderStatus: (orderId, statusData) => apiRequest(`/retailer/orders/${orderId}/status`, {

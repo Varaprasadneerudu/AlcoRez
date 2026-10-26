@@ -1,4 +1,4 @@
-# Telangana Liquor Marketplace Platform
+# AlcoDelivery Platform
 
 A production-minded alcoholic beverage discovery and licensed retail wine shop marketplace platform tailored for Telangana, India. Inspired by modern Indian quick-commerce interfaces (Swiggy, Zomato), the application provides separate role-based interfaces for **Customers**, **Licensed Retailers**, and **State Prohibition & Excise Administrators**.
 

@@ -28,7 +28,9 @@ export default function CatalogPage() {
   useEffect(() => {
     Promise.all([api.getCategories(), api.getRetailers()]).then(([cats, rets]) => {
       setCategories(cats || []);
-      setRetailers(rets || []);
+      const approvedStores = (rets || []).filter((r) => r.status === 'approved');
+      const uniqueStores = Array.from(new Map(approvedStores.map((item) => [item.shop_name, item])).values());
+      setRetailers(uniqueStores);
     });
   }, []);
 
