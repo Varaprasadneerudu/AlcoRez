@@ -9,19 +9,19 @@ import {
   ShoppingCart,
   AlertTriangle,
   CheckCircle2,
-  Package,
-  Globe2,
-  FileCheck
+  Globe2
 } from 'lucide-react';
 import { api } from '../services/api';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
+import { useLanguage } from '../context/LanguageContext';
 
 export default function ProductDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { addToCart, loading: cartLoading } = useCart();
-  const { isAuthenticated, role } = useAuth();
+  const { isAuthenticated } = useAuth();
+  const { t, tp, tb, tc, ts, tr, to, language } = useLanguage();
 
   const [product, setProduct] = useState(null);
   const [selectedInventory, setSelectedInventory] = useState(null);
@@ -37,7 +37,6 @@ export default function ProductDetailPage() {
         const data = await api.getProduct(id);
         setProduct(data);
         if (data.inventories && data.inventories.length > 0) {
-          // Select first in-stock inventory by default
           const inStock = data.inventories.find((i) => i.is_available && i.stock_quantity > 0) || data.inventories[0];
           setSelectedInventory(inStock);
         }
@@ -52,7 +51,7 @@ export default function ProductDetailPage() {
 
   const handleAddToCart = async () => {
     if (!isAuthenticated) {
-      alert('Please log in (or select a demo profile from the top bar) to add items to your cart.');
+      alert(t('productDetail.loginRequired'));
       return;
     }
     if (!selectedInventory) return;
@@ -60,7 +59,8 @@ export default function ProductDetailPage() {
     try {
       setError(null);
       await addToCart(selectedInventory.id, quantity);
-      setSuccessMessage(`Added ${quantity} unit(s) of ${product.name} (${selectedInventory.bottle_size}) to demonstration cart.`);
+      const prodName = tp(product.name);
+      setSuccessMessage(`${prodName} (${ts(selectedInventory.bottle_size)}): ${t('productDetail.addedSuccess')}`);
       setTimeout(() => setSuccessMessage(null), 4000);
     } catch (err) {
       setError(err.message);
@@ -71,7 +71,7 @@ export default function ProductDetailPage() {
     return (
       <div className="max-w-7xl mx-auto px-4 py-16 text-center">
         <div className="w-12 h-12 border-4 border-amber-600 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-        <p className="text-xs text-stone-500 font-medium">Loading verified product details...</p>
+        <p className="text-xs text-stone-500 font-medium">{language === 'te' ? 'ఉత్పత్తి వివరాలు లోడ్ అవుతున్నాయి...' : 'Loading verified product details...'}</p>
       </div>
     );
   }
@@ -82,10 +82,10 @@ export default function ProductDetailPage() {
         <div className="w-16 h-16 bg-red-100 text-red-600 rounded-full flex items-center justify-center mx-auto">
           <AlertTriangle className="w-8 h-8" />
         </div>
-        <h2 className="text-xl font-bold text-stone-900">Product Unavailable</h2>
-        <p className="text-xs text-stone-600">{error || 'Product could not be retrieved or is currently inactive.'}</p>
-        <Link to="/products" className="inline-flex items-center gap-2 text-xs font-bold text-amber-800 underline">
-          <ArrowLeft className="w-4 h-4" /> Return to Catalogue
+        <h2 className="text-xl font-bold text-stone-900 dark:text-stone-100">{t('productDetail.unavailableTitle')}</h2>
+        <p className="text-xs text-stone-600 dark:text-stone-400">{error || t('productDetail.unavailableDesc')}</p>
+        <Link to="/products" className="inline-flex items-center gap-2 text-xs font-bold text-amber-800 dark:text-amber-400 underline">
+          <ArrowLeft className="w-4 h-4" /> {t('productDetail.returnCatalog')}
         </Link>
       </div>
     );
@@ -94,27 +94,27 @@ export default function ProductDetailPage() {
   const primaryImage = product.images?.[0]?.image_url || 'https://images.unsplash.com/photo-1527061011665-3652c757a4d4?auto=format&fit=crop&w=800&q=80';
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8 transition-colors duration-200">
       
       {/* Breadcrumb & Back */}
       <Link
         to="/products"
-        className="inline-flex items-center gap-2 text-xs font-bold text-stone-600 hover:text-amber-800 transition"
+        className="inline-flex items-center gap-2 text-xs font-bold text-stone-600 dark:text-stone-400 hover:text-amber-800 dark:hover:text-amber-400 transition"
       >
         <ArrowLeft className="w-4 h-4" />
-        Back to Catalogue
+        {t('productDetail.backToCatalog')}
       </Link>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
         
         {/* Left: Product Image */}
-        <div className="lg:col-span-5 bg-white rounded-3xl border border-stone-200 p-8 shadow-sm flex flex-col items-center justify-center relative overflow-hidden">
+        <div className="lg:col-span-5 bg-white dark:bg-stone-900 rounded-3xl border border-stone-200 dark:border-stone-800 p-8 shadow-sm flex flex-col items-center justify-center relative overflow-hidden">
           <span className="absolute top-4 left-4 bg-amber-500 text-stone-950 font-black text-[10px] px-2.5 py-1 rounded-md uppercase tracking-wider">
-            DEMO LISTING
+            {t('productDetail.demoListing')}
           </span>
           <img
             src={primaryImage}
-            alt={product.name}
+            alt={tp(product.name)}
             className="w-full max-h-[420px] object-contain drop-shadow-lg"
           />
         </div>
@@ -123,46 +123,46 @@ export default function ProductDetailPage() {
         <div className="lg:col-span-7 space-y-6">
           
           <div>
-            <div className="flex items-center gap-2 text-xs text-amber-800 font-bold uppercase tracking-wider mb-1">
-              <span>{product.brand}</span>
+            <div className="flex items-center gap-2 text-xs text-amber-800 dark:text-amber-400 font-bold uppercase tracking-wider mb-1">
+              <span>{tb(product.brand)}</span>
               <span>•</span>
-              <span className="text-stone-500 font-semibold">{product.category_name}</span>
+              <span className="text-stone-500 dark:text-stone-400 font-semibold">{tc(product.category_name)}</span>
             </div>
 
-            <h1 className="text-2xl sm:text-3xl font-extrabold text-stone-900 leading-tight">
-              {product.name}
+            <h1 className="text-2xl sm:text-3xl font-extrabold text-stone-900 dark:text-stone-100 leading-tight">
+              {tp(product.name)}
             </h1>
 
-            <div className="flex flex-wrap items-center gap-3 mt-3 text-xs text-stone-600">
+            <div className="flex flex-wrap items-center gap-3 mt-3 text-xs text-stone-600 dark:text-stone-300">
               {product.alcohol_by_volume && (
-                <span className="bg-stone-100 text-stone-800 font-semibold px-2.5 py-1 rounded-md">
+                <span className="bg-stone-100 dark:bg-stone-800 text-stone-800 dark:text-stone-200 font-semibold px-2.5 py-1 rounded-md border border-stone-200 dark:border-stone-700">
                   {product.alcohol_by_volume}
                 </span>
               )}
               <span className="flex items-center gap-1 font-medium">
                 <Globe2 className="w-3.5 h-3.5 text-stone-400" />
-                Origin: {product.country_of_origin}
+                {t('productDetail.origin')} {to(product.country_of_origin)}
               </span>
-              <span className="flex items-center gap-1 text-emerald-700 font-semibold">
-                <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
-                Excise Verified
+              <span className="flex items-center gap-1 text-emerald-700 dark:text-emerald-400 font-semibold">
+                <ShieldCheck className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                {t('productDetail.exciseVerified')}
               </span>
             </div>
           </div>
 
-          <p className="text-stone-600 text-xs sm:text-sm leading-relaxed">
-            {product.description || 'Authentic alcoholic beverage verified against approved Telangana State Excise catalogues.'}
+          <p className="text-stone-600 dark:text-stone-300 text-xs sm:text-sm leading-relaxed">
+            {product.description || t('productDetail.defaultDescription')}
           </p>
 
           {/* Retailer & Size Options Matrix */}
-          <div className="bg-stone-50 rounded-2xl border border-stone-200 p-5 space-y-4">
-            <h3 className="font-bold text-xs uppercase tracking-wider text-stone-700 flex items-center gap-2">
-              <Store className="w-4 h-4 text-amber-700" />
-              Available at Licensed Wine Shops
+          <div className="bg-stone-50 dark:bg-stone-900 rounded-2xl border border-stone-200 dark:border-stone-800 p-5 space-y-4">
+            <h3 className="font-bold text-xs uppercase tracking-wider text-stone-700 dark:text-stone-300 flex items-center gap-2">
+              <Store className="w-4 h-4 text-amber-700 dark:text-amber-400" />
+              {t('productDetail.availableAtRetailers')}
             </h3>
 
             {product.inventories?.length === 0 ? (
-              <p className="text-xs text-stone-500 italic">No approved retailer currently has stock listed for this item.</p>
+              <p className="text-xs text-stone-500 italic">{t('productDetail.noStock')}</p>
             ) : (
               <div className="space-y-2">
                 {product.inventories.map((inv) => {
@@ -176,25 +176,25 @@ export default function ProductDetailPage() {
                       }}
                       className={`w-full text-left p-3 rounded-xl border text-xs transition flex flex-col sm:flex-row sm:items-center justify-between gap-2 ${
                         isSelected
-                          ? 'bg-white border-amber-500 ring-2 ring-amber-500/20 shadow-sm'
-                          : 'bg-white/80 border-stone-200 hover:border-amber-300'
+                          ? 'bg-white dark:bg-stone-800 border-amber-500 ring-2 ring-amber-500/20 shadow-sm'
+                          : 'bg-white/80 dark:bg-stone-800/60 border-stone-200 dark:border-stone-700 hover:border-amber-300 dark:hover:border-amber-600'
                       }`}
                     >
                       <div>
                         <div className="flex items-center gap-2">
-                          <span className="font-bold text-stone-900">{inv.retailer_shop_name}</span>
-                          <span className="font-bold bg-amber-100 text-amber-900 text-[10px] px-2 py-0.5 rounded">
-                            {inv.bottle_size}
+                          <span className="font-bold text-stone-900 dark:text-stone-100">{tr(inv.retailer_shop_name)}</span>
+                          <span className="font-bold bg-amber-100 dark:bg-amber-950/80 text-amber-900 dark:text-amber-300 text-[10px] px-2 py-0.5 rounded border border-amber-200 dark:border-amber-800">
+                            {ts(inv.bottle_size)}
                           </span>
                         </div>
-                        <p className="text-[11px] text-stone-500 mt-0.5">{inv.retailer_address}</p>
+                        <p className="text-[11px] text-stone-500 dark:text-stone-400 mt-0.5">{inv.retailer_address}</p>
                       </div>
 
                       <div className="flex items-center justify-between sm:justify-end gap-3 shrink-0">
-                        <span className="text-[11px] text-stone-500">
-                          {inv.is_available ? `In Stock (${inv.stock_quantity})` : 'Out of Stock'}
+                        <span className="text-[11px] text-stone-500 dark:text-stone-400">
+                          {inv.is_available ? `${t('productDetail.inStockUnits')} (${inv.stock_quantity})` : t('productDetail.outOfStock')}
                         </span>
-                        <span className="font-extrabold text-stone-900 text-sm">
+                        <span className="font-extrabold text-stone-900 dark:text-stone-100 text-sm">
                           ₹{Number(inv.price).toLocaleString('en-IN')}
                         </span>
                       </div>
@@ -209,26 +209,26 @@ export default function ProductDetailPage() {
           {selectedInventory && (
             <div className="space-y-4 pt-2">
               <div className="flex items-center gap-4">
-                <span className="text-xs font-bold text-stone-700">Quantity:</span>
-                <div className="flex items-center border border-stone-200 rounded-xl bg-white shadow-sm overflow-hidden">
+                <span className="text-xs font-bold text-stone-700 dark:text-stone-300">{t('productDetail.quantity')}</span>
+                <div className="flex items-center border border-stone-200 dark:border-stone-700 rounded-xl bg-white dark:bg-stone-800 shadow-sm overflow-hidden">
                   <button
                     onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                    className="p-2 text-stone-600 hover:bg-stone-100 transition"
+                    className="p-2 text-stone-600 dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-stone-700 transition"
                     disabled={quantity <= 1}
                   >
                     <Minus className="w-3.5 h-3.5" />
                   </button>
-                  <span className="px-4 py-1 text-xs font-bold text-stone-900">{quantity}</span>
+                  <span className="px-4 py-1 text-xs font-bold text-stone-900 dark:text-stone-100">{quantity}</span>
                   <button
                     onClick={() => setQuantity(Math.min(selectedInventory.stock_quantity || 10, quantity + 1))}
-                    className="p-2 text-stone-600 hover:bg-stone-100 transition"
+                    className="p-2 text-stone-600 dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-stone-700 transition"
                     disabled={quantity >= (selectedInventory.stock_quantity || 10)}
                   >
                     <Plus className="w-3.5 h-3.5" />
                   </button>
                 </div>
-                <span className="text-xs text-stone-400">
-                  Total: <strong className="text-stone-900">₹{(Number(selectedInventory.price) * quantity).toLocaleString('en-IN')}</strong>
+                <span className="text-xs text-stone-400 dark:text-stone-500">
+                  {t('productDetail.total')} <strong className="text-stone-900 dark:text-stone-100">₹{(Number(selectedInventory.price) * quantity).toLocaleString('en-IN')}</strong>
                 </span>
               </div>
 
@@ -238,29 +238,29 @@ export default function ProductDetailPage() {
                 className="w-full sm:w-auto py-3.5 px-8 rounded-xl font-bold text-sm bg-gradient-to-r from-amber-600 to-amber-700 hover:from-amber-700 hover:to-amber-800 text-white shadow-lg shadow-amber-700/20 flex items-center justify-center gap-2 transition disabled:opacity-50"
               >
                 <ShoppingCart className="w-4 h-4" />
-                <span>Add to Demo Cart</span>
+                <span>{t('productDetail.addToDemoCart')}</span>
               </button>
 
               {successMessage && (
-                <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-xl text-xs text-emerald-800 flex items-center justify-between">
+                <div className="p-3 bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-800 rounded-xl text-xs text-emerald-800 dark:text-emerald-300 flex items-center justify-between">
                   <span className="flex items-center gap-2">
-                    <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                    <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
                     {successMessage}
                   </span>
-                  <Link to="/cart" className="font-bold underline text-emerald-900">View Cart</Link>
+                  <Link to="/cart" className="font-bold underline text-emerald-900 dark:text-emerald-200">{t('productDetail.viewCart')}</Link>
                 </div>
               )}
             </div>
           )}
 
           {/* Statutory Warning Box */}
-          <div className="p-4 rounded-2xl bg-amber-50/80 border border-amber-200 text-xs text-amber-900 space-y-1">
-            <p className="font-bold flex items-center gap-1.5">
-              <AlertTriangle className="w-4 h-4 text-amber-700" />
-              Statutory Demonstration Notice
+          <div className="p-4 rounded-2xl bg-amber-50/80 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-900/50 text-xs text-amber-900 dark:text-amber-200 space-y-1">
+            <p className="font-bold flex items-center gap-1.5 text-amber-900 dark:text-amber-300">
+              <AlertTriangle className="w-4 h-4 text-amber-700 dark:text-amber-400" />
+              {t('productDetail.statutoryNoticeTitle')}
             </p>
-            <p className="leading-relaxed text-[11px] text-amber-800/90">
-              {product.compliance_notice}
+            <p className="leading-relaxed text-[11px] text-amber-800/90 dark:text-amber-200/90">
+              {product.compliance_notice || t('banner.exciseText')}
             </p>
           </div>
 

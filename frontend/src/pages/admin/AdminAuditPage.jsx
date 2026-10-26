@@ -53,18 +53,18 @@ export default function AdminAuditPage() {
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs">
-              <thead className="bg-stone-50 border-b border-stone-200 text-stone-600 uppercase font-bold text-[10px] tracking-wider">
+              <thead className="bg-stone-100 dark:bg-stone-900 border-b border-stone-200 dark:border-stone-800 text-stone-800 dark:text-stone-200 uppercase font-extrabold text-[11px] tracking-wider">
                 <tr>
-                  <th className="py-3 px-4">Timestamp (UTC)</th>
-                  <th className="py-3 px-4">Action Event</th>
-                  <th className="py-3 px-4">Actor</th>
-                  <th className="py-3 px-4">Target Entity</th>
-                  <th className="py-3 px-4">Event Payload / Diff</th>
+                  <th className="py-3.5 px-4">Timestamp (UTC)</th>
+                  <th className="py-3.5 px-4">Action Event</th>
+                  <th className="py-3.5 px-4">Actor</th>
+                  <th className="py-3.5 px-4">Target Entity</th>
+                  <th className="py-3.5 px-4">Event Payload / Diff</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-stone-100 font-mono text-[11px]">
+              <tbody className="divide-y divide-stone-100 dark:divide-stone-800 font-mono text-[11px]">
                 {logs.map((log) => (
-                  <tr key={log.id} className="hover:bg-stone-50 transition">
+                  <tr key={log.id} className="hover:bg-stone-50 dark:hover:bg-stone-800/40 transition">
                     <td className="py-3 px-4 text-stone-500 whitespace-nowrap">
                       {new Date(log.timestamp).toISOString().replace('T', ' ').substring(0, 19)}
                     </td>

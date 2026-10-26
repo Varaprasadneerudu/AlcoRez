@@ -1,40 +1,41 @@
 import React from 'react';
-import { ShieldCheck, AlertCircle, PhoneCall, Scale } from 'lucide-react';
+import { ShieldCheck, PhoneCall } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { useLanguage } from '../context/LanguageContext';
 
 export default function Footer() {
+  const { t } = useLanguage();
+
   return (
-    <footer className="bg-stone-900 text-stone-300 pt-12 pb-8 border-t border-stone-800 text-xs">
+    <footer className="bg-stone-900 dark:bg-stone-950 text-stone-300 dark:text-stone-400 pt-12 pb-8 border-t border-stone-800 text-xs transition-colors duration-200">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
         
         {/* Statutory Health & Legal Warning Callout */}
-        <div className="bg-stone-950/80 border border-amber-900/40 rounded-2xl p-5 text-center space-y-2">
+        <div className="bg-stone-950/80 dark:bg-stone-900/60 border border-amber-900/40 rounded-2xl p-5 text-center space-y-2">
           <p className="font-extrabold tracking-wider text-amber-400 uppercase text-sm sm:text-base">
-            ⚠️ STATUTORY WARNING: CONSUMPTION OF ALCOHOL IS INJURIOUS TO HEALTH • BE SAFE — DON'T DRINK AND DRIVE
+            {t('footer.statutoryWarning')}
           </p>
           <p className="text-stone-400 max-w-4xl mx-auto leading-relaxed text-[11px]">
-            Under the provisions of the Telangana Excise Act, 1968, sale of liquor to persons below 21 years of age is strictly prohibited.
-            This marketplace platform operates in a technological demonstration mode for licensed retailer discovery.
-            Commercial online payments and alcohol delivery dispatch are strictly disabled.
+            {t('footer.statutoryDetails')}
           </p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8 pt-4">
           {/* Col 1: Platform */}
           <div className="space-y-3">
-            <h3 className="font-bold text-white text-sm">Telangana Liquor Marketplace</h3>
+            <h3 className="font-bold text-white text-sm">{t('footer.platformTitle')}</h3>
             <p className="text-stone-400 leading-relaxed text-xs">
-              A modern digital catalogue assisting consumers in discovering verified products and authorized A4 wine shops in Telangana.
+              {t('footer.platformDesc')}
             </p>
             <div className="flex items-center gap-2 text-amber-400 font-semibold text-[11px]">
               <ShieldCheck className="w-4 h-4 text-emerald-400" />
-              Fail-Closed Regulatory Architecture
+              {t('footer.failClosed')}
             </div>
           </div>
 
           {/* Col 2: Permitted Zones */}
           <div className="space-y-3">
-            <h3 className="font-bold text-white text-sm">Hyderabad Retail Zones</h3>
+            <h3 className="font-bold text-white text-sm">{t('footer.zonesTitle')}</h3>
             <ul className="space-y-1.5 text-stone-400">
               <li>• Madhapur & HITEC City (500081)</li>
               <li>• Jubilee Hills & Road 36 (500033)</li>
@@ -46,7 +47,7 @@ export default function Footer() {
 
           {/* Col 3: Excise & Compliance Links */}
           <div className="space-y-3">
-            <h3 className="font-bold text-white text-sm">Regulatory Governance</h3>
+            <h3 className="font-bold text-white text-sm">{t('footer.governanceTitle')}</h3>
             <ul className="space-y-1.5 text-stone-400">
               <li><Link to="/compliance-info" className="hover:text-amber-300">Telangana Excise Act, 1968</Link></li>
               <li><Link to="/compliance-info" className="hover:text-amber-300">A4 Retail Shop Licensing Rules</Link></li>
@@ -58,21 +59,20 @@ export default function Footer() {
 
           {/* Col 4: State Helpline */}
           <div className="space-y-3">
-            <h3 className="font-bold text-white text-sm">Prohibition & Excise Dept</h3>
-            <p className="text-stone-400 text-xs">
-              Government of Telangana<br />
-              Nampally, Hyderabad, 500001
+            <h3 className="font-bold text-white text-sm">{t('footer.deptTitle')}</h3>
+            <p className="text-stone-400 text-xs whitespace-pre-line">
+              {t('footer.govtOfTelangana')}
             </p>
             <div className="flex items-center gap-2 text-stone-300">
               <PhoneCall className="w-3.5 h-3.5 text-amber-400" />
-              <span>Toll Free Helpline: 1800-425-2523</span>
+              <span>{t('footer.tollFree')}</span>
             </div>
           </div>
         </div>
 
         <div className="border-t border-stone-800 pt-6 flex flex-col sm:flex-row items-center justify-between text-stone-500 text-[11px] gap-2">
-          <p>© {new Date().getFullYear()} Telangana Liquor Marketplace Prototype. Demonstration dataset only.</p>
-          <p>Built with FastAPI, React, PostgreSQL & Tailwind CSS • 21+ Statutory Gate Active</p>
+          <p>© {new Date().getFullYear()} {t('footer.copyright')}</p>
+          <p>{t('footer.techStack')}</p>
         </div>
       </div>
     </footer>

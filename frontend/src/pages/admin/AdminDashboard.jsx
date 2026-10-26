@@ -296,9 +296,9 @@ export default function AdminDashboard() {
           </button>
           <Link
             to="/admin/retailers"
-            className="py-2.5 px-4 rounded-xl text-xs font-bold bg-amber-500 hover:bg-amber-600 text-stone-950 shadow transition flex items-center gap-1.5"
+            className="py-2.5 px-4 rounded-xl text-xs font-bold bg-amber-500 hover:bg-amber-400 text-stone-950 dark:bg-amber-500 dark:hover:bg-amber-400 dark:text-stone-950 shadow-md transition flex items-center gap-1.5"
           >
-            <Store className="w-3.5 h-3.5" />
+            <Store className="w-3.5 h-3.5 text-stone-950" />
             Review Retailers ({stats?.pending_retailers || 0} Pending)
           </Link>
           <Link
@@ -531,48 +531,48 @@ export default function AdminDashboard() {
             </p>
           </div>
         ) : (
-          <div className="border border-stone-200 rounded-2xl overflow-hidden shadow-xs">
+          <div className="border border-stone-200 dark:border-stone-800 rounded-2xl overflow-hidden shadow-xs">
             <div className="overflow-x-auto">
               <table className="w-full text-left text-xs">
-                <thead className="bg-stone-50/80 border-b border-stone-200 text-stone-500 font-bold uppercase tracking-wider text-[10px]">
+                <thead className="bg-stone-100 dark:bg-stone-900 border-b border-stone-200 dark:border-stone-800 text-stone-800 dark:text-stone-200 font-extrabold uppercase tracking-wider text-[11px]">
                   <tr>
-                    <th className="py-3 px-4">User Details</th>
-                    <th className="py-3 px-3">Role</th>
-                    <th className="py-3 px-3">Phone</th>
-                    <th className="py-3 px-3">Status</th>
-                    <th className="py-3 px-3">Age 21+ Gate</th>
-                    <th className="py-3 px-3">Registered</th>
-                    <th className="py-3 px-4 text-right">Excise Actions</th>
+                    <th className="py-3.5 px-4">User Details</th>
+                    <th className="py-3.5 px-3">Role</th>
+                    <th className="py-3.5 px-3">Phone</th>
+                    <th className="py-3.5 px-3">Status</th>
+                    <th className="py-3.5 px-3">Age 21+ Gate</th>
+                    <th className="py-3.5 px-3">Registered</th>
+                    <th className="py-3.5 px-4 text-right">Excise Actions</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-stone-100">
+                <tbody className="divide-y divide-stone-100 dark:divide-stone-800">
                   {filteredUsers.map((u) => {
                     const isSelf = u.id === currentAdmin?.id;
 
                     return (
-                      <tr key={u.id} className="hover:bg-amber-50/30 transition">
+                      <tr key={u.id} className="hover:bg-amber-50/30 dark:hover:bg-stone-800/40 transition">
                         {/* Name & Email */}
                         <td className="py-3.5 px-4">
-                          <div className="font-bold text-stone-900 flex items-center gap-1.5">
+                          <div className="font-bold text-stone-900 dark:text-stone-100 flex items-center gap-1.5">
                             <span>{u.full_name}</span>
                             {isSelf && (
-                              <span className="text-[9px] bg-amber-100 text-amber-900 border border-amber-300 font-extrabold px-1.5 py-0.2 rounded">
+                              <span className="text-[9px] bg-amber-100 dark:bg-amber-950/60 text-amber-900 dark:text-amber-300 border border-amber-300 dark:border-amber-800 font-extrabold px-1.5 py-0.2 rounded">
                                 YOU (Active)
                               </span>
                             )}
                           </div>
-                          <div className="text-[11px] text-stone-500 font-mono mt-0.5">{u.email}</div>
+                          <div className="text-[11px] text-stone-500 dark:text-stone-400 font-mono mt-0.5">{u.email}</div>
                         </td>
 
                         {/* Role */}
                         <td className="py-3.5 px-3">
                           <span
-                            className={`inline-block px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider border ${
+                            className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider border ${
                               u.role === 'admin'
-                                ? 'bg-stone-900 text-amber-300 border-stone-900'
+                                ? 'bg-amber-50 text-amber-800 border-amber-200 dark:bg-amber-950/50 dark:text-amber-300 dark:border-amber-800/60'
                                 : u.role === 'retailer'
-                                ? 'bg-emerald-100 text-emerald-900 border-emerald-300'
-                                : 'bg-amber-100 text-amber-900 border-amber-300'
+                                ? 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950/50 dark:text-blue-300 dark:border-blue-800/60'
+                                : 'bg-stone-100 text-stone-700 border-stone-200 dark:bg-stone-800 dark:text-stone-300 dark:border-stone-700'
                             }`}
                           >
                             {u.role === 'retailer' ? 'Retailer' : u.role === 'admin' ? 'Admin' : 'Customer'}
@@ -580,17 +580,20 @@ export default function AdminDashboard() {
                         </td>
 
                         {/* Phone */}
-                        <td className="py-3.5 px-3 text-stone-600 font-medium">
+                        <td className="py-3.5 px-3 text-stone-600 dark:text-stone-300 font-medium">
                           {u.phone || '—'}
                         </td>
 
                         {/* Status */}
                         <td className="py-3.5 px-3">
                           <span
-                            className={`inline-block px-2 py-0.5 rounded text-[10px] font-bold ${
-                              u.is_active ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-700'
+                            className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider border ${
+                              u.is_active
+                                ? 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/50 dark:text-emerald-400 dark:border-emerald-800/60'
+                                : 'bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-950/50 dark:text-rose-400 dark:border-rose-800/60'
                             }`}
                           >
+                            <span className={`w-1.5 h-1.5 rounded-full ${u.is_active ? 'bg-emerald-500' : 'bg-rose-500'}`} />
                             {u.is_active ? 'Active' : 'Deactivated'}
                           </span>
                         </td>
@@ -598,8 +601,8 @@ export default function AdminDashboard() {
                         {/* Age Verified */}
                         <td className="py-3.5 px-3">
                           {u.is_verified ? (
-                            <span className="flex items-center gap-1 text-[11px] font-semibold text-emerald-700">
-                              <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
+                            <span className="flex items-center gap-1.5 text-[11px] font-semibold text-emerald-700 dark:text-emerald-400">
+                              <ShieldCheck className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
                               Verified (21+)
                             </span>
                           ) : (
@@ -608,7 +611,7 @@ export default function AdminDashboard() {
                         </td>
 
                         {/* Registered Date */}
-                        <td className="py-3.5 px-3 text-stone-500 text-[11px]">
+                        <td className="py-3.5 px-3 text-stone-500 dark:text-stone-400 text-[11px]">
                           {new Date(u.created_at).toLocaleDateString('en-IN', {
                             day: 'numeric',
                             month: 'short',
@@ -622,7 +625,7 @@ export default function AdminDashboard() {
                             {/* Edit Button */}
                             <button
                               onClick={() => handleOpenEditUser(u)}
-                              className="p-1.5 rounded-lg text-stone-600 hover:text-amber-800 hover:bg-amber-50 border border-stone-200 transition"
+                              className="p-1.5 rounded-lg text-stone-600 dark:text-stone-300 hover:text-amber-800 dark:hover:text-amber-300 hover:bg-amber-50 dark:hover:bg-stone-800 border border-stone-200 dark:border-stone-800 transition"
                               title="Edit user details"
                             >
                               <Edit3 className="w-3.5 h-3.5" />
@@ -637,8 +640,8 @@ export default function AdminDashboard() {
                               disabled={isSelf}
                               className={`p-1.5 rounded-lg border transition ${
                                 isSelf
-                                  ? 'text-stone-300 border-stone-100 cursor-not-allowed'
-                                  : 'text-rose-600 hover:text-rose-800 hover:bg-rose-50 border-stone-200'
+                                  ? 'text-stone-300 dark:text-stone-600 border-stone-100 dark:border-stone-800/50 cursor-not-allowed'
+                                  : 'text-rose-600 dark:text-rose-400 hover:text-rose-800 dark:hover:text-rose-300 hover:bg-rose-50 dark:hover:bg-stone-800 border-stone-200 dark:border-stone-800'
                               }`}
                               title={isSelf ? 'Cannot delete your own active administrator account' : 'Delete user account permanently'}
                             >

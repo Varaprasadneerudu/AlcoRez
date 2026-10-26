@@ -10,22 +10,28 @@ import {
 } from 'lucide-react';
 import { api } from '../services/api';
 import { useCart } from '../context/CartContext';
+import { useLanguage } from '../context/LanguageContext';
 
 export default function CheckoutDemoPage() {
   const { cart, subtotal, fetchCart } = useCart();
+  const { t, tp, ts, language } = useLanguage();
   const navigate = useNavigate();
 
   const [addresses, setAddresses] = useState([]);
   const [selectedAddressId, setSelectedAddressId] = useState('');
   const [simulateSuccess, setSimulateSuccess] = useState(true);
-  const [notes, setNotes] = useState('Demonstration simulated order placement');
+  const [notes, setNotes] = useState(
+    language === 'te'
+      ? 'ప్రదర్శన సమీక్ష కోసం సిమ్యులేటెడ్ ఆర్డర్'
+      : 'Demonstration simulated order placement'
+  );
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
   // New address modal state
   const [showAddAddress, setShowAddAddress] = useState(false);
   const [newAddr, setNewAddr] = useState({
-    label: 'Home',
+    label: language === 'te' ? 'ఇల్లు' : 'Home',
     address_line1: '',
     address_line2: '',
     landmark: '',
@@ -59,7 +65,7 @@ export default function CheckoutDemoPage() {
       setSelectedAddressId(created.id);
       setShowAddAddress(false);
       setNewAddr({
-        label: 'Home',
+        label: language === 'te' ? 'ఇల్లు' : 'Home',
         address_line1: '',
         address_line2: '',
         landmark: '',
@@ -75,7 +81,7 @@ export default function CheckoutDemoPage() {
 
   const handlePlaceOrder = async () => {
     if (!cart || cart.items.length === 0) {
-      alert('Cart is empty.');
+      alert(language === 'te' ? 'కార్ట్ ఖాళీగా ఉంది.' : 'Cart is empty.');
       navigate('/cart');
       return;
     }
@@ -106,9 +112,14 @@ export default function CheckoutDemoPage() {
   if (!cart || cart.items.length === 0) {
     return (
       <div className="max-w-md mx-auto px-4 py-16 text-center space-y-4">
-        <h2 className="text-xl font-bold text-stone-900">Your cart is empty</h2>
-        <Link to="/products" className="inline-block py-2 px-5 bg-amber-600 text-white rounded-xl text-xs font-bold">
-          Browse Products
+        <h2 className="text-xl font-bold text-stone-900 dark:text-stone-100">
+          {t('checkout.cartEmpty', 'Your cart is empty')}
+        </h2>
+        <Link
+          to="/products"
+          className="inline-block py-2 px-5 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-xs font-bold transition shadow"
+        >
+          {t('checkout.browseProducts', 'Browse Products')}
         </Link>
       </div>
     );
@@ -119,23 +130,22 @@ export default function CheckoutDemoPage() {
       
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-extrabold text-stone-900 tracking-tight">
-          Simulated Demonstration Checkout
+        <h1 className="text-2xl font-extrabold text-stone-900 dark:text-stone-100 tracking-tight">
+          {t('checkout.title', 'Simulated Demonstration Checkout')}
         </h1>
-        <p className="text-xs text-stone-500 mt-0.5">
-          Step 2 of 2 • Prototype order creation and test payment verification
+        <p className="text-xs text-stone-500 dark:text-stone-400 mt-0.5">
+          {t('checkout.stepDesc', 'Step 2 of 2 • Prototype order creation and test payment verification')}
         </p>
       </div>
 
       {/* Critical Statutory Alert */}
-      <div className="bg-amber-50 rounded-2xl border border-amber-300 p-5 text-xs text-amber-950 space-y-2">
-        <div className="flex items-center gap-2 font-bold text-amber-900">
-          <ShieldAlert className="w-5 h-5 text-amber-700" />
-          <span>Legal Clearances Pending — Alcohol Transaction Flow Disabled by Default</span>
+      <div className="bg-amber-50 dark:bg-amber-950/40 rounded-2xl border border-amber-300 dark:border-amber-700/60 p-5 text-xs text-amber-950 dark:text-amber-200 space-y-2">
+        <div className="flex items-center gap-2 font-bold text-amber-900 dark:text-amber-300">
+          <ShieldAlert className="w-5 h-5 text-amber-700 dark:text-amber-400 shrink-0" />
+          <span>{t('checkout.statutoryAlertTitle', 'Legal Clearances Pending — Alcohol Transaction Flow Disabled by Default')}</span>
         </div>
-        <p className="leading-relaxed text-stone-700">
-          Under the <strong>Telangana Excise Act, 1968</strong>, retail alcohol delivery and online payments are strictly prohibited for wine shops.
-          This checkout creates a simulated test order to evaluate platform mechanics. No actual alcohol will be packed or dispatched.
+        <p className="leading-relaxed text-stone-700 dark:text-amber-200/90">
+          {t('checkout.statutoryAlertText', 'Under the Telangana Excise Act, 1968, retail alcohol delivery and online payments are strictly prohibited for wine shops. This checkout creates a simulated test order to evaluate platform mechanics. No actual alcohol will be packed or dispatched.')}
         </p>
       </div>
 
@@ -145,56 +155,64 @@ export default function CheckoutDemoPage() {
         <div className="lg:col-span-8 space-y-6">
           
           {/* Section 1: Customer Address */}
-          <div className="bg-white rounded-2xl border border-stone-200 p-6 space-y-4 shadow-sm">
-            <div className="flex items-center justify-between pb-3 border-b border-stone-100">
-              <h2 className="text-sm font-bold text-stone-900 flex items-center gap-2">
-                <MapPin className="w-4 h-4 text-amber-700" />
-                Hyderabad Delivery Address (Demonstration Location)
+          <div className="bg-white dark:bg-stone-900 rounded-2xl border border-stone-200 dark:border-stone-800 p-6 space-y-4 shadow-sm">
+            <div className="flex items-center justify-between pb-3 border-b border-stone-100 dark:border-stone-800">
+              <h2 className="text-sm font-bold text-stone-900 dark:text-stone-100 flex items-center gap-2">
+                <MapPin className="w-4 h-4 text-amber-700 dark:text-amber-500" />
+                {t('checkout.deliveryAddressTitle', 'Hyderabad Delivery Address (Demonstration Location)')}
               </h2>
               <button
                 onClick={() => setShowAddAddress(!showAddAddress)}
-                className="text-xs font-bold text-amber-800 hover:text-amber-900 flex items-center gap-1"
+                className="text-xs font-bold text-amber-800 dark:text-amber-400 hover:text-amber-900 dark:hover:text-amber-300 flex items-center gap-1"
               >
                 <Plus className="w-3.5 h-3.5" />
-                Add New Address
+                {t('checkout.addNewAddress', 'Add New Address')}
               </button>
             </div>
 
             {/* Add Address Form */}
             {showAddAddress && (
-              <form onSubmit={handleCreateAddress} className="p-4 bg-stone-50 rounded-xl border border-stone-200 space-y-3">
-                <h3 className="font-bold text-xs text-stone-800">Add New Hyderabad Address</h3>
+              <form onSubmit={handleCreateAddress} className="p-4 bg-stone-50 dark:bg-stone-950 rounded-xl border border-stone-200 dark:border-stone-800 space-y-3">
+                <h3 className="font-bold text-xs text-stone-800 dark:text-stone-200">
+                  {t('checkout.addNewAddressTitle', 'Add New Hyderabad Address')}
+                </h3>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
                   <div>
-                    <label className="block text-stone-600 font-semibold mb-1">Label</label>
+                    <label className="block text-stone-600 dark:text-stone-400 font-semibold mb-1">
+                      {t('checkout.label', 'Label')}
+                    </label>
                     <input
                       type="text"
                       value={newAddr.label}
                       onChange={(e) => setNewAddr({ ...newAddr, label: e.target.value })}
-                      placeholder="e.g. Home, Office"
-                      className="w-full p-2 rounded-lg border border-stone-200 outline-none"
+                      placeholder={t('checkout.labelPlaceholder', 'e.g. Home, Office')}
+                      className="w-full p-2 rounded-lg border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-900 text-stone-900 dark:text-stone-100 outline-none"
                       required
                     />
                   </div>
                   <div>
-                    <label className="block text-stone-600 font-semibold mb-1">Postal Code</label>
+                    <label className="block text-stone-600 dark:text-stone-400 font-semibold mb-1">
+                      {t('checkout.postalCode', 'Postal Code')}
+                    </label>
                     <input
                       type="text"
                       value={newAddr.postal_code}
                       onChange={(e) => setNewAddr({ ...newAddr, postal_code: e.target.value })}
-                      placeholder="e.g. 500081"
-                      className="w-full p-2 rounded-lg border border-stone-200 outline-none"
+                      placeholder={t('checkout.postalCodePlaceholder', 'e.g. 500081')}
+                      className="w-full p-2 rounded-lg border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-900 text-stone-900 dark:text-stone-100 outline-none"
                       required
                     />
                   </div>
                   <div className="sm:col-span-2">
-                    <label className="block text-stone-600 font-semibold mb-1">Address Line 1</label>
+                    <label className="block text-stone-600 dark:text-stone-400 font-semibold mb-1">
+                      {t('checkout.addressLine1', 'Address Line 1')}
+                    </label>
                     <input
                       type="text"
                       value={newAddr.address_line1}
                       onChange={(e) => setNewAddr({ ...newAddr, address_line1: e.target.value })}
-                      placeholder="Flat / House / Building"
-                      className="w-full p-2 rounded-lg border border-stone-200 outline-none"
+                      placeholder={t('checkout.addressLine1Placeholder', 'Flat / House / Building')}
+                      className="w-full p-2 rounded-lg border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-900 text-stone-900 dark:text-stone-100 outline-none"
                       required
                     />
                   </div>
@@ -203,15 +221,15 @@ export default function CheckoutDemoPage() {
                   <button
                     type="button"
                     onClick={() => setShowAddAddress(false)}
-                    className="px-3 py-1.5 text-xs text-stone-600 hover:bg-stone-200 rounded-lg"
+                    className="px-3 py-1.5 text-xs text-stone-600 dark:text-stone-400 hover:bg-stone-200 dark:hover:bg-stone-800 rounded-lg transition"
                   >
-                    Cancel
+                    {t('checkout.cancel', 'Cancel')}
                   </button>
                   <button
                     type="submit"
-                    className="px-4 py-1.5 text-xs font-bold bg-amber-600 text-white rounded-lg shadow"
+                    className="px-4 py-1.5 text-xs font-bold bg-amber-600 hover:bg-amber-700 text-white rounded-lg shadow transition"
                   >
-                    Save Address
+                    {t('checkout.saveAddress', 'Save Address')}
                   </button>
                 </div>
               </form>
@@ -220,8 +238,8 @@ export default function CheckoutDemoPage() {
             {/* Address List */}
             <div className="space-y-2">
               {addresses.length === 0 ? (
-                <div className="p-3 text-xs text-stone-500 bg-stone-50 rounded-xl">
-                  No saved addresses found. You can add one above or proceed with in-store pickup demonstration.
+                <div className="p-3 text-xs text-stone-500 dark:text-stone-400 bg-stone-50 dark:bg-stone-950 rounded-xl">
+                  {t('checkout.noSavedAddress', 'No saved addresses found. You can add one above or proceed with in-store pickup demonstration.')}
                 </div>
               ) : (
                 addresses.map((addr) => {
@@ -231,8 +249,8 @@ export default function CheckoutDemoPage() {
                       key={addr.id}
                       className={`block p-3.5 rounded-xl border text-xs cursor-pointer transition ${
                         isSelected
-                          ? 'bg-amber-50/60 border-amber-500 ring-2 ring-amber-500/20'
-                          : 'bg-white border-stone-200 hover:border-amber-300'
+                          ? 'bg-amber-50/60 dark:bg-amber-950/40 border-amber-500 ring-2 ring-amber-500/20'
+                          : 'bg-white dark:bg-stone-900 border-stone-200 dark:border-stone-800 hover:border-amber-300 dark:hover:border-amber-700'
                       }`}
                     >
                       <div className="flex items-start justify-between">
@@ -245,13 +263,13 @@ export default function CheckoutDemoPage() {
                             className="mt-0.5 text-amber-600 focus:ring-amber-500"
                           />
                           <div>
-                            <span className="font-bold text-stone-900">{addr.label}</span>
-                            <p className="text-stone-600 mt-0.5">{addr.address_line1}, {addr.city}, {addr.state} - {addr.postal_code}</p>
+                            <span className="font-bold text-stone-900 dark:text-stone-100">{addr.label}</span>
+                            <p className="text-stone-600 dark:text-stone-400 mt-0.5">{addr.address_line1}, {addr.city}, {addr.state} - {addr.postal_code}</p>
                           </div>
                         </div>
                         {addr.is_default && (
-                          <span className="text-[10px] font-bold bg-stone-100 text-stone-600 px-2 py-0.5 rounded">
-                            Default
+                          <span className="text-[10px] font-bold bg-stone-100 dark:bg-stone-800 text-stone-600 dark:text-stone-300 px-2 py-0.5 rounded">
+                            {t('checkout.defaultBadge', 'Default')}
                           </span>
                         )}
                       </div>
@@ -263,10 +281,10 @@ export default function CheckoutDemoPage() {
           </div>
 
           {/* Section 2: Payment Simulator */}
-          <div className="bg-white rounded-2xl border border-stone-200 p-6 space-y-4 shadow-sm">
-            <h2 className="text-sm font-bold text-stone-900 flex items-center gap-2 pb-3 border-b border-stone-100">
-              <CreditCard className="w-4 h-4 text-amber-700" />
-              Simulated Payment Gateway
+          <div className="bg-white dark:bg-stone-900 rounded-2xl border border-stone-200 dark:border-stone-800 p-6 space-y-4 shadow-sm">
+            <h2 className="text-sm font-bold text-stone-900 dark:text-stone-100 flex items-center gap-2 pb-3 border-b border-stone-100 dark:border-stone-800">
+              <CreditCard className="w-4 h-4 text-amber-700 dark:text-amber-500" />
+              {t('checkout.paymentGatewayTitle', 'Simulated Payment Gateway')}
             </h2>
 
             <div className="space-y-3 text-xs">
@@ -274,8 +292,8 @@ export default function CheckoutDemoPage() {
                 onClick={() => setSimulateSuccess(true)}
                 className={`flex items-center justify-between p-3.5 rounded-xl border cursor-pointer transition ${
                   simulateSuccess
-                    ? 'bg-emerald-50/60 border-emerald-500 ring-2 ring-emerald-500/20'
-                    : 'bg-white border-stone-200'
+                    ? 'bg-emerald-50/60 dark:bg-emerald-950/40 border-emerald-500 ring-2 ring-emerald-500/20'
+                    : 'bg-white dark:bg-stone-900 border-stone-200 dark:border-stone-800'
                 }`}
               >
                 <div className="flex items-center gap-3">
@@ -286,12 +304,16 @@ export default function CheckoutDemoPage() {
                     className="text-emerald-600"
                   />
                   <div>
-                    <span className="font-bold text-stone-900 block">Simulate Gateway Approval (Instant Success)</span>
-                    <span className="text-stone-500 text-[11px]">Creates test order with SUCCESS status and snapshots pricing</span>
+                    <span className="font-bold text-stone-900 dark:text-stone-100 block">
+                      {t('checkout.simulateSuccessTitle', 'Simulate Gateway Approval (Instant Success)')}
+                    </span>
+                    <span className="text-stone-500 dark:text-stone-400 text-[11px]">
+                      {t('checkout.simulateSuccessDesc', 'Creates test order with SUCCESS status and snapshots pricing')}
+                    </span>
                   </div>
                 </div>
-                <span className="text-emerald-700 font-bold text-[11px] bg-emerald-100 px-2 py-0.5 rounded">
-                  Recommended
+                <span className="text-emerald-700 dark:text-emerald-400 font-bold text-[11px] bg-emerald-100 dark:bg-emerald-950 px-2 py-0.5 rounded">
+                  {t('checkout.recommended', 'Recommended')}
                 </span>
               </label>
 
@@ -299,8 +321,8 @@ export default function CheckoutDemoPage() {
                 onClick={() => setSimulateSuccess(false)}
                 className={`flex items-center justify-between p-3.5 rounded-xl border cursor-pointer transition ${
                   !simulateSuccess
-                    ? 'bg-red-50/60 border-red-500 ring-2 ring-red-500/20'
-                    : 'bg-white border-stone-200'
+                    ? 'bg-red-50/60 dark:bg-red-950/40 border-red-500 ring-2 ring-red-500/20'
+                    : 'bg-white dark:bg-stone-900 border-stone-200 dark:border-stone-800'
                 }`}
               >
                 <div className="flex items-center gap-3">
@@ -311,67 +333,83 @@ export default function CheckoutDemoPage() {
                     className="text-red-600"
                   />
                   <div>
-                    <span className="font-bold text-stone-900 block">Simulate Gateway Rejection / Failure</span>
-                    <span className="text-stone-500 text-[11px]">Simulates a declined card transaction response</span>
+                    <span className="font-bold text-stone-900 dark:text-stone-100 block">
+                      {t('checkout.simulateFailureTitle', 'Simulate Gateway Rejection / Failure')}
+                    </span>
+                    <span className="text-stone-500 dark:text-stone-400 text-[11px]">
+                      {t('checkout.simulateFailureDesc', 'Simulates a declined card transaction response')}
+                    </span>
                   </div>
                 </div>
-                <span className="text-red-700 font-bold text-[11px] bg-red-100 px-2 py-0.5 rounded">
-                  Test Failure
+                <span className="text-red-700 dark:text-red-400 font-bold text-[11px] bg-red-100 dark:bg-red-950 px-2 py-0.5 rounded">
+                  {t('checkout.testFailure', 'Test Failure')}
                 </span>
               </label>
             </div>
           </div>
 
           {/* Section 3: Notes */}
-          <div className="bg-white rounded-2xl border border-stone-200 p-6 space-y-2 shadow-sm text-xs">
-            <label className="font-bold text-stone-700 block">Customer / Simulation Notes (Optional)</label>
+          <div className="bg-white dark:bg-stone-900 rounded-2xl border border-stone-200 dark:border-stone-800 p-6 space-y-2 shadow-sm text-xs">
+            <label className="font-bold text-stone-700 dark:text-stone-300 block">
+              {t('checkout.notesLabel', 'Customer / Simulation Notes (Optional)')}
+            </label>
             <input
               type="text"
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              placeholder="e.g. Test simulated order for demonstration review"
-              className="w-full p-2.5 rounded-xl border border-stone-200 outline-none focus:ring-2 focus:ring-amber-500/20"
+              placeholder={t('checkout.notesPlaceholder', 'e.g. Test simulated order for demonstration review')}
+              className="w-full p-2.5 rounded-xl border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-950 text-stone-900 dark:text-stone-100 outline-none focus:ring-2 focus:ring-amber-500/20"
             />
           </div>
 
         </div>
 
         {/* Right Column: Order Summary & Place Test Order */}
-        <div className="lg:col-span-4 bg-white rounded-2xl border border-stone-200 p-6 space-y-6 shadow-sm">
-          <h2 className="font-extrabold text-base text-stone-900 pb-3 border-b border-stone-100">
-            Order Review
+        <div className="lg:col-span-4 bg-white dark:bg-stone-900 rounded-2xl border border-stone-200 dark:border-stone-800 p-6 space-y-6 shadow-sm">
+          <h2 className="font-extrabold text-base text-stone-900 dark:text-stone-100 pb-3 border-b border-stone-100 dark:border-stone-800">
+            {t('checkout.orderReview', 'Order Review')}
           </h2>
 
           <div className="space-y-3 max-h-60 overflow-y-auto pr-1">
             {cart.items.map((item) => (
-              <div key={item.id} className="flex items-center justify-between text-xs py-1 border-b border-stone-50">
+              <div key={item.id} className="flex items-center justify-between text-xs py-1 border-b border-stone-50 dark:border-stone-800">
                 <div className="truncate max-w-[190px]">
-                  <span className="font-bold text-stone-900">{item.product_name}</span>
-                  <p className="text-[10px] text-stone-400">Qty: {item.quantity} • {item.bottle_size}</p>
+                  <span className="font-bold text-stone-900 dark:text-stone-100 block truncate">
+                    {tp(item.product_name)}
+                  </span>
+                  <p className="text-[10px] text-stone-400">
+                    {t('checkout.qty', 'Qty:')} {item.quantity} • {ts(item.bottle_size)}
+                  </p>
                 </div>
-                <span className="font-semibold text-stone-900">
+                <span className="font-semibold text-stone-900 dark:text-stone-100">
                   ₹{Number(item.total_price).toLocaleString('en-IN')}
                 </span>
               </div>
             ))}
           </div>
 
-          <div className="space-y-2 pt-3 border-t border-stone-200 text-xs">
-            <div className="flex justify-between text-stone-600">
-              <span>Subtotal</span>
-              <span className="font-bold text-stone-900">₹{Number(subtotal).toLocaleString('en-IN')}</span>
+          <div className="space-y-2 pt-3 border-t border-stone-200 dark:border-stone-800 text-xs">
+            <div className="flex justify-between text-stone-600 dark:text-stone-400">
+              <span>{t('checkout.subtotal', 'Subtotal')}</span>
+              <span className="font-bold text-stone-900 dark:text-stone-100">₹{Number(subtotal).toLocaleString('en-IN')}</span>
             </div>
-            <div className="flex justify-between text-stone-600">
-              <span>Home Delivery</span>
-              <span className="font-bold text-emerald-700">₹0.00 (Disabled)</span>
+            <div className="flex justify-between text-stone-600 dark:text-stone-400">
+              <span>{t('checkout.homeDelivery', 'Home Delivery')}</span>
+              <span className="font-bold text-emerald-700 dark:text-emerald-400">
+                {t('checkout.deliveryDisabled', '₹0.00 (Disabled)')}
+              </span>
             </div>
-            <div className="flex justify-between text-stone-600">
-              <span>Taxes</span>
-              <span className="font-bold text-stone-900">₹0.00 (Demo)</span>
+            <div className="flex justify-between text-stone-600 dark:text-stone-400">
+              <span>{t('checkout.taxes', 'Taxes')}</span>
+              <span className="font-bold text-stone-900 dark:text-stone-100">
+                {t('checkout.taxesDemo', '₹0.00 (Demo)')}
+              </span>
             </div>
-            <div className="pt-2 border-t border-stone-100 flex justify-between text-sm">
-              <span className="font-bold text-stone-900">Demonstration Value</span>
-              <span className="font-extrabold text-amber-900 text-lg">
+            <div className="pt-2 border-t border-stone-100 dark:border-stone-800 flex justify-between text-sm">
+              <span className="font-bold text-stone-900 dark:text-stone-100">
+                {t('checkout.demonstrationValue', 'Demonstration Value')}
+              </span>
+              <span className="font-extrabold text-amber-900 dark:text-amber-400 text-lg">
                 ₹{Number(subtotal).toLocaleString('en-IN')}
               </span>
             </div>
@@ -383,25 +421,24 @@ export default function CheckoutDemoPage() {
             className="w-full py-3.5 px-4 rounded-xl font-bold text-sm bg-gradient-to-r from-amber-600 to-amber-700 hover:from-amber-700 hover:to-amber-800 text-white shadow-lg shadow-amber-700/20 flex items-center justify-center gap-2 transition disabled:opacity-50"
           >
             {loading ? (
-              <span>Simulating Order...</span>
+              <span>{t('checkout.simulatingOrder', 'Simulating Order...')}</span>
             ) : (
               <>
                 <CheckCircle2 className="w-4 h-4" />
-                <span>Place Simulated Order</span>
+                <span>{t('checkout.placeSimulatedOrder', 'Place Simulated Order')}</span>
               </>
             )}
           </button>
 
           {error && (
-            <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-xs text-red-800 flex items-start gap-2">
-              <AlertTriangle className="w-4 h-4 text-red-600 shrink-0 mt-0.5" />
+            <div className="p-3 bg-red-50 dark:bg-red-950/50 border border-red-200 dark:border-red-800 rounded-xl text-xs text-red-800 dark:text-red-300 flex items-start gap-2">
+              <AlertTriangle className="w-4 h-4 text-red-600 dark:text-red-400 shrink-0 mt-0.5" />
               <span>{error}</span>
             </div>
           )}
 
-          <div className="p-3 bg-stone-50 rounded-xl border border-stone-200 text-[10px] text-stone-500 leading-normal">
-            This prototype does NOT connect to a real banking gateway or merchant acquirer.
-            Order records are created in test status for technical validation.
+          <div className="p-3 bg-stone-50 dark:bg-stone-950 rounded-xl border border-stone-200 dark:border-stone-800 text-[10px] text-stone-500 dark:text-stone-400 leading-normal">
+            {t('checkout.prototypeNotice', 'This prototype does NOT connect to a real banking gateway or merchant acquirer. Order records are created in test status for technical validation.')}
           </div>
         </div>
 

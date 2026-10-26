@@ -3,6 +3,8 @@ import { BrowserRouter } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AuthProvider } from './context/AuthContext';
 import { CartProvider } from './context/CartContext';
+import { ThemeProvider } from './context/ThemeContext';
+import { LanguageProvider } from './context/LanguageContext';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import StatutoryBanner from './components/StatutoryBanner';
@@ -21,30 +23,34 @@ const queryClient = new QueryClient({
 export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <BrowserRouter>
-        <AuthProvider>
-          <CartProvider>
-            <div className="flex flex-col min-h-screen bg-[#FBF9F5]">
-              {/* Mandatory 21+ Statutory Age Verification Modal */}
-              <LegalAgeModal />
+      <ThemeProvider>
+        <LanguageProvider>
+          <BrowserRouter>
+            <AuthProvider>
+              <CartProvider>
+                <div className="flex flex-col min-h-screen bg-[#FBF9F5] dark:bg-stone-950 text-stone-900 dark:text-stone-100 transition-colors duration-200">
+                  {/* Mandatory 21+ Statutory Age Verification Modal */}
+                  <LegalAgeModal />
 
-              {/* Persistent Excise Compliance Banner */}
-              <StatutoryBanner />
+                  {/* Persistent Excise Compliance Banner */}
+                  <StatutoryBanner />
 
-              {/* Header / Navbar */}
-              <Navbar />
+                  {/* Header / Navbar */}
+                  <Navbar />
 
-              {/* Page Contents */}
-              <main className="flex-1">
-                <AppRoutes />
-              </main>
+                  {/* Page Contents */}
+                  <main className="flex-1">
+                    <AppRoutes />
+                  </main>
 
-              {/* Footer with Statutory Health Warning */}
-              <Footer />
-            </div>
-          </CartProvider>
-        </AuthProvider>
-      </BrowserRouter>
+                  {/* Footer with Statutory Health Warning */}
+                  <Footer />
+                </div>
+              </CartProvider>
+            </AuthProvider>
+          </BrowserRouter>
+        </LanguageProvider>
+      </ThemeProvider>
     </QueryClientProvider>
   );
 }
