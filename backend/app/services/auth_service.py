@@ -1,0 +1,143 @@
+from datetime import datetime, timezone
+from typing import Optional
+from fastapi import HTTPException, status
+from sqlalchemy.orm import Session
+from app.core.security import hash_password, verify_password, create_access_token, create_refresh_token, decode_token
+from app.models.user import User, UserRole, CustomerProfile
+from app.models.retailer import Retailer, RetailerMembership
+from app.schemas.auth import UserRegister, UserLogin, Token
+from app.core.compliance import ComplianceEngine
+from app.services.audit_service import AuditService
+
+class AuthService:
+    @staticmethod
+    def register_user(db: Session, reg_in: UserRegister, ip_address: Optional[str] = None) -> User:
+        existing = db.query(User).filter(User.email == reg_in.email).first()
+        if existing:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="An account with this email already exists"
+            )
+
+        # Enforce statutory 21+ age check if DOB provided for customer
+        age_verified = False
+        dob_date = None
+        if reg_in.date_of_birth:
+            if not ComplianceEngine.validate_customer_age(reg_in.date_of_birth):
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Under the Telangana Excise Act, users must be at least 21 years of age to access alcoholic beverage services."
+                )
+            dob_date = datetime.strptime(reg_in.date_of_birth, "%Y-%m-%d").date()
+            age_verified = True
+
+        hashed_pw = hash_password(reg_in.password)
+        new_user = User(
+            email=reg_in.email,
+            hashed_password=hashed_pw,
+            full_name=reg_in.full_name,
+            phone=reg_in.phone,
+            role=reg_in.role,
+            is_active=True,
+            is_verified=age_verified
+        )
+        db.add(new_user)
+        db.commit()
+        db.refresh(new_user)
+
+        # Create linked profile for customer
+        if new_user.role == UserRole.CUSTOMER:
+            profile = CustomerProfile(
+                user_id=new_user.id,
+                date_of_birth=dob_date,
+                age_verified=age_verified
+            )
+            db.add(profile)
+            db.commit()
+
+        # Link existing store if provided for retailer
+        if new_user.role == UserRole.RETAILER and reg_in.retailer_id:
+            store = db.query(Retailer).filter(Retailer.id == reg_in.retailer_id).first()
+            if store:
+                membership = RetailerMembership(
+                    retailer_id=store.id,
+                    user_id=new_user.id,
+                    role_in_retailer="OWNER" if not store.user_id else "MANAGER"
+                )
+                db.add(membership)
+                db.commit()
+
+        AuditService.log_event(
+            db=db,
+            action="USER_REGISTERED",
+            entity_type="user",
+            actor_user_id=new_user.id,
+            actor_role=new_user.role.value,
+            entity_id=new_user.id,
+            ip_address=ip_address,
+            details={"email": new_user.email, "role": new_user.role.value, "age_verified": age_verified}
+        )
+        return new_user
+
+    @staticmethod
+    def authenticate_user(db: Session, login_in: UserLogin, ip_address: Optional[str] = None) -> Token:
+        user = db.query(User).filter(User.email == login_in.email).first()
+        if not user or not verify_password(login_in.password, user.hashed_password):
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Incorrect email or password",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+        if not user.is_active:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Account is suspended or deactivated"
+            )
+
+        access_token = create_access_token(subject=user.id, role=user.role.value)
+        refresh_token = create_refresh_token(subject=user.id, role=user.role.value)
+
+        AuditService.log_event(
+            db=db,
+            action="USER_LOGIN_SUCCESS",
+            entity_type="user",
+            actor_user_id=user.id,
+            actor_role=user.role.value,
+            entity_id=user.id,
+            ip_address=ip_address
+        )
+
+        return Token(
+            access_token=access_token,
+            refresh_token=refresh_token,
+            role=user.role.value,
+            user_id=user.id,
+            full_name=user.full_name,
+            email=user.email
+        )
+
+    @staticmethod
+    def refresh_access_token(db: Session, refresh_token: str) -> Token:
+        payload = decode_token(refresh_token)
+        if not payload or payload.get("type") != "refresh":
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid or expired refresh token"
+            )
+        user_id = payload.get("sub")
+        user = db.query(User).filter(User.id == user_id, User.is_active == True).first()
+        if not user:
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="User account not found or inactive")
+
+        # Rotate tokens
+        new_access_token = create_access_token(subject=user.id, role=user.role.value)
+        new_refresh_token = create_refresh_token(subject=user.id, role=user.role.value)
+
+        return Token(
+            access_token=new_access_token,
+            refresh_token=new_refresh_token,
+            role=user.role.value,
+            user_id=user.id,
+            full_name=user.full_name,
+            email=user.email
+        )

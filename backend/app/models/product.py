@@ -1,0 +1,56 @@
+from decimal import Decimal
+from typing import Optional
+from sqlalchemy import String, Text, Boolean, Numeric, Integer, ForeignKey
+from sqlalchemy.orm import relationship, Mapped, mapped_column
+from app.models.base import TimeStampedUUIDModel
+
+class Category(TimeStampedUUIDModel):
+    __tablename__ = "categories"
+
+    name: Mapped[str] = mapped_column(String(100), unique=True, nullable=False, index=True)
+    slug: Mapped[str] = mapped_column(String(100), unique=True, nullable=False, index=True)
+    description: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    image_url: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+
+    products = relationship("Product", back_populates="category")
+
+class Product(TimeStampedUUIDModel):
+    __tablename__ = "products"
+
+    name: Mapped[str] = mapped_column(String(255), nullable=False, index=True)
+    brand: Mapped[str] = mapped_column(String(150), nullable=False, index=True)
+    category_id: Mapped[str] = mapped_column(String(36), ForeignKey("categories.id", ondelete="RESTRICT"), nullable=False, index=True)
+    description: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    alcohol_by_volume: Mapped[Optional[str]] = mapped_column(String(20), nullable=True)
+    country_of_origin: Mapped[str] = mapped_column(String(100), default="India", nullable=False)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    is_demo_data: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+
+    category = relationship("Category", back_populates="products")
+    images = relationship("ProductImage", back_populates="product", cascade="all, delete-orphan")
+    inventories = relationship("Inventory", back_populates="product", cascade="all, delete-orphan")
+
+class ProductImage(TimeStampedUUIDModel):
+    __tablename__ = "product_images"
+
+    product_id: Mapped[str] = mapped_column(String(36), ForeignKey("products.id", ondelete="CASCADE"), nullable=False, index=True)
+    image_url: Mapped[str] = mapped_column(String(500), nullable=False)
+    is_primary: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+
+    product = relationship("Product", back_populates="images")
+
+class Inventory(TimeStampedUUIDModel):
+    __tablename__ = "inventory"
+
+    retailer_id: Mapped[str] = mapped_column(String(36), ForeignKey("retailers.id", ondelete="CASCADE"), nullable=False, index=True)
+    product_id: Mapped[str] = mapped_column(String(36), ForeignKey("products.id", ondelete="CASCADE"), nullable=False, index=True)
+    bottle_size: Mapped[str] = mapped_column(String(50), nullable=False)
+    price: Mapped[Decimal] = mapped_column(Numeric(10, 2), nullable=False)
+    stock_quantity: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    is_available: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    low_stock_threshold: Mapped[int] = mapped_column(Integer, default=5, nullable=False)
+
+    retailer = relationship("Retailer", back_populates="inventories")
+    product = relationship("Product", back_populates="inventories")
+    cart_items = relationship("CartItem", back_populates="inventory")

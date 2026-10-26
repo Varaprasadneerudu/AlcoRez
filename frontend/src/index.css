@@ -1,0 +1,17 @@
+@import "tailwindcss";
+
+@layer base {
+  body {
+    background-color: #FBF9F5;
+    color: #1c1917;
+    font-family: 'Plus Jakarta Sans', Inter, system-ui, sans-serif;
+    min-height: 100vh;
+  }
+}
+
+/* Glass panel */
+.glass-panel {
+  background: rgba(255, 255, 255, 0.88);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
