@@ -13,11 +13,13 @@ export default function CatalogPage() {
   const [total, setTotal] = useState(0);
   const [categories, setCategories] = useState([]);
   const [retailers, setRetailers] = useState([]);
+  const [brands, setBrands] = useState([]);
   const [loading, setLoading] = useState(true);
 
   // Filter states from URL or defaults
   const search = searchParams.get('search') || '';
   const selectedCategory = searchParams.get('category') || '';
+  const selectedBrand = searchParams.get('brand') || '';
   const selectedRetailer = searchParams.get('retailer_id') || '';
   const selectedBottleSize = searchParams.get('bottle_size') || '';
   const sortBy = searchParams.get('sort_by') || 'name_asc';
@@ -26,11 +28,12 @@ export default function CatalogPage() {
   const [mobileFilterOpen, setMobileFilterOpen] = useState(false);
 
   useEffect(() => {
-    Promise.all([api.getCategories(), api.getRetailers()]).then(([cats, rets]) => {
+    Promise.all([api.getCategories(), api.getRetailers(), api.getBrands()]).then(([cats, rets, brs]) => {
       setCategories(cats || []);
       const approvedStores = (rets || []).filter((r) => r.status === 'approved');
       const uniqueStores = Array.from(new Map(approvedStores.map((item) => [item.shop_name, item])).values());
       setRetailers(uniqueStores);
+      setBrands(brs || []);
     });
   }, []);
 
@@ -41,6 +44,7 @@ export default function CatalogPage() {
         const res = await api.getProducts({
           search,
           category: selectedCategory,
+          brand: selectedBrand,
           retailer_id: selectedRetailer,
           bottle_size: selectedBottleSize,
           sort_by: sortBy,
@@ -56,7 +60,7 @@ export default function CatalogPage() {
       }
     }
     fetchCatalog();
-  }, [search, selectedCategory, selectedRetailer, selectedBottleSize, sortBy, page]);
+  }, [search, selectedCategory, selectedBrand, selectedRetailer, selectedBottleSize, sortBy, page]);
 
   const updateParam = (key, value) => {
     const next = new URLSearchParams(searchParams);
@@ -73,7 +77,7 @@ export default function CatalogPage() {
     setSearchParams(new URLSearchParams());
   };
 
-  const hasActiveFilters = Boolean(search || selectedCategory || selectedRetailer || selectedBottleSize);
+  const hasActiveFilters = Boolean(search || selectedCategory || selectedBrand || selectedRetailer || selectedBottleSize);
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6 transition-colors duration-200">
@@ -90,7 +94,7 @@ export default function CatalogPage() {
       </div>
 
       {/* Page Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-stone-200 dark:border-stone-800 pb-5">
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 border-b border-stone-200 dark:border-stone-800 pb-5">
         <div>
           <h1 className="text-2xl sm:text-3xl font-extrabold text-stone-900 dark:text-stone-100 tracking-tight">
             {t('catalog.title')}
@@ -100,22 +104,57 @@ export default function CatalogPage() {
           </p>
         </div>
 
-        {/* Sort & Mobile Filter Toggle */}
-        <div className="flex items-center gap-3">
+        {/* Dropdowns: Categories, Brands, and Sort */}
+        <div className="flex flex-wrap items-center gap-2 sm:gap-3">
           <button
             onClick={() => setMobileFilterOpen(!mobileFilterOpen)}
-            className="md:hidden px-3 py-2 rounded-xl bg-white dark:bg-stone-800 border border-stone-200 dark:border-stone-700 text-xs font-semibold text-stone-800 dark:text-stone-200 flex items-center gap-2"
+            className="lg:hidden px-3 py-2 rounded-xl bg-white dark:bg-stone-800 border border-stone-200 dark:border-stone-700 text-xs font-semibold text-stone-800 dark:text-stone-200 flex items-center gap-2"
           >
             <SlidersHorizontal className="w-3.5 h-3.5" />
             {t('catalog.filters')} {hasActiveFilters && '•'}
           </button>
 
-          <div className="flex items-center gap-2">
-            <span className="text-xs text-stone-500 dark:text-stone-400 font-medium hidden sm:inline">{t('catalog.sortBy')}:</span>
+          {/* Category Dropdown */}
+          <div className="flex items-center gap-1.5">
+            <select
+              value={selectedCategory}
+              onChange={(e) => updateParam('category', e.target.value)}
+              className="py-2 px-3 rounded-xl bg-white dark:bg-stone-800 border border-stone-200 dark:border-stone-700 text-xs font-semibold text-stone-800 dark:text-stone-200 outline-none focus:ring-2 focus:ring-amber-500/20"
+              title="Filter by Category"
+            >
+              <option value="">{language === 'te' ? 'అన్ని వర్గాలు (All Categories)' : 'All Categories'}</option>
+              {categories.map((c) => (
+                <option key={c.id} value={c.slug}>
+                  {tc(c.name)}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Brand Dropdown */}
+          <div className="flex items-center gap-1.5">
+            <select
+              value={selectedBrand}
+              onChange={(e) => updateParam('brand', e.target.value)}
+              className="py-2 px-3 rounded-xl bg-white dark:bg-stone-800 border border-stone-200 dark:border-stone-700 text-xs font-semibold text-stone-800 dark:text-stone-200 outline-none focus:ring-2 focus:ring-amber-500/20"
+              title="Filter by Brand"
+            >
+              <option value="">{language === 'te' ? 'అన్ని బ్రాండ్లు (All Brands)' : 'All Brands'}</option>
+              {brands.map((b) => (
+                <option key={b} value={b}>
+                  {b}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Sort By Dropdown */}
+          <div className="flex items-center gap-1.5">
             <select
               value={sortBy}
               onChange={(e) => updateParam('sort_by', e.target.value)}
               className="py-2 px-3 rounded-xl bg-white dark:bg-stone-800 border border-stone-200 dark:border-stone-700 text-xs font-semibold text-stone-800 dark:text-stone-200 outline-none focus:ring-2 focus:ring-amber-500/20"
+              title="Sort products"
             >
               <option value="name_asc">{t('catalog.nameAsc')}</option>
               <option value="name_desc">{t('catalog.nameDesc')}</option>
@@ -176,6 +215,52 @@ export default function CatalogPage() {
                     {selectedCategory === c.slug && <span className="text-amber-700 dark:text-amber-400 font-bold">✓</span>}
                   </button>
                 ))}
+              </div>
+            </div>
+
+            {/* Brand Filter */}
+            <div className="space-y-2 pt-2 border-t border-stone-100 dark:border-stone-800">
+              <div className="flex items-center justify-between">
+                <h4 className="text-xs font-bold text-stone-700 dark:text-stone-300 uppercase tracking-wider">
+                  {language === 'te' ? 'బ్రాండ్లు (Brands)' : 'Brands'}
+                </h4>
+                {selectedBrand && (
+                  <button
+                    onClick={() => updateParam('brand', '')}
+                    className="text-[10px] font-bold text-amber-700 dark:text-amber-400 hover:underline"
+                  >
+                    Clear
+                  </button>
+                )}
+              </div>
+              <div className="space-y-2">
+                <select
+                  value={selectedBrand}
+                  onChange={(e) => updateParam('brand', e.target.value)}
+                  className="w-full py-2 px-2.5 rounded-lg text-xs bg-stone-50 dark:bg-stone-800 border border-stone-200 dark:border-stone-700 text-stone-900 dark:text-stone-100 outline-none focus:ring-2 focus:ring-amber-500/20"
+                >
+                  <option value="">{language === 'te' ? 'అన్ని బ్రాండ్లు (All Brands)' : 'All Brands'}</option>
+                  {brands.map((b) => (
+                    <option key={b} value={b}>
+                      {b}
+                    </option>
+                  ))}
+                </select>
+                <div className="flex flex-wrap gap-1 max-h-32 overflow-y-auto pr-1">
+                  {brands.map((b) => (
+                    <button
+                      key={b}
+                      onClick={() => updateParam('brand', selectedBrand === b ? '' : b)}
+                      className={`text-[10px] px-2 py-0.5 rounded-md font-medium border transition ${
+                        selectedBrand === b
+                          ? 'bg-amber-100 dark:bg-amber-950/80 text-amber-900 dark:text-amber-300 border-amber-400 dark:border-amber-700 font-bold'
+                          : 'bg-stone-50 dark:bg-stone-800 text-stone-600 dark:text-stone-400 border-stone-200 dark:border-stone-700 hover:bg-stone-100 dark:hover:bg-stone-750'
+                      }`}
+                    >
+                      {b}
+                    </button>
+                  ))}
+                </div>
               </div>
             </div>
 

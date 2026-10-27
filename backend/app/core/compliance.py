@@ -31,7 +31,7 @@ class ComplianceEngine:
     @classmethod
     def is_alcohol_transaction_enabled(cls) -> bool:
         """Fail-closed check for alcohol transaction processing."""
-        return bool(settings.ALCOHOL_TRANSACTIONS_ENABLED)
+        return settings.ALCOHOL_TRANSACTIONS_ENABLED
 
     @classmethod
     def assert_real_payment_allowed(cls):

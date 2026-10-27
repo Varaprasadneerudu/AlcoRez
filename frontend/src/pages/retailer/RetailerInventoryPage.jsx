@@ -29,7 +29,7 @@ import { api } from '../../services/api';
 import { useLanguage } from '../../context/LanguageContext';
 
 export default function RetailerInventoryPage() {
-  const { t, language } = useLanguage();
+  const { t, tc, language } = useLanguage();
   const [searchParams] = useSearchParams();
 
   // Data states
@@ -50,6 +50,7 @@ export default function RetailerInventoryPage() {
   });
   const [catalogProducts, setCatalogProducts] = useState([]);
   const [categories, setCategories] = useState([]);
+  const [masterBrands, setMasterBrands] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState(null);
@@ -101,12 +102,20 @@ export default function RetailerInventoryPage() {
   useEffect(() => {
     async function loadMasterCatalogue() {
       try {
-        const [prodRes, catRes] = await Promise.all([
-          api.getProducts({ limit: 150 }),
-          api.getCategories()
+        const [prodRes, catRes, brandsRes] = await Promise.allSettled([
+          api.getProducts({ limit: 100 }),
+          api.getCategories(),
+          api.getBrands()
         ]);
-        setCatalogProducts(prodRes?.items || []);
-        setCategories(catRes || []);
+        if (prodRes.status === 'fulfilled') {
+          setCatalogProducts(prodRes.value?.items || []);
+        }
+        if (catRes.status === 'fulfilled') {
+          setCategories(catRes.value || []);
+        }
+        if (brandsRes.status === 'fulfilled') {
+          setMasterBrands(brandsRes.value || []);
+        }
       } catch (err) {
         console.error('Failed to load catalogue products:', err);
       }
@@ -147,14 +156,19 @@ export default function RetailerInventoryPage() {
     fetchInventory();
   }, [fetchInventory]);
 
-  // Distinct Brands from Catalogue for brand filter
+  // Distinct Brands from Catalogue, Brands API, and inventory for brand filter
   const availableBrands = useMemo(() => {
-    const brands = new Set();
+    const brands = new Set(masterBrands || []);
     catalogProducts.forEach((p) => {
       if (p.brand) brands.add(p.brand);
     });
-    return Array.from(brands).sort();
-  }, [catalogProducts]);
+    (data.items || []).forEach((item) => {
+      if (item.brand) brands.add(item.brand);
+      if (item.product?.brand) brands.add(item.product.brand);
+      if (item.product_brand) brands.add(item.product_brand);
+    });
+    return Array.from(brands).filter(Boolean).sort();
+  }, [masterBrands, catalogProducts, data.items]);
 
   // Check if any filter is active
   const hasActiveFilters = Boolean(
@@ -706,7 +720,7 @@ export default function RetailerInventoryPage() {
               <option value="">{language === 'te' ? 'అన్ని వర్గాలు (Categories)' : 'All Categories'}</option>
               {categories.map((c) => (
                 <option key={c.id} value={c.id}>
-                  {c.name}
+                  {tc ? tc(c.name) : c.name}
                 </option>
               ))}
             </select>

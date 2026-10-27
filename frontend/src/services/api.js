@@ -103,6 +103,7 @@ export const api = {
 
   // Catalog
   getCategories: () => cachedApiRequest('/categories', 120000), // 2 min cache
+  getBrands: () => cachedApiRequest('/brands', 120000), // 2 min cache
   getCategory: (slug) => cachedApiRequest(`/categories/${slug}`, 120000),
   getProducts: (params = {}) => {
     const query = new URLSearchParams();

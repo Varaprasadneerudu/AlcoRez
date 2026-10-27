@@ -112,7 +112,7 @@ class CatalogService:
         if not products:
             return [], total
 
-        product_ids = [p.id for p in products]
+        product_ids: List[str] = [str(p.id) for p in products]
 
         # 1. Batch fetch primary & secondary images for all products in 1 query
         images = (
@@ -123,8 +123,9 @@ class CatalogService:
         )
         images_by_product: Dict[str, str] = {}
         for img in images:
-            if img.product_id not in images_by_product:
-                images_by_product[img.product_id] = img.image_url
+            img_pid = str(img.product_id)
+            if img_pid not in images_by_product:
+                images_by_product[img_pid] = str(img.image_url)
 
         # 2. Batch fetch active inventory from approved retailers in 1 query
         inv_query = (
@@ -142,26 +143,29 @@ class CatalogService:
         all_invs = inv_query.all()
         inv_by_product: Dict[str, List[Inventory]] = {pid: [] for pid in product_ids}
         for inv in all_invs:
-            inv_by_product[inv.product_id].append(inv)
+            inv_pid = str(inv.product_id)
+            if inv_pid in inv_by_product:
+                inv_by_product[inv_pid].append(inv)
 
         # 3. Assemble response objects in-memory with 0 extra DB roundtrips
         results = []
         for p in products:
-            inv_list = inv_by_product.get(p.id, [])
+            p_id = str(p.id)
+            inv_list = inv_by_product.get(p_id, [])
             min_price_val = min([inv.price for inv in inv_list]) if inv_list else None
-            sizes = sorted(list(set([inv.bottle_size for inv in inv_list])))
+            sizes = sorted(list(set([str(inv.bottle_size) for inv in inv_list])))
             has_stock = any([inv.stock_quantity > 0 for inv in inv_list])
 
-            category_name = p.category.name if p.category else None
-            category_slug_val = p.category.slug if p.category else None
+            category_name = str(p.category.name) if p.category else None
+            category_slug_val = str(p.category.slug) if p.category else None
             primary_url = images_by_product.get(
-                p.id,
+                p_id,
                 "https://images.unsplash.com/photo-1527061011665-3652c757a4d4?auto=format&fit=crop&w=600&q=80"
             )
 
             results.append(
                 ProductOut(
-                    id=p.id,
+                    id=p_id,
                     name=p.name,
                     brand=p.brand,
                     category_id=p.category_id,
@@ -226,7 +230,7 @@ class CatalogService:
                 stock_quantity=inv.stock_quantity,
                 is_available=inv.is_available and inv.stock_quantity > 0,
                 retailer_shop_name=inv.retailer.shop_name,
-                retailer_status=inv.retailer.status.value,
+                retailer_status=inv.retailer.status.value if hasattr(inv.retailer.status, "value") else str(inv.retailer.status),
                 retailer_address=f"{inv.retailer.address_line}, {inv.retailer.city}"
             )
             inventory_outs.append(inv_out)

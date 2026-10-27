@@ -134,7 +134,7 @@ def test_search_filters_and_sorting(client):
             "product_id": p["id"],
             "bottle_size": "750ml",
             "price": float(500 * (idx + 1)),
-            "stock_quantity": int(10 * (idx + 1)),
+            "stock_quantity": 10 * (idx + 1),
             "is_available": True,
             "low_stock_threshold": 5
         }, headers=headers)
