@@ -109,7 +109,7 @@ export default function RetailerApplyPage() {
           Retailer License Onboarding Application
         </h1>
         <p className="text-xs text-stone-500 mt-1">
-          Apply to list your licensed A4 wine shop on the AlcoDelivery Platform.
+          Apply to list your licensed A4 wine shop on the Alco Platform.
         </p>
       </div>
 
@@ -150,7 +150,7 @@ export default function RetailerApplyPage() {
               <span>Select an Existing Store or Apply for New A4 Shop</span>
             </div>
             <p className="text-[11px] text-amber-800 leading-relaxed">
-              If your licensed wine shop is already registered on AlcoDelivery, select it below to link your account and auto-fill details:
+              If your licensed wine shop is already registered on Alco, select it below to link your account and auto-fill details:
             </p>
             <select
               value={selectedStoreId}

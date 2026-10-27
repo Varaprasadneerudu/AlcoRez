@@ -5,7 +5,7 @@ const ThemeContext = createContext(null);
 export function ThemeProvider({ children }) {
   const [theme, setTheme] = useState(() => {
     try {
-      const saved = localStorage.getItem('alcodelivery_theme');
+      const saved = localStorage.getItem('alco_theme') || localStorage.getItem('alcodelivery_theme');
       if (saved === 'dark' || saved === 'light') return saved;
       if (typeof window !== 'undefined' && window.matchMedia('(prefers-color-scheme: dark)').matches) {
         return 'dark';
@@ -26,7 +26,7 @@ export function ThemeProvider({ children }) {
         root.classList.remove('dark');
         document.body.classList.remove('dark');
       }
-      localStorage.setItem('alcodelivery_theme', theme);
+      localStorage.setItem('alco_theme', theme);
     } catch (e) {
       console.warn('Could not save theme preference:', e);
     }
