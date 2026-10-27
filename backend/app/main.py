@@ -27,7 +27,7 @@ async def lifespan(app: FastAPI):
     logger.info("Initializing database schemas...")
     Base.metadata.create_all(bind=engine)
     logger.info(
-        f"AlcoDelivery Telangana Marketplace initialized. "
+        f"Alco Telangana Marketplace initialized. "
         f"Alcohol Transactions Enabled: {settings.ALCOHOL_TRANSACTIONS_ENABLED} (FAIL-CLOSED)."
     )
     yield
