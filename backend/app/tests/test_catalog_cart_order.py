@@ -7,6 +7,10 @@ def test_catalog_search_and_filters(client):
     items = res.json()["items"]
     assert len(items) >= 1
     assert any("Amrut" in p["name"] for p in items)
+    # Check default_inventory_id and inventories
+    amrut_prod = next(p for p in items if "Amrut" in p["name"])
+    assert amrut_prod["default_inventory_id"] is not None
+    assert len(amrut_prod["inventories"]) >= 1
 
     # Test category filter "beer"
     res_beer = client.get("/api/v1/products?category=beer")

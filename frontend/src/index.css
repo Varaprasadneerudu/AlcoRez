@@ -4,66 +4,66 @@
 
 @layer base {
   body {
-    background-color: #FBF9F5;
-    color: #1c1917;
+    background-color: #F8F7F4;
+    color: #18181b;
     font-family: 'Plus Jakarta Sans', 'Noto Sans Telugu', Inter, system-ui, sans-serif;
     min-height: 100vh;
-    transition: background-color 0.25s ease, color 0.25s ease;
+    transition: background-color 0.2s ease, color 0.2s ease;
   }
 
   .dark body {
-    background-color: #0c0a09;
-    color: #f5f5f4;
+    background-color: #0f1115;
+    color: #f4f4f5;
   }
 }
 
-/* Global Dark Mode enhancements for high consistency across all pages */
+/* Direction 3 Quick-Reserve Dark Mode enhancements */
 .dark .bg-white {
-  background-color: #1c1917 !important;
+  background-color: #171920 !important;
 }
 
 .dark .bg-stone-50,
 .dark [class~="bg-stone-50"],
 .dark [class*="bg-stone-50/"] {
-  background-color: #141210 !important;
+  background-color: #13151b !important;
 }
 
 .dark .bg-stone-100,
 .dark [class~="bg-stone-100"],
 .dark [class*="bg-stone-100/"] {
-  background-color: #292524 !important;
+  background-color: #20242e !important;
 }
 
 .dark .border-stone-200,
 .dark .border-stone-100 {
-  border-color: #292524 !important;
+  border-color: #262a36 !important;
 }
 
 .dark .text-stone-900 {
-  color: #f5f5f4 !important;
+  color: #f8fafc !important;
 }
 
 .dark .text-stone-800 {
-  color: #e7e5e4 !important;
+  color: #e2e8f0 !important;
 }
 
 .dark .text-stone-700 {
-  color: #d6d3d1 !important;
+  color: #cbd5e1 !important;
 }
 
 .dark .text-stone-600 {
-  color: #a8a29e !important;
+  color: #94a3b8 !important;
 }
 
 .dark .text-stone-500 {
-  color: #a8a29e !important;
+  color: #64748b !important;
 }
 
-/* Dark mode for amber alert, restriction and disclosure cards (targets bg-amber-50, never bg-amber-500) */
+/* Dark mode for amber alert, restriction and disclosure cards */
 .dark .bg-amber-50,
 .dark [class~="bg-amber-50"],
 .dark [class*="bg-amber-50/"] {
-  background-color: #1c150c !important;
+  background-color: #1e1910 !important;
   border-color: #78350f !important;
 }
 
@@ -119,14 +119,14 @@
 .dark input[type="email"],
 .dark input[type="number"],
 .dark textarea {
-  background-color: #292524 !important;
-  color: #f5f5f4 !important;
-  border-color: #44403c !important;
+  background-color: #1f222b !important;
+  color: #f8fafc !important;
+  border-color: #333846 !important;
 }
 
 .dark select option {
-  background-color: #1c1917 !important;
-  color: #f5f5f4 !important;
+  background-color: #171920 !important;
+  color: #f8fafc !important;
 }
 
 /* Glass panel */
@@ -137,12 +137,17 @@
 }
 
 .dark .glass-panel {
-  background: rgba(28, 25, 23, 0.88) !important;
+  background: rgba(23, 25, 32, 0.88) !important;
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
 }
 
-/* Transitions */
-*, ::before, ::after {
-  border-color: inherit;
+/* Smooth micro-animations */
+@keyframes pulseSubtle {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.85; transform: scale(1.02); }
+}
+
+.pulse-subtle {
+  animation: pulseSubtle 3s infinite ease-in-out;
 }

@@ -12,10 +12,12 @@ import {
 import { api } from '../services/api';
 import { useCart } from '../context/CartContext';
 import { useLanguage } from '../context/LanguageContext';
+import { useAuth } from '../context/AuthContext';
 
 export default function CheckoutDemoPage() {
   const { cart, subtotal, fetchCart } = useCart();
   const { t, tp, ts, language } = useLanguage();
+  const { isAuthenticated } = useAuth();
   const navigate = useNavigate();
 
   const [addresses, setAddresses] = useState([]);
@@ -44,6 +46,7 @@ export default function CheckoutDemoPage() {
 
   useEffect(() => {
     async function loadAddresses() {
+      if (!isAuthenticated) return;
       try {
         const addrs = await api.getAddresses();
         setAddresses(addrs || []);
@@ -56,7 +59,7 @@ export default function CheckoutDemoPage() {
       }
     }
     loadAddresses();
-  }, []);
+  }, [isAuthenticated]);
 
   const handleCreateAddress = async (e) => {
     e.preventDefault();
@@ -109,6 +112,30 @@ export default function CheckoutDemoPage() {
       setLoading(false);
     }
   };
+
+  if (!isAuthenticated) {
+    return (
+      <div className="max-w-md mx-auto px-4 py-16 text-center space-y-4">
+        <div className="w-16 h-16 bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-400 rounded-full flex items-center justify-center mx-auto">
+          <CreditCard className="w-8 h-8" />
+        </div>
+        <h2 className="text-xl font-bold text-stone-900 dark:text-stone-100">
+          {language === 'te' ? 'సైన్ ఇన్ అవసరం' : 'Sign In Required'}
+        </h2>
+        <p className="text-xs text-stone-500 dark:text-stone-400">
+          {language === 'te'
+            ? 'ఆర్డర్‌ను రిజర్వ్ చేయడానికి దయచేసి మీ ఖాతాలోకి సైన్ ఇన్ చేయండి.'
+            : 'Please log in to your account to review and complete your test reservation.'}
+        </p>
+        <Link
+          to="/login"
+          className="inline-block py-2.5 px-6 rounded-xl font-bold text-xs bg-amber-600 hover:bg-amber-700 text-white shadow transition"
+        >
+          {language === 'te' ? 'లాగిన్ చేయండి' : 'Sign In to Proceed'}
+        </Link>
+      </div>
+    );
+  }
 
   if (!cart || cart.items.length === 0) {
     return (

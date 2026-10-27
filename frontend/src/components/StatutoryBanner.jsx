@@ -10,7 +10,7 @@ export default function StatutoryBanner() {
   if (dismissed) return null;
 
   return (
-    <div className="bg-amber-950 dark:bg-stone-950 text-amber-100 text-xs py-2 px-4 border-b border-amber-900/60 dark:border-amber-900/40 sticky top-0 z-40 transition-colors duration-200">
+    <div className="bg-amber-950 dark:bg-stone-950 text-amber-100 text-xs py-2 px-4 border-b border-amber-900/60 dark:border-amber-900/40 transition-colors duration-200 w-full">
       <div className="max-w-7xl mx-auto flex items-center justify-between gap-4">
         <div className="flex items-center gap-2 overflow-hidden">
           <span className="bg-amber-500 text-stone-950 px-1.5 py-0.5 rounded font-black text-[10px] uppercase tracking-wider shrink-0 shadow-sm">

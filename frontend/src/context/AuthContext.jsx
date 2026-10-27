@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import { api, setStoredToken, getStoredToken } from '../services/api';
+import { api, setStoredToken, getStoredToken, invalidateCache } from '../services/api';
 
 const AuthContext = createContext(null);
 
@@ -41,6 +41,7 @@ export function AuthProvider({ children }) {
     setUser(null);
     setRole('customer');
     setStoredToken(null);
+    invalidateCache();
   }, []);
 
   useEffect(() => {

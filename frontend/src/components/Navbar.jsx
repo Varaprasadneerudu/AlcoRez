@@ -48,7 +48,7 @@ const DEMO_ACCOUNT_LABELS = {
 
 export default function Navbar() {
   const { user, role, isAuthenticated, logout, switchDemoAccount } = useAuth();
-  const { itemCount } = useCart();
+  const { itemCount, toggleDrawer } = useCart();
   const { theme, toggleTheme, isDark } = useTheme();
   const { language, setLanguage, toggleLanguage, t } = useLanguage();
   const navigate = useNavigate();
@@ -81,7 +81,7 @@ export default function Navbar() {
   };
 
   return (
-    <header className="sticky top-[33px] z-30 bg-white/95 dark:bg-stone-900/95 backdrop-blur-md border-b border-stone-200/80 dark:border-stone-800 shadow-sm transition-colors duration-200">
+    <header className="bg-white/95 dark:bg-stone-900/95 backdrop-blur-md border-b border-stone-200/80 dark:border-stone-800 shadow-sm transition-colors duration-200 w-full">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16 gap-3">
           
@@ -339,19 +339,27 @@ export default function Navbar() {
               </Link>
             )}
 
-            {/* Cart Button */}
-            <Link
-              to="/cart"
-              className="relative p-2 rounded-xl bg-amber-50 dark:bg-amber-950/60 hover:bg-amber-100 dark:hover:bg-amber-900/60 text-stone-800 dark:text-amber-200 border border-amber-200/80 dark:border-amber-800/60 transition flex items-center justify-center"
+            {/* Direction 3 21+ Verified Indicator */}
+            <div className="hidden xl:flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-500/10 dark:bg-amber-400/10 text-amber-700 dark:text-amber-300 border border-amber-300 dark:border-amber-800 text-[10px] font-extrabold uppercase tracking-wider">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+              <span>21+ Verified</span>
+            </div>
+
+            {/* Cart Button with Direction 3 Quick-Drawer Trigger */}
+            <button
+              type="button"
+              onClick={toggleDrawer}
+              className="relative p-2 rounded-xl bg-amber-50 dark:bg-amber-950/60 hover:bg-amber-100 dark:hover:bg-amber-900/60 text-stone-800 dark:text-amber-200 border border-amber-200/80 dark:border-amber-800/60 transition flex items-center justify-center cursor-pointer group"
               aria-label={t('nav.cart')}
+              title={t('nav.cart')}
             >
-              <ShoppingCart className="w-5 h-5 text-amber-900 dark:text-amber-300" />
+              <ShoppingCart className="w-5 h-5 text-amber-900 dark:text-amber-300 group-hover:scale-105 transition-transform" />
               {itemCount > 0 && (
-                <span className="absolute -top-1.5 -right-1.5 bg-amber-600 text-white text-[11px] font-black w-5 h-5 rounded-full flex items-center justify-center shadow-md">
+                <span className="absolute -top-1.5 -right-1.5 bg-gradient-to-r from-amber-600 to-amber-700 text-white text-[11px] font-black w-5 h-5 rounded-full flex items-center justify-center shadow-md animate-in zoom-in-75">
                   {itemCount}
                 </span>
               )}
-            </Link>
+            </button>
 
             {/* Mobile menu button */}
             <button

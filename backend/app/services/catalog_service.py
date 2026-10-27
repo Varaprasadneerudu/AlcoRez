@@ -4,7 +4,7 @@ from sqlalchemy import or_, and_, asc, desc
 from sqlalchemy.orm import Session, joinedload
 from app.models.product import Category, Product, ProductImage, Inventory
 from app.models.retailer import Retailer, RetailerStatus
-from app.schemas.catalog import ProductOut, ProductDetailOut, ProductImageOut, InventoryOut, CategoryOut
+from app.schemas.catalog import ProductOut, ProductDetailOut, ProductImageOut, InventoryOut, CategoryOut, ProductInventorySummary
 
 class CatalogService:
     @staticmethod
@@ -156,6 +156,22 @@ class CatalogService:
             sizes = sorted(list(set([str(inv.bottle_size) for inv in inv_list])))
             has_stock = any([inv.stock_quantity > 0 for inv in inv_list])
 
+            # In-stock inventories sorted by price asc
+            in_stock_invs = [inv for inv in inv_list if inv.stock_quantity > 0 and inv.is_available]
+            in_stock_invs.sort(key=lambda x: x.price)
+            default_inv_id = str(in_stock_invs[0].id) if in_stock_invs else (str(inv_list[0].id) if inv_list else None)
+
+            inv_summaries = [
+                ProductInventorySummary(
+                    id=str(inv.id),
+                    bottle_size=str(inv.bottle_size),
+                    price=inv.price,
+                    stock_quantity=inv.stock_quantity,
+                    is_available=bool(inv.is_available and inv.stock_quantity > 0)
+                )
+                for inv in inv_list
+            ]
+
             category_name = str(p.category.name) if p.category else None
             category_slug_val = str(p.category.slug) if p.category else None
             primary_url = images_by_product.get(
@@ -179,7 +195,9 @@ class CatalogService:
                     primary_image_url=primary_url,
                     starting_price=min_price_val,
                     available_sizes=sizes,
-                    in_stock=has_stock
+                    in_stock=has_stock,
+                    default_inventory_id=default_inv_id,
+                    inventories=inv_summaries
                 )
             )
 

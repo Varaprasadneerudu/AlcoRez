@@ -169,6 +169,45 @@ export default function OrderConfirmationPage() {
           </div>
         </div>
 
+        {/* Direction 3 Secure OTP Pickup Code & Excise QR Verification Card */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="p-5 rounded-2xl bg-gradient-to-br from-amber-500/10 via-amber-500/5 to-transparent border border-amber-300 dark:border-amber-700/80 space-y-2">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-amber-800 dark:text-amber-400 block">
+              {language === 'te' ? 'కౌంటర్ పికప్ సెక్యూర్ కోడ్' : 'Secure Store Counter Pickup Code'}
+            </span>
+            <div className="flex items-center gap-3">
+              <div className="font-mono text-3xl sm:text-4xl font-black text-amber-900 dark:text-amber-200 tracking-widest bg-white dark:bg-stone-800 px-4 py-2 rounded-xl border border-amber-300 dark:border-amber-700 shadow-sm">
+                {String(Math.abs(order.order_number?.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0) || 4892) % 9000 + 1000)}
+              </div>
+              <span className="text-[11px] text-stone-500 dark:text-stone-400">
+                {language === 'te' ? 'వైన్ షాప్ వద్ద ఆర్డర్ తీసుకునేటప్పుడు ఈ కోడ్ చూపించండి.' : 'Present this 4-digit code at the licensed counter during pickup.'}
+              </span>
+            </div>
+          </div>
+
+          <div className="p-5 rounded-2xl bg-stone-50 dark:bg-stone-850 border border-stone-200 dark:border-stone-800 flex items-center justify-between gap-4">
+            <div className="space-y-1">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-700 dark:text-emerald-400 flex items-center gap-1">
+                <ShieldCheck className="w-3.5 h-3.5" />
+                {language === 'te' ? 'తెలంగాణ ఎక్సైజ్ ధృవీకరించబడింది' : 'Telangana Excise Verified'}
+              </span>
+              <p className="text-xs font-bold text-stone-900 dark:text-stone-100">
+                {language === 'te' ? 'డిజిటల్ ఎక్సైజ్ కంప్లయన్స్ సీల్' : 'Digital Excise Counter Clearance'}
+              </p>
+              <p className="text-[10px] text-stone-500 dark:text-stone-400">
+                TS-EXCISE-A4-REF #{order.id?.slice(0, 8)?.toUpperCase()}
+              </p>
+            </div>
+
+            {/* Simulated QR Code SVG */}
+            <div className="w-16 h-16 bg-white p-1.5 rounded-xl border border-stone-300 shrink-0 flex items-center justify-center shadow-xs">
+              <svg viewBox="0 0 24 24" className="w-full h-full text-stone-900" fill="currentColor">
+                <path d="M2 2h8v8H2V2zm2 2v4h4V4H4zm8-2h8v8h-8V2zm2 2v4h4V4h-4zM2 14h8v8H2v-8zm2 2v4h4v-4H4zm14-2h4v2h-4v-2zm-6 0h2v2h-2v-2zm2 2h2v2h-2v-2zm4 2h2v4h-2v-4zm-4 2h4v2h-4v-2zm-2-2h2v4h-2v-4zm4-4h2v2h-2v-2z" />
+              </svg>
+            </div>
+          </div>
+        </div>
+
         {/* Retailer & Address Details */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
           <div className="p-4 rounded-2xl bg-stone-50 dark:bg-stone-950 border border-stone-200 dark:border-stone-800 space-y-1.5 text-xs">

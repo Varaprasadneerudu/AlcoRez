@@ -154,6 +154,47 @@ export default function ProductDetailPage() {
             {product.description || t('productDetail.defaultDescription')}
           </p>
 
+          {/* Direction 3 Tasting Notes Flavor Radar */}
+          <div className="bg-amber-500/5 dark:bg-stone-900/90 rounded-2xl border border-amber-500/20 dark:border-stone-800 p-5 space-y-3">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold uppercase tracking-wider text-amber-800 dark:text-amber-400 flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-full bg-amber-500"></span>
+                {language === 'te' ? 'రుచి మరియు సువాసన వివరాలు (Flavor Profile)' : 'Sommelier Flavor Profile & Notes'}
+              </span>
+              <span className="text-[10px] text-stone-400 font-semibold uppercase">
+                {product.category_name || 'Spirits'}
+              </span>
+            </div>
+
+            {/* Flavor Balance Bars */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 pt-1">
+              {[
+                { name: 'Oak & Cask', value: '85%' },
+                { name: 'Smoky Peat', value: '70%' },
+                { name: 'Caramel & Malt', value: '78%' },
+                { name: 'Citrus & Spice', value: '60%' },
+              ].map((note) => (
+                <div key={note.name} className="p-2 rounded-xl bg-white/80 dark:bg-stone-800/80 border border-stone-200/80 dark:border-stone-700/60 space-y-1">
+                  <div className="flex justify-between text-[10px] font-semibold text-stone-600 dark:text-stone-300">
+                    <span>{note.name}</span>
+                    <span className="font-mono text-amber-600 dark:text-amber-400">{note.value}</span>
+                  </div>
+                  <div className="w-full h-1.5 rounded-full bg-stone-200 dark:bg-stone-700 overflow-hidden">
+                    <div className="h-full bg-gradient-to-r from-amber-500 to-amber-600 rounded-full" style={{ width: note.value }}></div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div className="flex flex-wrap gap-1.5 pt-1">
+              {['Aged in Oak Casks', 'Non-Chill Filtered', 'Telangana Barcode Seal', 'Serve Neat or On Rocks'].map((tag) => (
+                <span key={tag} className="text-[10px] font-medium bg-amber-100/70 dark:bg-amber-950/40 text-amber-900 dark:text-amber-300 px-2 py-0.5 rounded-full border border-amber-300/60 dark:border-amber-800/50">
+                  {tag}
+                </span>
+              ))}
+            </div>
+          </div>
+
           {/* Retailer & Size Options Matrix */}
           <div className="bg-stone-50 dark:bg-stone-900 rounded-2xl border border-stone-200 dark:border-stone-800 p-5 space-y-4">
             <h3 className="font-bold text-xs uppercase tracking-wider text-stone-700 dark:text-stone-300 flex items-center gap-2">

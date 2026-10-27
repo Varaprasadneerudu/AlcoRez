@@ -9,6 +9,8 @@ import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import StatutoryBanner from './components/StatutoryBanner';
 import LegalAgeModal from './components/LegalAgeModal';
+import CartDrawer from './components/CartDrawer';
+import ScrollToTop from './components/ScrollToTop';
 import AppRoutes from './routes/AppRoutes';
 
 const queryClient = new QueryClient({
@@ -26,17 +28,23 @@ export default function App() {
       <ThemeProvider>
         <LanguageProvider>
           <BrowserRouter>
+            {/* Reset scroll position to top whenever navigating to a new page */}
+            <ScrollToTop />
+
             <AuthProvider>
               <CartProvider>
                 <div className="flex flex-col min-h-screen bg-[#FBF9F5] dark:bg-stone-950 text-stone-900 dark:text-stone-100 transition-colors duration-200">
                   {/* Mandatory 21+ Statutory Age Verification Modal */}
                   <LegalAgeModal />
 
-                  {/* Persistent Excise Compliance Banner */}
-                  <StatutoryBanner />
+                  {/* Unified Sticky Header: eliminates gap between Banner & Navbar during scrolling */}
+                  <div className="sticky top-0 z-40 w-full shadow-xs">
+                    <StatutoryBanner />
+                    <Navbar />
+                  </div>
 
-                  {/* Header / Navbar */}
-                  <Navbar />
+                  {/* Direction 3 Quick-Reserve Cart Drawer */}
+                  <CartDrawer />
 
                   {/* Page Contents */}
                   <main className="flex-1">

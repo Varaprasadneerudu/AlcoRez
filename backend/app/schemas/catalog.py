@@ -107,6 +107,15 @@ class PaginatedInventoryResponse(BaseModel):
     categories: List[CategoryOut] = []
     brands: List[str] = []
 
+class ProductInventorySummary(BaseModel):
+    id: str
+    bottle_size: str
+    price: Decimal
+    stock_quantity: int
+    is_available: bool
+
+    model_config = ConfigDict(from_attributes=True)
+
 class ProductOut(BaseModel):
     id: str
     name: str
@@ -123,6 +132,8 @@ class ProductOut(BaseModel):
     starting_price: Optional[Decimal] = None
     available_sizes: List[str] = []
     in_stock: bool = False
+    default_inventory_id: Optional[str] = None
+    inventories: List[ProductInventorySummary] = []
 
     model_config = ConfigDict(from_attributes=True)
 

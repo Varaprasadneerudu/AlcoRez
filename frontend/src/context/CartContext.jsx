@@ -78,6 +78,12 @@ export function CartProvider({ children }) {
     }
   };
 
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+
+  const openDrawer = () => setIsDrawerOpen(true);
+  const closeDrawer = () => setIsDrawerOpen(false);
+  const toggleDrawer = () => setIsDrawerOpen(prev => !prev);
+
   return (
     <CartContext.Provider
       value={{
@@ -86,6 +92,10 @@ export function CartProvider({ children }) {
         subtotal: cart?.subtotal || '0.00',
         loading,
         error,
+        isDrawerOpen,
+        openDrawer,
+        closeDrawer,
+        toggleDrawer,
         fetchCart,
         addToCart,
         updateQuantity,

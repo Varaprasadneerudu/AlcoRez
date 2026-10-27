@@ -228,6 +228,12 @@ const translations = {
       outOfStock: 'Out of Stock at Verified Retailers',
       demoPriceLabel: 'Demonstration Price',
       detailsBtn: 'Details',
+      addToCartBtn: 'Add to Cart',
+      addBtn: 'Add',
+      addedBtn: 'Added',
+      addingBtn: 'Adding...',
+      addedSuccess: 'Added to cart!',
+      loginRequired: 'Please log in to add items to your cart.',
       priceOnRequest: 'Price on request'
     },
     productDetail: {
@@ -652,6 +658,12 @@ const translations = {
       outOfStock: 'ధృవీకరించబడిన షాపుల్లో స్టాక్ లేదు',
       demoPriceLabel: 'డెమో ధర',
       detailsBtn: 'వివరాలు',
+      addToCartBtn: 'కార్ట్‌కు చేర్చు',
+      addBtn: 'చేర్చు',
+      addedBtn: 'చేర్చబడింది',
+      addingBtn: 'చేర్చుతోంది...',
+      addedSuccess: 'కార్ట్‌కు చేర్చబడింది!',
+      loginRequired: 'కార్ట్‌కు జోడించడానికి దయచేసి లాగిన్ అవ్వండి.',
       priceOnRequest: 'ధర విచారించండి'
     },
     productDetail: {

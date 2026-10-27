@@ -1,7 +1,7 @@
 from decimal import Decimal
 from typing import Optional
 from fastapi import HTTPException, status
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from app.models.order import Cart, CartItem
 from app.models.product import Inventory, Product, ProductImage
 from app.models.retailer import Retailer, RetailerStatus
@@ -21,21 +21,39 @@ class CartService:
 
     @staticmethod
     def get_cart_view(db: Session, user: User) -> CartOut:
+        """
+        Retrieves the user's active cart view.
+        Uses eager joinedload to eliminate N+1 query overhead in a single SQL operation.
+        """
         cart = CartService.get_or_create_cart(db, user)
-        items = db.query(CartItem).filter(CartItem.cart_id == cart.id).all()
+        items = (
+            db.query(CartItem)
+            .options(
+                joinedload(CartItem.inventory).joinedload(Inventory.retailer),
+                joinedload(CartItem.inventory).joinedload(Inventory.product).joinedload(Product.images),
+            )
+            .filter(CartItem.cart_id == cart.id)
+            .all()
+        )
 
         item_outs = []
         subtotal = Decimal("0.00")
         total_items_count = 0
 
         for item in items:
-            inv = db.query(Inventory).filter(Inventory.id == item.inventory_id).first()
+            inv = item.inventory
             if not inv:
                 continue
 
-            product = db.query(Product).filter(Product.id == inv.product_id).first()
-            retailer = db.query(Retailer).filter(Retailer.id == inv.retailer_id).first()
-            primary_img = db.query(ProductImage).filter(ProductImage.product_id == product.id, ProductImage.is_primary == True).first()
+            product = inv.product
+            retailer = inv.retailer
+            if not product or not retailer:
+                continue
+
+            primary_img = next(
+                (img for img in product.images if img.is_primary),
+                product.images[0] if product.images else None
+            )
 
             item_total = inv.price * item.quantity
             subtotal += item_total
