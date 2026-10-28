@@ -112,7 +112,7 @@ export default function RetailerDetailPage() {
   const isFav = isRetailerFavorite(retailer.id);
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+    <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-6 sm:py-8 space-y-6 sm:space-y-8">
       
       {/* Back button */}
       <div>
@@ -126,7 +126,7 @@ export default function RetailerDetailPage() {
       </div>
 
       {/* Store Header Card */}
-      <div className="bg-white dark:bg-stone-900 rounded-3xl border border-stone-200 dark:border-stone-800 p-6 sm:p-8 shadow-sm space-y-6">
+      <div className="bg-white dark:bg-stone-900 rounded-3xl border border-stone-200 dark:border-stone-800 p-4 sm:p-8 shadow-sm space-y-6">
         <div className="flex flex-col md:flex-row md:items-start justify-between gap-6">
           <div className="flex items-start gap-4">
             <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-amber-50 dark:bg-amber-950/60 border border-amber-200 dark:border-amber-800 flex items-center justify-center text-amber-800 dark:text-amber-300 shrink-0 shadow-xs">
@@ -249,7 +249,7 @@ export default function RetailerDetailPage() {
             <p className="text-xs text-stone-500 dark:text-stone-400">Try adjusting your search query or category filter.</p>
           </div>
         ) : (
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
             {catalogue.map((product) => (
               <ProductCard key={product.id} product={product} />
             ))}

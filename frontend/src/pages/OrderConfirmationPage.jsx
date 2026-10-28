@@ -75,7 +75,7 @@ export default function OrderConfirmationPage() {
   const currentStepIndex = orderSteps.findIndex((s) => s.key === order.status);
 
   return (
-    <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
+    <div className="max-w-4xl mx-auto px-3 sm:px-6 lg:px-8 py-6 sm:py-8 space-y-6">
       
       {/* Back Link */}
       <div>
@@ -90,7 +90,7 @@ export default function OrderConfirmationPage() {
 
       {/* Top Success Banner if just placed */}
       {justPlaced && (
-        <div className="bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-300 dark:border-emerald-700/60 rounded-3xl p-6 text-center space-y-2 animate-in fade-in zoom-in-95">
+        <div className="bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-300 dark:border-emerald-700/60 rounded-3xl p-5 sm:p-6 text-center space-y-2 animate-in fade-in zoom-in-95">
           <div className="w-12 h-12 bg-emerald-100 dark:bg-emerald-900 text-emerald-700 dark:text-emerald-300 rounded-full flex items-center justify-center mx-auto">
             <CheckCircle2 className="w-6 h-6" />
           </div>
@@ -108,7 +108,7 @@ export default function OrderConfirmationPage() {
       )}
 
       {/* Main Order Card */}
-      <div className="bg-white dark:bg-stone-900 rounded-3xl border border-stone-200 dark:border-stone-800 p-6 sm:p-8 space-y-8 shadow-sm">
+      <div className="bg-white dark:bg-stone-900 rounded-3xl border border-stone-200 dark:border-stone-800 p-4 sm:p-8 space-y-6 sm:space-y-8 shadow-sm">
         
         {/* Order Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-stone-100 dark:border-stone-800">
@@ -154,7 +154,7 @@ export default function OrderConfirmationPage() {
               return (
                 <div
                   key={step.key}
-                  className={`p-3 rounded-xl border text-xs text-center transition ${
+                  className={`p-3 rounded-xl border text-xs text-center transition ${idx === 4 ? 'col-span-2 sm:col-span-1' : ''} ${
                     isCurrent
                       ? 'bg-amber-600 text-white font-bold border-amber-600 shadow-md'
                       : isPastOrCurrent

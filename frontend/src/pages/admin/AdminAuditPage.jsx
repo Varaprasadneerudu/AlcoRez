@@ -28,24 +28,24 @@ export default function AdminAuditPage() {
   }
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
+    <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-6 sm:py-8 space-y-6">
       
       {/* Header */}
-      <div className="border-b border-stone-200 pb-4">
-        <Link to="/admin" className="inline-flex items-center gap-1.5 text-xs font-bold text-amber-800 hover:text-amber-900 mb-2">
+      <div className="border-b border-stone-200 dark:border-stone-800 pb-4">
+        <Link to="/admin" className="inline-flex items-center gap-1.5 text-xs font-bold text-amber-800 dark:text-amber-400 hover:text-amber-900 dark:hover:text-amber-300 mb-2">
           <ArrowLeft className="w-3.5 h-3.5" /> Back to Admin Dashboard
         </Link>
-        <h1 className="text-2xl font-extrabold text-stone-900 tracking-tight flex items-center gap-2">
-          <Activity className="w-6 h-6 text-amber-700" />
+        <h1 className="text-2xl font-extrabold text-stone-900 dark:text-stone-100 tracking-tight flex items-center gap-2">
+          <Activity className="w-6 h-6 text-amber-700 dark:text-amber-400" />
           Immutable Audit Trail & Regulatory Event Log
         </h1>
-        <p className="text-xs text-stone-500 mt-0.5">
+        <p className="text-xs text-stone-500 dark:text-stone-400 mt-0.5">
           Tamper-evident record of all user registrations, retailer license approvals, price changes, and simulated orders.
         </p>
       </div>
 
       {/* Logs Table */}
-      <div className="bg-white rounded-3xl border border-stone-200 overflow-hidden shadow-sm">
+      <div className="bg-white dark:bg-stone-900 rounded-3xl border border-stone-200 dark:border-stone-800 overflow-hidden shadow-sm">
         {loading ? (
           <div className="p-12 text-center text-xs text-stone-400">Loading audit trail...</div>
         ) : logs.length === 0 ? (

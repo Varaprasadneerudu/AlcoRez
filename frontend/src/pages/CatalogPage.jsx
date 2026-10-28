@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
-import { Filter, SlidersHorizontal, Search, ArrowLeft } from 'lucide-react';
+import { Filter, SlidersHorizontal, Search, ArrowLeft, X } from 'lucide-react';
 import { api } from '../services/api';
 import ProductCard from '../components/ProductCard';
 import { useLanguage } from '../context/LanguageContext';
@@ -84,7 +84,7 @@ export default function CatalogPage() {
   const hasActiveFilters = Boolean(search || selectedCategory || selectedBrand || selectedRetailer || selectedBottleSize || selectedPostalCode);
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6 transition-colors duration-200">
+    <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-6 sm:py-8 space-y-6 transition-colors duration-200">
       
       {/* Back Link */}
       <div>
@@ -112,7 +112,7 @@ export default function CatalogPage() {
         <div className="flex flex-wrap items-center gap-2 sm:gap-3">
           <button
             onClick={() => setMobileFilterOpen(!mobileFilterOpen)}
-            className="lg:hidden px-3 py-2 rounded-xl bg-white dark:bg-stone-800 border border-stone-200 dark:border-stone-700 text-xs font-semibold text-stone-800 dark:text-stone-200 flex items-center gap-2"
+            className="md:hidden px-3 py-2 rounded-xl bg-white dark:bg-stone-800 border border-stone-200 dark:border-stone-700 text-xs font-semibold text-stone-800 dark:text-stone-200 flex items-center gap-2"
           >
             <SlidersHorizontal className="w-3.5 h-3.5" />
             {t('catalog.filters')} {hasActiveFilters && '•'}
@@ -123,7 +123,7 @@ export default function CatalogPage() {
             <select
               value={selectedCategory}
               onChange={(e) => updateParam('category', e.target.value)}
-              className="py-2 px-3 rounded-xl bg-white dark:bg-stone-800 border border-stone-200 dark:border-stone-700 text-xs font-semibold text-stone-800 dark:text-stone-200 outline-none focus:ring-2 focus:ring-amber-500/20"
+              className="py-2 px-3 rounded-xl bg-white dark:bg-stone-800 border border-stone-200 dark:border-stone-700 text-xs font-semibold text-stone-800 dark:text-stone-200 outline-none focus:ring-2 focus:ring-amber-500/20 max-w-[130px] sm:max-w-xs truncate"
               title="Filter by Category"
             >
               <option value="">{language === 'te' ? 'అన్ని వర్గాలు (All Categories)' : 'All Categories'}</option>
@@ -140,7 +140,7 @@ export default function CatalogPage() {
             <select
               value={selectedBrand}
               onChange={(e) => updateParam('brand', e.target.value)}
-              className="py-2 px-3 rounded-xl bg-white dark:bg-stone-800 border border-stone-200 dark:border-stone-700 text-xs font-semibold text-stone-800 dark:text-stone-200 outline-none focus:ring-2 focus:ring-amber-500/20"
+              className="py-2 px-3 rounded-xl bg-white dark:bg-stone-800 border border-stone-200 dark:border-stone-700 text-xs font-semibold text-stone-800 dark:text-stone-200 outline-none focus:ring-2 focus:ring-amber-500/20 max-w-[120px] sm:max-w-xs truncate"
               title="Filter by Brand"
             >
               <option value="">{language === 'te' ? 'అన్ని బ్రాండ్లు (All Brands)' : 'All Brands'}</option>
@@ -157,7 +157,7 @@ export default function CatalogPage() {
             <select
               value={sortBy}
               onChange={(e) => updateParam('sort_by', e.target.value)}
-              className="py-2 px-3 rounded-xl bg-white dark:bg-stone-800 border border-stone-200 dark:border-stone-700 text-xs font-semibold text-stone-800 dark:text-stone-200 outline-none focus:ring-2 focus:ring-amber-500/20"
+              className="py-2 px-3 rounded-xl bg-white dark:bg-stone-800 border border-stone-200 dark:border-stone-700 text-xs font-semibold text-stone-800 dark:text-stone-200 outline-none focus:ring-2 focus:ring-amber-500/20 max-w-[120px] sm:max-w-xs truncate"
               title="Sort products"
             >
               <option value="name_asc">{t('catalog.nameAsc')}</option>
@@ -181,14 +181,24 @@ export default function CatalogPage() {
                 <Filter className="w-4 h-4 text-amber-700 dark:text-amber-400" />
                 {t('catalog.filters')}
               </span>
-              {hasActiveFilters && (
+              <div className="flex items-center gap-2">
+                {hasActiveFilters && (
+                  <button
+                    onClick={clearAllFilters}
+                    className="text-[11px] font-bold text-amber-800 dark:text-amber-400 hover:text-amber-900 dark:hover:text-amber-300 underline"
+                  >
+                    {t('catalog.clearAll')}
+                  </button>
+                )}
                 <button
-                  onClick={clearAllFilters}
-                  className="text-[11px] font-bold text-amber-800 dark:text-amber-400 hover:text-amber-900 dark:hover:text-amber-300 underline"
+                  type="button"
+                  onClick={() => setMobileFilterOpen(false)}
+                  className="md:hidden p-1 rounded-lg text-stone-400 hover:text-stone-600 dark:hover:text-stone-200 transition"
+                  aria-label="Close filters"
                 >
-                  {t('catalog.clearAll')}
+                  <X className="w-4 h-4" />
                 </button>
-              )}
+              </div>
             </div>
 
             {/* Category Filter */}
@@ -372,15 +382,15 @@ export default function CatalogPage() {
         </aside>
 
         {/* Product Grid */}
-        <main className="md:col-span-3 space-y-6">
+        <main className="md:col-span-3 space-y-6 min-w-0">
           {loading ? (
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4">
               {[...Array(6)].map((_, i) => (
                 <div key={i} className="bg-white dark:bg-stone-900 rounded-2xl h-80 border border-stone-200 dark:border-stone-800 animate-pulse" />
               ))}
             </div>
           ) : products.length === 0 ? (
-            <div className="bg-white dark:bg-stone-900 rounded-3xl border border-stone-200 dark:border-stone-800 p-12 text-center space-y-4">
+            <div className="bg-white dark:bg-stone-900 rounded-3xl border border-stone-200 dark:border-stone-800 p-8 sm:p-12 text-center space-y-4">
               <div className="w-16 h-16 rounded-full bg-amber-50 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 flex items-center justify-center mx-auto">
                 <Search className="w-8 h-8" />
               </div>
@@ -396,7 +406,7 @@ export default function CatalogPage() {
               </button>
             </div>
           ) : (
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4">
               {products.map((p) => (
                 <ProductCard key={p.id} product={p} />
               ))}

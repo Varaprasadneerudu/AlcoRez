@@ -7,7 +7,7 @@ export default function ComplianceInfoPage() {
   const { t, language } = useLanguage();
 
   return (
-    <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-8">
+    <div className="max-w-4xl mx-auto px-3 sm:px-6 lg:px-8 py-6 sm:py-10 space-y-6 sm:space-y-8">
       
       <div>
         <Link to="/" className="inline-flex items-center gap-1.5 text-xs font-bold text-amber-800 dark:text-amber-400 hover:text-amber-900 dark:hover:text-amber-300 mb-2 transition">
@@ -22,7 +22,7 @@ export default function ComplianceInfoPage() {
       </div>
 
       {/* Main Notice */}
-      <div className="bg-white dark:bg-stone-900 rounded-3xl border border-stone-200 dark:border-stone-800 p-6 sm:p-8 space-y-6 shadow-sm">
+      <div className="bg-white dark:bg-stone-900 rounded-2xl sm:rounded-3xl border border-stone-200 dark:border-stone-800 p-4 sm:p-8 space-y-6 shadow-sm">
         
         <div className="space-y-3">
           <h2 className="text-base font-extrabold text-stone-900 dark:text-stone-100 flex items-center gap-2">

@@ -45,63 +45,65 @@ export default function HomePage() {
   }, [filterByZone, postalCode]);
 
   return (
-    <div className="space-y-12 pb-16 transition-colors duration-200">
+    <div className="space-y-8 sm:space-y-12 pb-16 transition-colors duration-200 w-full overflow-hidden">
       
       {/* Hero Section */}
-      <section className="relative overflow-hidden bg-gradient-to-br from-stone-900 via-stone-900 to-amber-950 dark:from-stone-950 dark:via-stone-900 dark:to-stone-950 text-white rounded-3xl mx-4 sm:mx-6 lg:mx-8 mt-6 p-6 sm:p-10 lg:p-14 border border-amber-900/40 dark:border-stone-800 shadow-2xl">
-        <div className="absolute -right-20 -top-20 w-96 h-96 bg-amber-600/10 rounded-full blur-3xl pointer-events-none" />
-        
-        <div className="max-w-3xl space-y-5 relative z-10">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/20 border border-amber-400/30 text-amber-300 text-xs font-bold tracking-wide uppercase">
-            <ShieldCheck className="w-4 h-4 text-emerald-400" />
-            {t('home.heroBadge')}
-          </div>
-
-          <h1 className="text-3xl sm:text-5xl font-extrabold tracking-tight leading-tight">
-            {language === 'en' ? (
-              <>
-                Discover Premium Spirits & Verified <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-400 via-amber-200 to-amber-500">Wine Retailers</span> in Telangana
-              </>
-            ) : (
-              <>
-                తెలంగాణలో ప్రీమియం లిక్కర్ మరియు అధీకృత <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-400 via-amber-200 to-amber-500">వైన్ షాపులను</span> అన్వేషించండి
-              </>
-            )}
-          </h1>
-
-          <p className="text-stone-300 dark:text-stone-300 text-sm sm:text-base leading-relaxed max-w-2xl">
-            {t('home.heroDesc')}
-          </p>
-
-          {/* Demonstration Notice Box */}
-          <div className="bg-white/10 dark:bg-stone-900/60 backdrop-blur-md rounded-2xl p-4 border border-white/15 dark:border-stone-700/50 text-xs text-amber-100 dark:text-amber-200 flex items-start gap-3">
-            <AlertTriangle className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
-            <div>
-              <strong className="text-white block font-semibold mb-0.5">{t('home.disclosureTitle')}</strong>
-              {t('home.disclosureText')}
+      <section className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 mt-4 sm:mt-6">
+        <div className="relative overflow-hidden bg-gradient-to-br from-stone-900 via-stone-900 to-amber-950 dark:from-stone-950 dark:via-stone-900 dark:to-stone-950 text-white rounded-2xl sm:rounded-3xl p-5 sm:p-10 lg:p-14 border border-amber-900/40 dark:border-stone-800 shadow-2xl">
+          <div className="absolute -right-20 -top-20 w-96 h-96 bg-amber-600/10 rounded-full blur-3xl pointer-events-none" />
+          
+          <div className="max-w-3xl space-y-4 sm:space-y-5 relative z-10">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/20 border border-amber-400/30 text-amber-300 text-xs font-bold tracking-wide uppercase">
+              <ShieldCheck className="w-4 h-4 text-emerald-400" />
+              {t('home.heroBadge')}
             </div>
-          </div>
 
-          <div className="pt-2 flex flex-wrap gap-3">
-            <Link
-              to="/products"
-              className="py-3 px-6 rounded-xl font-bold text-sm bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-stone-950 shadow-lg shadow-amber-500/20 flex items-center gap-2 transition"
-            >
-              <span>{t('home.exploreBtn')}</span>
-              <ArrowRight className="w-4 h-4" />
-            </Link>
-            <Link
-              to="/compliance-info"
-              className="py-3 px-6 rounded-xl font-semibold text-sm bg-white/10 hover:bg-white/20 text-white border border-white/20 transition flex items-center gap-2"
-            >
-              <span>{t('home.guidelinesBtn')}</span>
-            </Link>
+            <h1 className="text-2xl sm:text-5xl font-extrabold tracking-tight leading-tight">
+              {language === 'en' ? (
+                <>
+                  Discover Premium Spirits & Verified <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-400 via-amber-200 to-amber-500">Wine Retailers</span> in Telangana
+                </>
+              ) : (
+                <>
+                  తెలంగాణలో ప్రీమియం లిక్కర్ మరియు అధీకృత <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-400 via-amber-200 to-amber-500">వైన్ షాపులను</span> అన్వేషించండి
+                </>
+              )}
+            </h1>
+
+            <p className="text-stone-300 dark:text-stone-300 text-xs sm:text-base leading-relaxed max-w-2xl">
+              {t('home.heroDesc')}
+            </p>
+
+            {/* Demonstration Notice Box */}
+            <div className="bg-white/10 dark:bg-stone-900/60 backdrop-blur-md rounded-2xl p-3.5 sm:p-4 border border-white/15 dark:border-stone-700/50 text-xs text-amber-100 dark:text-amber-200 flex items-start gap-3">
+              <AlertTriangle className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
+              <div>
+                <strong className="text-white block font-semibold mb-0.5">{t('home.disclosureTitle')}</strong>
+                {t('home.disclosureText')}
+              </div>
+            </div>
+
+            <div className="pt-2 flex flex-wrap gap-2.5 sm:gap-3">
+              <Link
+                to="/products"
+                className="py-2.5 sm:py-3 px-5 sm:px-6 rounded-xl font-bold text-xs sm:text-sm bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-stone-950 shadow-lg shadow-amber-500/20 flex items-center gap-2 transition"
+              >
+                <span>{t('home.exploreBtn')}</span>
+                <ArrowRight className="w-4 h-4" />
+              </Link>
+              <Link
+                to="/compliance-info"
+                className="py-2.5 sm:py-3 px-5 sm:px-6 rounded-xl font-semibold text-xs sm:text-sm bg-white/10 hover:bg-white/20 text-white border border-white/20 transition flex items-center gap-2"
+              >
+                <span>{t('home.guidelinesBtn')}</span>
+              </Link>
+            </div>
           </div>
         </div>
       </section>
 
       {/* Category Navigation Horizontal Scroll / Grid */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-4">
+      <section className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 space-y-4">
         <div className="flex items-center justify-between">
           <div>
             <h2 className="text-xl font-extrabold text-stone-900 dark:text-stone-100 tracking-tight">{t('home.browseCategory')}</h2>
@@ -112,14 +114,14 @@ export default function HomePage() {
           </Link>
         </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2.5 sm:gap-3">
           {categories.map((cat) => (
             <Link
               key={cat.id}
               to={`/products?category=${cat.slug}`}
               className="group bg-white dark:bg-stone-900 rounded-2xl border border-stone-200/90 dark:border-stone-800 hover:border-amber-400 dark:hover:border-amber-500 p-3 flex flex-col items-center text-center shadow-sm hover:shadow-md transition-all"
             >
-              <div className="w-14 h-14 rounded-full bg-amber-50 dark:bg-stone-800 overflow-hidden mb-2 group-hover:scale-105 transition">
+              <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-amber-50 dark:bg-stone-800 overflow-hidden mb-2 group-hover:scale-105 transition">
                 <img
                   src={cat.image_url || 'https://images.unsplash.com/photo-1527061011665-3652c757a4d4?auto=format&fit=crop&w=300&q=80'}
                   alt={tc(cat.name)}
@@ -136,7 +138,7 @@ export default function HomePage() {
       </section>
 
       {/* Licensed Retailers Section */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-4">
+      <section className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div>
             <div className="flex items-center gap-2">
@@ -173,30 +175,30 @@ export default function HomePage() {
       </section>
 
       {/* Featured Products Grid */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-4">
-        <div className="flex items-center justify-between">
-          <div>
-            <div className="flex items-center gap-2">
-              <h2 className="text-xl font-extrabold text-stone-900 dark:text-stone-100 tracking-tight">{t('home.featuredTitle')}</h2>
-              <span className="bg-amber-100 dark:bg-amber-950/80 text-amber-800 dark:text-amber-300 font-bold text-[10px] px-2 py-0.5 rounded-full border border-amber-300 dark:border-amber-800">
+      <section className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 space-y-4">
+        <div className="flex items-end sm:items-center justify-between gap-3">
+          <div className="min-w-0">
+            <div className="flex items-center gap-2 flex-wrap">
+              <h2 className="text-lg sm:text-xl font-extrabold text-stone-900 dark:text-stone-100 tracking-tight">{t('home.featuredTitle')}</h2>
+              <span className="hidden sm:inline-flex bg-amber-100 dark:bg-amber-950/80 text-amber-800 dark:text-amber-300 font-bold text-[10px] px-2 py-0.5 rounded-full border border-amber-300 dark:border-amber-800">
                 {t('home.featuredBadge')}
               </span>
             </div>
             <p className="text-xs text-stone-500 dark:text-stone-400 font-medium">{t('home.featuredSubtitle')}</p>
           </div>
-          <Link to="/products" className="text-xs font-bold text-amber-800 dark:text-amber-400 hover:text-amber-900 dark:hover:text-amber-300 flex items-center gap-1">
+          <Link to="/products" className="text-xs font-bold text-amber-800 dark:text-amber-400 hover:text-amber-900 dark:hover:text-amber-300 flex items-center gap-1 shrink-0 whitespace-nowrap">
             {t('home.seeMore')} <ArrowRight className="w-3.5 h-3.5" />
           </Link>
         </div>
 
         {loading ? (
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
             {[...Array(8)].map((_, idx) => (
               <div key={idx} className="bg-white dark:bg-stone-900 rounded-2xl p-4 border border-stone-200 dark:border-stone-800 h-72 animate-pulse" />
             ))}
           </div>
         ) : (
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
             {featuredProducts.map((prod) => (
               <ProductCard key={prod.id} product={prod} />
             ))}
@@ -205,8 +207,8 @@ export default function HomePage() {
       </section>
 
       {/* Compliance Architecture Pillars */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="bg-white dark:bg-stone-900 rounded-3xl border border-stone-200 dark:border-stone-800 p-8 shadow-sm">
+      <section className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
+        <div className="bg-white dark:bg-stone-900 rounded-2xl sm:rounded-3xl border border-stone-200 dark:border-stone-800 p-5 sm:p-8 shadow-sm">
           <div className="text-center max-w-2xl mx-auto space-y-2 mb-8">
             <span className="text-amber-800 dark:text-amber-400 font-extrabold text-xs uppercase tracking-widest">
               {t('home.frameworkTag')}

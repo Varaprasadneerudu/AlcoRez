@@ -42,6 +42,8 @@ export default function Navbar() {
   const zoneRef = useRef(null);
   const userMenuRef = useRef(null);
 
+  const [mobileUserExpanded, setMobileUserExpanded] = useState(false);
+
   useEffect(() => {
     function handleClickOutside(event) {
       if (zoneRef.current && !zoneRef.current.contains(event.target)) {
@@ -52,7 +54,11 @@ export default function Navbar() {
       }
     }
     document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    document.addEventListener('touchstart', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('touchstart', handleClickOutside);
+    };
   }, []);
 
   const selectedZoneLabel = selectedZone ? (language === 'te' ? selectedZone.te : selectedZone.en) : 'Hyderabad';
@@ -74,20 +80,20 @@ export default function Navbar() {
   };
 
   return (
-    <header className="bg-white/95 dark:bg-stone-900/95 backdrop-blur-md border-b border-stone-200/80 dark:border-stone-800 shadow-sm transition-colors duration-200 w-full">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-16 gap-3">
+    <header className="bg-white/95 dark:bg-stone-900/95 backdrop-blur-md border-b border-stone-200/80 dark:border-stone-800 shadow-sm transition-colors duration-200 w-full relative z-40">
+      <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
+        <div className="flex items-center justify-between h-16 gap-1.5 sm:gap-3">
           
           {/* Logo & Brand */}
           <div className="flex items-center shrink-0">
-            <Link to="/" className="flex items-center gap-3 group">
-              <AlcoRezIcon className="h-10 w-auto rounded-lg shadow-sm group-hover:scale-105 transition-transform duration-200" />
+            <Link to="/" className="flex items-center gap-2 sm:gap-3 group">
+              <AlcoRezIcon className="h-8 sm:h-10 w-auto rounded-lg shadow-sm group-hover:scale-105 transition-transform duration-200" />
               <div className="flex flex-col">
-                <span className="font-extrabold text-lg leading-tight tracking-tight flex items-center">
+                <span className="font-extrabold text-base sm:text-lg leading-tight tracking-tight flex items-center">
                   <span className="text-amber-800 dark:text-amber-400 font-black">Alco</span>
                   <span className="text-stone-900 dark:text-stone-100 font-extrabold">Rez</span>
                 </span>
-                <span className="text-[10px] text-stone-500 dark:text-stone-400 font-medium tracking-wide">
+                <span className="text-[10px] text-stone-500 dark:text-stone-400 font-medium tracking-wide hidden sm:block">
                   {t('nav.subTitle')}
                 </span>
               </div>
@@ -109,7 +115,7 @@ export default function Navbar() {
           </div>
 
           {/* Right Navigation Controls */}
-          <div className="flex items-center gap-2 sm:gap-2.5 shrink-0">
+          <div className="flex items-center gap-1 sm:gap-2 shrink-0">
 
             {/* Permitted Service Area Button (Hyderabad Zones) */}
             <div className="relative hidden md:block" ref={zoneRef}>
@@ -157,7 +163,7 @@ export default function Navbar() {
             <button
               type="button"
               onClick={toggleTheme}
-              className="p-2 rounded-xl bg-stone-100 dark:bg-stone-800 hover:bg-stone-200 dark:hover:bg-stone-700 border border-stone-200 dark:border-stone-700 text-stone-700 dark:text-amber-300 transition flex items-center justify-center cursor-pointer shrink-0"
+              className="p-1.5 sm:p-2 rounded-xl bg-stone-100 dark:bg-stone-800 hover:bg-stone-200 dark:hover:bg-stone-700 border border-stone-200 dark:border-stone-700 text-stone-700 dark:text-amber-300 transition flex items-center justify-center cursor-pointer shrink-0"
               title={isDark ? t('nav.lightMode') : t('nav.darkMode')}
               aria-label={isDark ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
             >
@@ -175,13 +181,13 @@ export default function Navbar() {
             <button
               type="button"
               onClick={toggleDrawer}
-              className="relative p-2 rounded-xl bg-amber-50 dark:bg-amber-950/60 hover:bg-amber-100 dark:hover:bg-amber-900/60 text-stone-800 dark:text-amber-200 border border-amber-200/80 dark:border-amber-800/60 transition flex items-center justify-center cursor-pointer group shrink-0"
+              className="relative p-1.5 sm:p-2 rounded-xl bg-amber-50 dark:bg-amber-950/60 hover:bg-amber-100 dark:hover:bg-amber-900/60 text-stone-800 dark:text-amber-200 border border-amber-200/80 dark:border-amber-800/60 transition flex items-center justify-center cursor-pointer group shrink-0"
               aria-label={t('nav.cart')}
               title={t('nav.cart')}
             >
               <ShoppingCart className="w-4 h-4 text-amber-900 dark:text-amber-300 group-hover:scale-105 transition-transform" />
               {itemCount > 0 && (
-                <span className="absolute -top-1.5 -right-1.5 bg-gradient-to-r from-amber-600 to-amber-700 text-white text-[11px] font-black w-4.5 h-4.5 rounded-full flex items-center justify-center shadow-md animate-in zoom-in-75">
+                <span className="absolute -top-1.5 -right-1.5 bg-gradient-to-r from-amber-600 to-amber-700 text-white text-[10px] sm:text-[11px] font-black w-4 h-4 sm:w-4.5 sm:h-4.5 rounded-full flex items-center justify-center shadow-md animate-in zoom-in-75">
                   {itemCount}
                 </span>
               )}
@@ -189,44 +195,47 @@ export default function Navbar() {
 
             {/* User Name at Rightmost Side with Dropdown (or Login if guest) */}
             {!isAuthenticated ? (
-              <div className="flex items-center gap-1.5">
+              <div className="flex items-center gap-1 sm:gap-1.5 shrink-0">
                 <button
                   type="button"
                   onClick={toggleLanguage}
-                  className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs font-semibold bg-stone-100 dark:bg-stone-800 hover:bg-stone-200 dark:hover:bg-stone-700 border border-stone-200 dark:border-stone-700 text-stone-800 dark:text-stone-200 transition cursor-pointer"
+                  className="flex items-center gap-1 px-2 sm:px-2.5 py-1.5 rounded-xl text-xs font-semibold bg-stone-100 dark:bg-stone-800 hover:bg-stone-200 dark:hover:bg-stone-700 border border-stone-200 dark:border-stone-700 text-stone-800 dark:text-stone-200 transition cursor-pointer"
                   title={t('nav.languageToggle')}
                 >
                   <Globe className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
-                  <span className="font-bold">{language === 'en' ? 'EN' : 'తెలుగు'}</span>
+                  <span className="font-bold hidden sm:inline">{language === 'en' ? 'EN' : 'తెలుగు'}</span>
                 </button>
 
                 <Link
                   to="/login"
-                  className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold bg-amber-600 hover:bg-amber-700 text-white shadow-xs transition cursor-pointer shrink-0"
+                  className="flex items-center gap-1.5 px-2.5 sm:px-3.5 py-1.5 rounded-xl text-xs font-bold bg-amber-600 hover:bg-amber-700 text-white shadow-xs transition cursor-pointer shrink-0"
                   title={t('nav.login')}
                 >
                   <LogIn className="w-3.5 h-3.5" />
-                  <span>{t('nav.login')}</span>
+                  <span className="hidden sm:inline">{t('nav.login')}</span>
                 </Link>
               </div>
             ) : (
-              <div className="relative" ref={userMenuRef}>
+              <div className="relative shrink-0" ref={userMenuRef}>
                 <button
                   type="button"
-                  onClick={() => setUserMenuOpen(!userMenuOpen)}
+                  onClick={() => {
+                    setUserMenuOpen(!userMenuOpen);
+                    if (!userMenuOpen) setMobileMenuOpen(false);
+                  }}
                   aria-expanded={userMenuOpen}
-                  className="flex items-center gap-2 px-2.5 sm:px-3 py-1.5 rounded-xl bg-stone-100 dark:bg-stone-800 hover:bg-stone-200 dark:hover:bg-stone-700 border border-stone-200 dark:border-stone-700 text-stone-800 dark:text-stone-200 shadow-xs transition cursor-pointer group"
+                  className="flex items-center gap-1.5 sm:gap-2 p-1.5 sm:px-3 sm:py-1.5 rounded-xl bg-stone-100 dark:bg-stone-800 hover:bg-stone-200 dark:hover:bg-stone-700 border border-stone-200 dark:border-stone-700 text-stone-800 dark:text-stone-200 shadow-xs transition cursor-pointer group shrink-0"
                   title="User Profile & Menu"
                 >
                   <div className="w-6 h-6 rounded-full bg-amber-500/15 dark:bg-amber-400/20 text-amber-800 dark:text-amber-300 flex items-center justify-center font-bold shrink-0">
                     <User className="w-3.5 h-3.5" />
                   </div>
                   <div className="flex flex-col text-left">
-                    <span className="font-bold text-xs text-stone-900 dark:text-stone-100 max-w-[100px] sm:max-w-[140px] truncate leading-tight group-hover:text-amber-800 dark:group-hover:text-amber-300 transition-colors">
-                      {user?.full_name || user?.email?.split('@')[0] || 'User'}
+                    <span className="font-bold text-xs text-stone-900 dark:text-stone-100 max-w-[65px] xs:max-w-[95px] sm:max-w-[140px] truncate leading-tight group-hover:text-amber-800 dark:group-hover:text-amber-300 transition-colors">
+                      {user?.full_name?.split(' ')[0] || user?.full_name || user?.email?.split('@')[0] || 'User'}
                     </span>
                     {role && role !== 'customer' && (
-                      <span className="text-[9px] font-bold uppercase tracking-wider text-amber-700 dark:text-amber-400 leading-none">
+                      <span className="text-[9px] font-bold uppercase tracking-wider text-amber-700 dark:text-amber-400 leading-none hidden sm:inline">
                         {getRoleDisplayName(role)}
                       </span>
                     )}
@@ -236,7 +245,7 @@ export default function Navbar() {
 
                 {/* Dropdown Menu */}
                 {userMenuOpen && (
-                  <div className="absolute right-0 mt-2 w-64 sm:w-72 bg-white dark:bg-stone-900 rounded-2xl shadow-2xl border border-stone-200 dark:border-stone-800 py-1.5 z-50 animate-in fade-in zoom-in-95 duration-150">
+                  <div className="fixed inset-x-3 top-[4.25rem] sm:absolute sm:inset-auto sm:right-0 sm:top-full sm:mt-2 w-auto sm:w-72 max-w-sm sm:max-w-none mx-auto sm:mx-0 bg-white dark:bg-stone-900 rounded-2xl shadow-2xl border border-stone-200 dark:border-stone-800 py-1.5 z-50 animate-in fade-in zoom-in-95 duration-150">
                     {/* User Info Header */}
                     <div className="px-4 py-3 border-b border-stone-100 dark:border-stone-800">
                       <p className="text-xs font-extrabold text-stone-900 dark:text-stone-100 truncate">
@@ -285,6 +294,33 @@ export default function Navbar() {
                       </div>
                     )}
 
+                    {/* Portal Links based on role */}
+                    {role === 'retailer' && (
+                      <div className="py-1.5 border-b border-stone-100 dark:border-stone-800">
+                        <Link
+                          to="/retailer"
+                          onClick={() => setUserMenuOpen(false)}
+                          className="flex items-center justify-between px-3.5 py-2 text-xs font-semibold text-stone-700 dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-stone-800 hover:text-amber-800 dark:hover:text-amber-300 rounded-xl mx-1.5 transition"
+                        >
+                          <span>{t('nav.retailerPortal')}</span>
+                          <span className="text-[10px] text-stone-400">→</span>
+                        </Link>
+                      </div>
+                    )}
+
+                    {role === 'admin' && (
+                      <div className="py-1.5 border-b border-stone-100 dark:border-stone-800">
+                        <Link
+                          to="/admin"
+                          onClick={() => setUserMenuOpen(false)}
+                          className="flex items-center justify-between px-3.5 py-2 text-xs font-semibold text-stone-700 dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-stone-800 hover:text-amber-800 dark:hover:text-amber-300 rounded-xl mx-1.5 transition"
+                        >
+                          <span>{t('nav.adminPortal')}</span>
+                          <span className="text-[10px] text-stone-400">→</span>
+                        </Link>
+                      </div>
+                    )}
+
                     {/* Language Change Section */}
                     <div className="px-3 py-2">
                       <p className="text-[10px] font-bold uppercase tracking-wider text-stone-400 dark:text-stone-500 mb-1.5 flex items-center gap-1.5">
@@ -326,7 +362,7 @@ export default function Navbar() {
                         onClick={() => {
                           logout();
                           setUserMenuOpen(false);
-                          navigate('/');
+                          navigate('/login');
                         }}
                         className="w-full flex items-center gap-2 px-3 py-2 text-xs font-bold text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/50 rounded-xl transition cursor-pointer"
                       >
@@ -341,10 +377,14 @@ export default function Navbar() {
 
             {/* Mobile menu button */}
             <button
-              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="md:hidden p-2 text-stone-600 dark:text-stone-300 hover:text-stone-900 dark:hover:text-white"
+              onClick={() => {
+                setMobileMenuOpen(!mobileMenuOpen);
+                if (!mobileMenuOpen) setUserMenuOpen(false);
+              }}
+              className="md:hidden p-1.5 sm:p-2 text-stone-600 dark:text-stone-300 hover:text-stone-900 dark:hover:text-white shrink-0"
+              aria-label="Toggle navigation menu"
             >
-              {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+              {mobileMenuOpen ? <X className="w-5 h-5 sm:w-6 sm:h-6" /> : <Menu className="w-5 h-5 sm:w-6 sm:h-6" />}
             </button>
           </div>
         </div>
@@ -393,31 +433,55 @@ export default function Navbar() {
                 <span>{t('nav.login')}</span>
               </Link>
             ) : (
-              <div className="p-2.5 rounded-xl bg-stone-100 dark:bg-stone-800/80 border border-stone-200 dark:border-stone-700 flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-full bg-amber-500/15 dark:bg-amber-400/20 text-amber-800 dark:text-amber-300 flex items-center justify-center font-bold shrink-0">
-                    <User className="w-4 h-4" />
-                  </div>
-                  <div className="min-w-0">
-                    <p className="text-xs font-bold text-stone-900 dark:text-stone-100 truncate max-w-[180px]">
-                      {user?.full_name || user?.email?.split('@')[0]}
-                    </p>
-                    <p className="text-[10px] text-stone-500 dark:text-stone-400 capitalize">
-                      {getRoleDisplayName(role)}
-                    </p>
-                  </div>
-                </div>
+              <div className="rounded-xl bg-stone-100 dark:bg-stone-800/80 border border-stone-200 dark:border-stone-700 overflow-hidden">
                 <button
-                  onClick={() => {
-                    logout();
-                    setMobileMenuOpen(false);
-                    navigate('/');
-                  }}
-                  className="px-2.5 py-1.5 rounded-lg text-xs font-bold text-red-600 dark:text-red-400 bg-red-50 dark:hover:bg-red-950/40 border border-red-200 dark:border-red-900/60 flex items-center gap-1"
+                  type="button"
+                  onClick={() => setMobileUserExpanded(!mobileUserExpanded)}
+                  className="w-full p-2.5 flex items-center justify-between text-left cursor-pointer hover:bg-stone-200/60 dark:hover:bg-stone-700/60 transition"
+                  aria-expanded={mobileUserExpanded}
                 >
-                  <LogOut className="w-3.5 h-3.5" />
-                  <span>{t('nav.logout')}</span>
+                  <div className="flex items-center gap-2">
+                    <div className="w-8 h-8 rounded-full bg-amber-500/15 dark:bg-amber-400/20 text-amber-800 dark:text-amber-300 flex items-center justify-center font-bold shrink-0">
+                      <User className="w-4 h-4" />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-xs font-bold text-stone-900 dark:text-stone-100 truncate max-w-[180px]">
+                        {user?.full_name || user?.email?.split('@')[0]}
+                      </p>
+                      <p className="text-[10px] text-stone-500 dark:text-stone-400 capitalize">
+                        {getRoleDisplayName(role)}
+                      </p>
+                    </div>
+                  </div>
+                  <ChevronDown className={`w-4 h-4 text-stone-400 transition-transform duration-200 ${mobileUserExpanded ? 'rotate-180' : ''}`} />
                 </button>
+
+                {/* Collapsible Mobile User Drawer Details */}
+                {mobileUserExpanded && (
+                  <div className="p-3 border-t border-stone-200/70 dark:border-stone-700/70 bg-white/60 dark:bg-stone-900/60 space-y-2 animate-in fade-in duration-150">
+                    <div className="text-[11px] text-stone-500 dark:text-stone-400 truncate">
+                      <span className="font-semibold text-stone-700 dark:text-stone-300">Email: </span>
+                      {user?.email}
+                    </div>
+
+                    <div className="pt-1 flex items-center justify-between gap-2">
+                      <span className="text-[10px] uppercase font-bold text-amber-700 dark:text-amber-400">
+                        {getRoleDisplayName(role)} Account
+                      </span>
+                      <button
+                        onClick={() => {
+                          logout();
+                          setMobileMenuOpen(false);
+                          navigate('/login');
+                        }}
+                        className="px-2.5 py-1.5 rounded-lg text-xs font-bold text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900/60 flex items-center gap-1"
+                      >
+                        <LogOut className="w-3.5 h-3.5" />
+                        <span>{t('nav.logout')}</span>
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
 

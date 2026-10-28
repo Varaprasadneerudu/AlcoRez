@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { ShoppingBag, ShoppingCart, Check, Loader2, Plus, Minus, Store, Heart } from 'lucide-react';
+import { ShoppingBag, ShoppingCart, Check, Loader2, Plus, Minus, Heart } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
@@ -150,14 +150,13 @@ export default function ProductCard({ product }) {
         <img
           src={product.primary_image_url || 'https://images.unsplash.com/photo-1527061011665-3652c757a4d4?auto=format&fit=crop&w=600&q=80'}
           alt={tp(product.name)}
-          className="w-full h-full object-contain p-4 group-hover:scale-105 transition-transform duration-300"
+          className="w-full h-full object-contain p-3 sm:p-4 group-hover:scale-105 transition-transform duration-300"
           loading="lazy"
+          onError={(e) => {
+            e.currentTarget.onerror = null;
+            e.currentTarget.src = 'https://images.unsplash.com/photo-1527061011665-3652c757a4d4?auto=format&fit=crop&w=600&q=80';
+          }}
         />
-
-        {/* Demo Label badge */}
-        <span className="absolute top-2.5 left-2.5 bg-amber-500/90 text-stone-950 font-black text-[9px] px-2 py-0.5 rounded uppercase tracking-wider backdrop-blur-sm">
-          {t('product.demoBadge')}
-        </span>
 
         {/* ABV badge & Favorite Heart button */}
         <div className="absolute top-2.5 right-2.5 flex items-center gap-1.5 z-10">
@@ -196,26 +195,26 @@ export default function ProductCard({ product }) {
       </Link>
 
       {/* Content */}
-      <div className="p-4 flex-1 flex flex-col justify-between space-y-3">
+      <div className="p-3 sm:p-4 flex-1 flex flex-col justify-between space-y-2.5 sm:space-y-3 min-w-0">
         <div>
-          <div className="flex items-center justify-between text-xs text-stone-500 dark:text-stone-400 mb-1">
-            <span className="font-semibold text-amber-800 dark:text-amber-400 uppercase tracking-wider text-[10px]">
+          <div className="flex items-center justify-between gap-1.5 text-xs text-stone-500 dark:text-stone-400 mb-1 min-w-0">
+            <span className="font-semibold text-amber-800 dark:text-amber-400 uppercase tracking-wider text-[10px] truncate shrink min-w-0" title={tb(product.brand)}>
               {tb(product.brand)}
             </span>
-            <span className="text-[11px] bg-stone-100 dark:bg-stone-800 px-2 py-0.5 rounded-full text-stone-600 dark:text-stone-300">
+            <span className="text-[10px] sm:text-[11px] bg-stone-100 dark:bg-stone-800 px-1.5 sm:px-2 py-0.5 rounded-full text-stone-600 dark:text-stone-300 truncate max-w-[58%] text-center shrink-0" title={tc(product.category_name || 'Spirits')}>
               {tc(product.category_name || 'Spirits')}
             </span>
           </div>
 
           <Link to={`/products/${product.id}`} className="block group-hover:text-amber-800 dark:group-hover:text-amber-400 transition">
-            <h3 className="font-bold text-stone-900 dark:text-stone-100 text-sm leading-snug line-clamp-2">
+            <h3 className="font-bold text-stone-900 dark:text-stone-100 text-xs sm:text-sm leading-snug line-clamp-2 min-h-[2rem] sm:min-h-[2.5rem]" title={tp(product.name)}>
               {tp(product.name)}
             </h3>
           </Link>
 
           {/* Direction 3 Retailer Availability Radar */}
-          <div className="flex items-center gap-1.5 text-[10px] text-emerald-700 dark:text-emerald-400 font-semibold mt-1">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+          <div className="flex items-center gap-1.5 text-[10px] text-emerald-700 dark:text-emerald-400 font-semibold mt-1 min-w-0">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse shrink-0"></span>
             <span className="truncate">
               {product.in_stock ? 'In Stock at Madhapur Retailers' : 'Currently Unavailable'}
             </span>
@@ -255,23 +254,25 @@ export default function ProductCard({ product }) {
         )}
 
         {/* Price & Action */}
-        <div className="pt-2 border-t border-stone-100 dark:border-stone-800 flex items-center justify-between gap-1.5">
-          <div className="min-w-0 pr-1">
-            <span className="text-[10px] text-stone-400 dark:text-stone-500 block truncate">{t('product.demoPriceLabel')}</span>
-            <span className="font-extrabold text-stone-900 dark:text-stone-100 text-sm sm:text-base">
+        <div className="pt-2 border-t border-stone-100 dark:border-stone-800 flex items-center justify-between gap-1.5 sm:gap-2">
+          <div className="min-w-0 flex-1">
+            <span className="hidden sm:block text-[9px] sm:text-[10px] text-stone-400 dark:text-stone-500 truncate">
+              {t('product.demoPriceLabel')}
+            </span>
+            <span className="font-extrabold text-stone-900 dark:text-stone-100 text-xs sm:text-base whitespace-nowrap block">
               {displayPrice ? `₹${Number(displayPrice).toLocaleString('en-IN')}` : t('product.priceOnRequest')}
             </span>
           </div>
 
-          <div className="flex items-center gap-1.5 shrink-0">
-            {/* Details Button */}
+          <div className="flex items-center gap-1 sm:gap-1.5 shrink-0">
+            {/* Details Button - hidden on mobile so bottle price is 100% visible and un-truncated; visible on web */}
             <Link
               to={`/products/${product.id}`}
-              className="px-2.5 py-1.5 rounded-xl bg-amber-50 dark:bg-amber-950/60 hover:bg-amber-100 dark:hover:bg-amber-900/60 text-amber-900 dark:text-amber-200 font-semibold text-xs border border-amber-200 dark:border-amber-800/80 transition flex items-center gap-1"
+              className="hidden sm:flex p-1.5 sm:px-2.5 sm:py-1.5 rounded-xl bg-amber-50 dark:bg-amber-950/60 hover:bg-amber-100 dark:hover:bg-amber-900/60 text-amber-900 dark:text-amber-200 font-semibold text-xs border border-amber-200 dark:border-amber-800/80 transition items-center gap-1"
               title={t('product.detailsBtn')}
             >
               <ShoppingBag className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">{t('product.detailsBtn')}</span>
+              <span>{t('product.detailsBtn')}</span>
             </Link>
 
             {/* Direct Add to Cart OR Interactive Stepper if already in cart */}
@@ -281,19 +282,19 @@ export default function ProductCard({ product }) {
                   type="button"
                   onClick={(e) => handleStepQuantity(e, -1)}
                   disabled={isAdding}
-                  className="px-2 py-1.5 text-amber-900 dark:text-amber-200 hover:bg-amber-200/60 dark:hover:bg-amber-900/80 transition disabled:opacity-50"
+                  className="px-1.5 sm:px-2 py-1 sm:py-1.5 text-amber-900 dark:text-amber-200 hover:bg-amber-200/60 dark:hover:bg-amber-900/80 transition disabled:opacity-50"
                   title="Decrease"
                 >
                   <Minus className="w-3 h-3" />
                 </button>
-                <span className="px-2 text-xs font-black text-amber-950 dark:text-amber-100">
+                <span className="px-1 sm:px-2 text-xs font-black text-amber-950 dark:text-amber-100">
                   {cartItem.quantity}
                 </span>
                 <button
                   type="button"
                   onClick={(e) => handleStepQuantity(e, 1)}
                   disabled={isAdding || cartItem.quantity >= maxStockLimit}
-                  className="px-2 py-1.5 text-amber-900 dark:text-amber-200 hover:bg-amber-200/60 dark:hover:bg-amber-900/80 transition disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+                  className="px-1.5 sm:px-2 py-1 sm:py-1.5 text-amber-900 dark:text-amber-200 hover:bg-amber-200/60 dark:hover:bg-amber-900/80 transition disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
                   title={cartItem.quantity >= maxStockLimit ? `Max limit (${maxStockLimit})` : "Increase"}
                 >
                   <Plus className="w-3 h-3" />
@@ -304,7 +305,7 @@ export default function ProductCard({ product }) {
                 type="button"
                 onClick={handleAddToCart}
                 disabled={isAdding || !product.in_stock}
-                className={`px-2.5 py-1.5 rounded-xl font-bold text-xs transition-all duration-200 flex items-center gap-1.5 shadow-sm active:scale-95 ${
+                className={`px-2 sm:px-2.5 py-1.5 rounded-xl font-bold text-xs transition-all duration-200 flex items-center gap-1 sm:gap-1.5 shadow-sm active:scale-95 ${
                   isAdded
                     ? 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-emerald-600/30 ring-2 ring-emerald-500/30'
                     : 'bg-gradient-to-r from-amber-600 to-amber-700 hover:from-amber-700 hover:to-amber-800 text-white shadow-amber-700/20'

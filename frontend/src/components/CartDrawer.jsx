@@ -64,7 +64,7 @@ export default function CartDrawer() {
         onClick={closeDrawer}
       />
 
-      <div className="fixed inset-y-0 right-0 max-w-full flex pl-6 sm:pl-10 z-50">
+      <div className="fixed inset-y-0 right-0 max-w-full flex pl-0 sm:pl-10 z-50">
         <div
           className="w-screen max-w-md bg-white dark:bg-stone-900 border-l border-stone-200 dark:border-stone-800 shadow-2xl flex flex-col h-full overflow-hidden overscroll-contain"
           onClick={(e) => e.stopPropagation()}

@@ -8,8 +8,8 @@ export default function Footer() {
   const { t } = useLanguage();
 
   return (
-    <footer className="bg-stone-900 dark:bg-stone-950 text-stone-300 dark:text-stone-400 pt-12 pb-8 border-t border-stone-800 text-xs transition-colors duration-200">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
+    <footer className="bg-stone-900 dark:bg-stone-950 text-stone-300 dark:text-stone-400 pt-10 sm:pt-12 pb-8 border-t border-stone-800 text-xs transition-colors duration-200">
+      <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 space-y-6 sm:space-y-8">
         
         {/* Statutory Health & Legal Warning Callout */}
         <div className="bg-stone-950/80 dark:bg-stone-900/60 border border-amber-900/40 rounded-2xl p-5 text-center space-y-2">

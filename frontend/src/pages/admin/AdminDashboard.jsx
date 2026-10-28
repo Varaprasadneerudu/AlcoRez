@@ -243,7 +243,7 @@ export default function AdminDashboard() {
   const posture = stats?.compliance_posture;
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+    <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-6 sm:py-8 space-y-6 sm:space-y-8">
       {error && (
         <div className="bg-red-50 text-red-800 p-4 rounded-xl text-xs border border-red-200">
           {error}
@@ -507,7 +507,7 @@ export default function AdminDashboard() {
           </div>
 
           {/* Search Box */}
-          <div className="relative min-w-[240px]">
+          <div className="relative w-full md:w-auto md:min-w-[240px]">
             <input
               type="text"
               value={userSearchQuery}

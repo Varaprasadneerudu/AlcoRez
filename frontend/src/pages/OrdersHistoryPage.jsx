@@ -14,12 +14,10 @@ import {
   ChevronDown,
   ChevronUp,
   RefreshCw,
-  AlertTriangle,
   Printer,
   X,
   ShieldCheck,
-  ShoppingBag,
-  ExternalLink
+  ShoppingBag
 } from 'lucide-react';
 import { api } from '../services/api';
 import { useAuth } from '../context/AuthContext';
@@ -225,7 +223,7 @@ export default function OrdersHistoryPage() {
   }
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
+    <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-6 sm:py-8 space-y-6">
       
       {/* Back Link */}
       <div>
@@ -348,7 +346,7 @@ export default function OrdersHistoryPage() {
         </div>
 
         {/* Search input */}
-        <div className="relative min-w-[260px]">
+        <div className="relative w-full md:w-auto md:min-w-[260px]">
           <input
             type="text"
             value={searchQuery}

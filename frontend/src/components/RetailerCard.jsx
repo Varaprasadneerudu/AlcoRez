@@ -20,7 +20,7 @@ function formatAvailability(isoString) {
 }
 
 export default function RetailerCard({ retailer }) {
-  const { t } = useLanguage();
+  const { t, tr } = useLanguage();
   const { isRetailerFavorite, toggleRetailerFavorite } = useFavorites();
   const isFav = isRetailerFavorite(retailer.id);
 
@@ -33,7 +33,7 @@ export default function RetailerCard({ retailer }) {
           </div>
 
           <div className="flex items-center gap-2">
-            <span className="inline-flex items-center gap-1 bg-emerald-50 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 text-[11px] font-bold px-2.5 py-1 rounded-full shrink-0">
+            <span className="inline-flex items-center gap-1 bg-emerald-50 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 text-[10px] sm:text-[11px] font-bold px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-full shrink-0">
               <ShieldCheck className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
               <span>Verified A4 License</span>
             </span>
@@ -58,8 +58,8 @@ export default function RetailerCard({ retailer }) {
 
         <div className="mt-3">
           <Link to={`/retailers/${retailer.id}`} className="hover:text-amber-800 dark:hover:text-amber-400 transition-colors">
-            <h3 className="font-bold text-stone-900 dark:text-stone-100 text-base leading-snug">
-              {retailer.shop_name}
+            <h3 className="font-bold text-stone-900 dark:text-stone-100 text-base leading-snug line-clamp-1" title={tr(retailer.shop_name)}>
+              {tr(retailer.shop_name)}
             </h3>
           </Link>
           <p className="text-xs text-stone-500 dark:text-stone-400 font-medium mt-0.5">

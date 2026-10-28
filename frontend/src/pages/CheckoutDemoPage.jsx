@@ -157,7 +157,7 @@ export default function CheckoutDemoPage() {
   }
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
+    <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-6 sm:py-8 space-y-6">
       
       {/* Back Link */}
       <div>
@@ -414,8 +414,8 @@ export default function CheckoutDemoPage() {
 
           <div className="space-y-3 max-h-60 overflow-y-auto pr-1">
             {cart.items.map((item) => (
-              <div key={item.id} className="flex items-center justify-between text-xs py-1 border-b border-stone-50 dark:border-stone-800">
-                <div className="truncate max-w-[190px]">
+              <div key={item.id} className="flex items-center justify-between text-xs py-1 border-b border-stone-50 dark:border-stone-800 gap-2">
+                <div className="flex-1 min-w-0">
                   <span className="font-bold text-stone-900 dark:text-stone-100 block truncate">
                     {tp(item.product_name)}
                   </span>

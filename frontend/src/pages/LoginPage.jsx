@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Wine, Lock, Mail, Sparkles, ArrowRight, ArrowLeft, AlertCircle, ShieldCheck } from 'lucide-react';
+import { Lock, Mail, Sparkles, ArrowRight, ArrowLeft, AlertCircle } from 'lucide-react';
 import { useAuth, DEMO_ACCOUNTS } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
 import { AlcoRezIcon } from '../components/AlcoRezLogo';

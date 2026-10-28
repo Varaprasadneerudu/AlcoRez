@@ -37,7 +37,7 @@ export default function App() {
               <AuthProvider>
                 <FavoritesProvider>
                   <CartProvider>
-                    <div className="flex flex-col min-h-screen bg-[#FBF9F5] dark:bg-stone-950 text-stone-900 dark:text-stone-100 transition-colors duration-200">
+                    <div className="flex flex-col min-h-screen w-full max-w-full overflow-x-clip bg-[#FBF9F5] dark:bg-stone-950 text-stone-900 dark:text-stone-100 transition-colors duration-200">
                       {/* Mandatory 21+ Statutory Age Verification Modal */}
                       <LegalAgeModal />
 

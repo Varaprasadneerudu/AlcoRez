@@ -94,7 +94,7 @@ export default function ProductDetailPage() {
   const primaryImage = product.images?.[0]?.image_url || 'https://images.unsplash.com/photo-1527061011665-3652c757a4d4?auto=format&fit=crop&w=800&q=80';
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8 transition-colors duration-200">
+    <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-6 sm:py-8 space-y-6 sm:space-y-8 transition-colors duration-200">
       
       {/* Breadcrumb & Back */}
       <Link
@@ -108,14 +108,15 @@ export default function ProductDetailPage() {
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
         
         {/* Left: Product Image */}
-        <div className="lg:col-span-5 bg-white dark:bg-stone-900 rounded-3xl border border-stone-200 dark:border-stone-800 p-8 shadow-sm flex flex-col items-center justify-center relative overflow-hidden">
-          <span className="absolute top-4 left-4 bg-amber-500 text-stone-950 font-black text-[10px] px-2.5 py-1 rounded-md uppercase tracking-wider">
-            {t('productDetail.demoListing')}
-          </span>
+        <div className="lg:col-span-5 bg-white dark:bg-stone-900 rounded-3xl border border-stone-200 dark:border-stone-800 p-6 sm:p-8 shadow-sm flex flex-col items-center justify-center relative overflow-hidden">
           <img
             src={primaryImage}
             alt={tp(product.name)}
             className="w-full max-h-[420px] object-contain drop-shadow-lg"
+            onError={(e) => {
+              e.currentTarget.onerror = null;
+              e.currentTarget.src = 'https://images.unsplash.com/photo-1527061011665-3652c757a4d4?auto=format&fit=crop&w=600&q=80';
+            }}
           />
         </div>
 
@@ -129,7 +130,7 @@ export default function ProductDetailPage() {
               <span className="text-stone-500 dark:text-stone-400 font-semibold">{tc(product.category_name)}</span>
             </div>
 
-            <h1 className="text-2xl sm:text-3xl font-extrabold text-stone-900 dark:text-stone-100 leading-tight">
+            <h1 className="text-xl sm:text-3xl font-extrabold text-stone-900 dark:text-stone-100 leading-tight">
               {tp(product.name)}
             </h1>
 
@@ -235,7 +236,7 @@ export default function ProductDetailPage() {
                         <span className="text-[11px] text-stone-500 dark:text-stone-400">
                           {inv.is_available ? `${t('productDetail.inStockUnits')} (${inv.stock_quantity})` : t('productDetail.outOfStock')}
                         </span>
-                        <span className="font-extrabold text-stone-900 dark:text-stone-100 text-sm">
+                        <span className="font-extrabold text-stone-900 dark:text-stone-100 text-sm sm:text-base whitespace-nowrap">
                           ₹{Number(inv.price).toLocaleString('en-IN')}
                         </span>
                       </div>
