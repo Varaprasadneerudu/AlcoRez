@@ -1,0 +1,20 @@
+services:
+  - type: web
+    name: alcodelivery-backend
+    runtime: python
+    rootDir: backend
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: ENVIRONMENT
+        value: production
+      - key: DEBUG
+        value: "false"
+      - key: ALCOHOL_TRANSACTIONS_ENABLED
+        value: "false"
+      - key: DEMO_MODE
+        value: "true"
+      - key: JWT_SECRET_KEY
+        generateValue: true
+      - key: CORS_ORIGINS
+        value: "https://alcodelivery.onrender.com,http://localhost:5173,http://localhost:3000"
