@@ -4,6 +4,7 @@ import { Wine, Store, Shield, Lock, Mail, User, Calendar, Phone, AlertCircle, Sh
 import { useAuth } from '../context/AuthContext';
 import { api } from '../services/api';
 import { useLanguage } from '../context/LanguageContext';
+import { AlcoRezIcon } from '../components/AlcoRezLogo';
 
 export default function RegisterPage() {
   const { register, loading } = useAuth();
@@ -109,16 +110,20 @@ export default function RegisterPage() {
         </Link>
       </div>
 
-      {/* Header */}
+      {/* Brand Header */}
       <div className="text-center space-y-2">
-        <div className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${selectedRole.color} text-white flex items-center justify-center mx-auto shadow-lg transition-all`}>
-          <selectedRole.icon className="w-7 h-7 text-amber-200" />
+        <div className="flex justify-center">
+          <AlcoRezIcon className="h-16 w-auto shadow-xl rounded-xl" />
+        </div>
+        <div className="flex items-center justify-center text-xl tracking-tight leading-none pt-1">
+          <span className="text-amber-800 dark:text-amber-400 font-black">Alco</span>
+          <span className="text-stone-900 dark:text-stone-100 font-extrabold">Rez</span>
         </div>
         <h1 className="text-2xl sm:text-3xl font-extrabold text-stone-900 dark:text-stone-100 tracking-tight">
           {language === 'te' ? `${selectedRole.label} ఖాతాను సృష్టించండి` : `Create ${selectedRole.label} Account`}
         </h1>
         <p className="text-xs text-stone-500 dark:text-stone-400">
-          {t('auth.platformSub', 'Telangana State Liquor Discovery & Verified Retailer Platform')}
+          Reserve. Verify. Collect. • Telangana State Verified Platform
         </p>
       </div>
 

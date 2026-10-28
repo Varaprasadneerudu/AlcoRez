@@ -2,6 +2,7 @@ import React from 'react';
 import { ShieldAlert, CheckCircle2, XCircle } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
+import { AlcoRezIcon } from './AlcoRezLogo';
 
 export default function LegalAgeModal() {
   const { ageVerified, confirmAge } = useAuth();
@@ -13,8 +14,8 @@ export default function LegalAgeModal() {
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 backdrop-blur-md p-4 animate-in fade-in duration-200">
       <div className="max-w-md w-full bg-white dark:bg-stone-900 rounded-2xl shadow-2xl overflow-hidden border border-amber-200 dark:border-stone-800 animate-in fade-in zoom-in-95 duration-200 transition-colors">
         <div className="bg-gradient-to-r from-amber-700 via-amber-800 to-stone-900 dark:from-amber-900 dark:via-stone-900 dark:to-stone-950 p-6 text-white text-center">
-          <div className="w-16 h-16 bg-white/10 rounded-full flex items-center justify-center mx-auto mb-3 border border-white/20">
-            <ShieldAlert className="w-8 h-8 text-amber-300" />
+          <div className="flex justify-center mb-3">
+            <AlcoRezIcon className="h-14 w-auto rounded-xl shadow-lg" />
           </div>
           <h2 className="text-xl font-bold tracking-tight">{t('age.title')}</h2>
           <p className="text-xs text-amber-200 mt-1 uppercase tracking-wider font-semibold">

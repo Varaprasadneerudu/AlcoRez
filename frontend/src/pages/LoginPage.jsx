@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Wine, Lock, Mail, Sparkles, ArrowRight, ArrowLeft, AlertCircle, ShieldCheck } from 'lucide-react';
 import { useAuth, DEMO_ACCOUNTS } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
+import { AlcoRezIcon } from '../components/AlcoRezLogo';
 
 export default function LoginPage() {
   const { login, switchDemoAccount, loading } = useAuth();
@@ -65,14 +66,18 @@ export default function LoginPage() {
 
       {/* Brand Header */}
       <div className="text-center space-y-2">
-        <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-amber-600 to-amber-900 text-white flex items-center justify-center mx-auto shadow-md">
-          <Wine className="w-6 h-6 text-amber-200" />
+        <div className="flex justify-center">
+          <AlcoRezIcon className="h-16 w-auto shadow-xl rounded-xl" />
+        </div>
+        <div className="flex items-center justify-center text-xl tracking-tight leading-none pt-1">
+          <span className="text-amber-800 dark:text-amber-400 font-black">Alco</span>
+          <span className="text-stone-900 dark:text-stone-100 font-extrabold">Rez</span>
         </div>
         <h1 className="text-2xl font-extrabold text-stone-900 dark:text-stone-100 tracking-tight">
           {t('auth.signInTitle', 'Sign In to Your Account')}
         </h1>
-        <p className="text-xs text-stone-500 dark:text-stone-400">
-          {t('auth.signInPlatform', 'Telangana Alcoholic Beverage Marketplace Platform')}
+        <p className="text-xs text-stone-500 dark:text-stone-400 font-medium tracking-wide">
+          Reserve. Verify. Collect.
         </p>
       </div>
 

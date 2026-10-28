@@ -22,6 +22,7 @@ import { useAuth, DEMO_ACCOUNTS } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
+import { AlcoRezIcon } from './AlcoRezLogo';
 
 const HYDERABAD_ZONES = [
   { id: '500081', en: 'Madhapur & HITEC City (500081)', te: 'మాదాపూర్ & హైటెక్ సిటీ (500081)' },
@@ -87,16 +88,12 @@ export default function Navbar() {
           
           {/* Logo & Brand */}
           <div className="flex items-center gap-4 lg:gap-6 shrink-0">
-            <Link to="/" className="flex items-center gap-2.5 group">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-600 via-amber-700 to-amber-900 flex items-center justify-center text-white shadow-md shadow-amber-800/20 group-hover:scale-105 transition">
-                <Wine className="w-5 h-5 text-amber-200" />
-              </div>
+            <Link to="/" className="flex items-center gap-3 group">
+              <AlcoRezIcon className="h-10 w-auto rounded-lg shadow-sm group-hover:scale-105 transition-transform duration-200" />
               <div className="flex flex-col">
-                <span className="font-extrabold text-lg text-stone-900 dark:text-stone-100 leading-tight tracking-tight flex items-center gap-1.5">
-                  {t('nav.brandTitle')}
-                  <span className="text-[10px] font-bold bg-amber-100 dark:bg-amber-950/80 text-amber-800 dark:text-amber-300 px-1.5 py-0.2 rounded border border-amber-300 dark:border-amber-800">
-                    {t('nav.marketBadge')}
-                  </span>
+                <span className="font-extrabold text-lg leading-tight tracking-tight flex items-center">
+                  <span className="text-amber-800 dark:text-amber-400 font-black">Alco</span>
+                  <span className="text-stone-900 dark:text-stone-100 font-extrabold">Rez</span>
                 </span>
                 <span className="text-[10px] text-stone-500 dark:text-stone-400 font-medium tracking-wide">
                   {t('nav.subTitle')}

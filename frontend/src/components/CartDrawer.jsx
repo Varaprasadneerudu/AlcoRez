@@ -73,9 +73,7 @@ export default function CartDrawer() {
           {/* Header */}
           <div className="p-4 sm:p-5 border-b border-stone-200 dark:border-stone-800 flex items-center justify-between bg-stone-50/70 dark:bg-stone-950/40 shrink-0">
             <div className="flex items-center gap-2.5">
-              <div className="w-9 h-9 rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center font-bold">
-                <ShoppingBag className="w-5 h-5" />
-              </div>
+              <img src="/alcorez_logo.png" alt="AlcoRez" className="h-8 w-auto rounded object-contain shadow-xs shrink-0" />
               <div>
                 <h2 className="font-extrabold text-base text-stone-900 dark:text-stone-100 flex items-center gap-2">
                   <span>{language === 'te' ? 'మీ కార్ట్' : 'Your Reserve Cart'}</span>

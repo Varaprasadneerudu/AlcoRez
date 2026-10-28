@@ -2,6 +2,7 @@ import React from 'react';
 import { ShieldCheck, PhoneCall } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useLanguage } from '../context/LanguageContext';
+import { AlcoRezIcon } from './AlcoRezLogo';
 
 export default function Footer() {
   const { t } = useLanguage();
@@ -23,7 +24,18 @@ export default function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8 pt-4">
           {/* Col 1: Platform */}
           <div className="space-y-3">
-            <h3 className="font-bold text-white text-sm">{t('footer.platformTitle')}</h3>
+            <div className="flex items-center gap-2.5">
+              <AlcoRezIcon className="h-8 w-auto rounded shadow-sm" />
+              <div className="flex flex-col">
+                <div className="flex items-center text-lg tracking-tight leading-none">
+                  <span className="text-amber-400 font-black">Alco</span>
+                  <span className="text-white font-extrabold">Rez</span>
+                </div>
+                <span className="text-[10px] text-stone-400 font-medium tracking-wide mt-0.5">
+                  Reserve. Verify. Collect.
+                </span>
+              </div>
+            </div>
             <p className="text-stone-400 leading-relaxed text-xs">
               {t('footer.platformDesc')}
             </p>

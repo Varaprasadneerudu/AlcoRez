@@ -153,9 +153,8 @@ const translations = {
       kondapur: 'Kondapur (500084)'
     },
     nav: {
-      brandTitle: 'Alco',
-      marketBadge: 'MARKET',
-      subTitle: 'Licensed Retail Discovery Portal',
+      brandTitle: 'AlcoRez',
+      subTitle: 'Reserve. Verify. Collect.',
       permittedAreas: 'Permitted Service Areas',
       searchPlaceholder: 'Search premium whisky, wine, beer, gin, vodka...',
       switchPersona: 'Switch Persona',
@@ -583,9 +582,8 @@ const translations = {
       kondapur: 'కొండాపూర్ (500084)'
     },
     nav: {
-      brandTitle: 'Alco',
-      marketBadge: 'మార్కెట్',
-      subTitle: 'లైసెన్స్ పొందిన రిటైల్ డిస్కవరీ పోర్టల్',
+      brandTitle: 'AlcoRez',
+      subTitle: 'Reserve. Verify. Collect.',
       permittedAreas: 'అనుమతించబడిన సర్వీస్ ప్రాంతాలు',
       searchPlaceholder: 'ప్రీమియం విస్కీ, వైన్, బీర్, జిన్, వోడ్కా శోధించండి...',
       switchPersona: 'పాత్రను మార్చండి',

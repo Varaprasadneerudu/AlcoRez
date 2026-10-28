@@ -112,19 +112,22 @@ export default function OrderConfirmationPage() {
         
         {/* Order Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-stone-100 dark:border-stone-800">
-          <div>
-            <span className="text-[10px] font-bold uppercase tracking-wider text-amber-800 dark:text-amber-300 bg-amber-100 dark:bg-amber-950 border border-amber-300 dark:border-amber-800 px-2 py-0.5 rounded">
-              {order.is_simulated
-                ? t('orderConfirmation.simulatedBadge', 'SIMULATED DEMONSTRATION ORDER')
-                : t('orderConfirmation.liveBadge', 'LIVE ORDER')}
-            </span>
-            <h2 className="text-xl font-extrabold text-stone-900 dark:text-stone-100 mt-1.5 font-mono">
-              {order.order_number}
-            </h2>
-            <p className="text-xs text-stone-500 dark:text-stone-400 mt-0.5">
-              {t('orderConfirmation.placedOn', 'Placed on')}{' '}
-              {new Date(order.created_at).toLocaleString(language === 'te' ? 'te-IN' : 'en-IN')}
-            </p>
+          <div className="flex items-start gap-3.5">
+            <img src="/alcorez_logo.png" alt="AlcoRez" className="h-12 w-auto rounded-lg shadow-sm shrink-0 mt-0.5" />
+            <div>
+              <span className="text-[10px] font-bold uppercase tracking-wider text-amber-800 dark:text-amber-300 bg-amber-100 dark:bg-amber-950 border border-amber-300 dark:border-amber-800 px-2 py-0.5 rounded">
+                {order.is_simulated
+                  ? t('orderConfirmation.simulatedBadge', 'SIMULATED DEMONSTRATION ORDER')
+                  : t('orderConfirmation.liveBadge', 'LIVE ORDER')}
+              </span>
+              <h2 className="text-xl font-extrabold text-stone-900 dark:text-stone-100 mt-1 font-mono">
+                {order.order_number}
+              </h2>
+              <p className="text-xs text-stone-500 dark:text-stone-400 mt-0.5">
+                {t('orderConfirmation.placedOn', 'Placed on')}{' '}
+                {new Date(order.created_at).toLocaleString(language === 'te' ? 'te-IN' : 'en-IN')}
+              </p>
+            </div>
           </div>
 
           <div className="text-left sm:text-right">

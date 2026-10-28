@@ -36,7 +36,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(
     title=settings.PROJECT_NAME,
     description=(
-        "Production-minded Telangana Alcoholic Beverage Discovery & Licensed Retailer Marketplace API.\n\n"
+        "AlcoRez: Reserve. Verify. Collect. Production-minded Telangana Alcoholic Beverage Discovery & Licensed Retailer Reservation API.\n\n"
         "**CRITICAL STATUTORY NOTICE:** Commercial alcohol sales and home delivery are strictly regulated activities "
         "under the Telangana Excise Act, 1968. Live payment processing and actual delivery dispatch are permanently "
         "disabled by default (`ALCOHOL_TRANSACTIONS_ENABLED=false`). This platform operates exclusively in a simulated "
