@@ -27,6 +27,8 @@ class User(TimeStampedUUIDModel):
     cart = relationship("Cart", back_populates="user", uselist=False, cascade="all, delete-orphan")
     orders = relationship("Order", back_populates="user")
     notifications = relationship("Notification", back_populates="user", cascade="all, delete-orphan")
+    favorite_products = relationship("FavoriteProduct", back_populates="user", cascade="all, delete-orphan")
+    favorite_retailers = relationship("FavoriteRetailer", back_populates="user", cascade="all, delete-orphan")
 
 from datetime import date
 from typing import Optional

@@ -41,3 +41,32 @@ class AddressOut(BaseModel):
     created_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
+
+from typing import List
+from app.schemas.catalog import ProductOut
+from app.schemas.retailer import RetailerOut
+
+class FavoriteProductOut(BaseModel):
+    id: str
+    product_id: str
+    created_at: datetime
+    product: ProductOut
+
+    model_config = ConfigDict(from_attributes=True)
+
+class FavoriteRetailerOut(BaseModel):
+    id: str
+    retailer_id: str
+    created_at: datetime
+    retailer: RetailerOut
+
+    model_config = ConfigDict(from_attributes=True)
+
+class CustomerFavoritesOut(BaseModel):
+    products: List[FavoriteProductOut] = []
+    retailers: List[FavoriteRetailerOut] = []
+
+class FavoriteIdsOut(BaseModel):
+    product_ids: List[str] = []
+    retailer_ids: List[str] = []
+

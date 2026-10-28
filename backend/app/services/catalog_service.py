@@ -38,10 +38,13 @@ class CatalogService:
         max_price: Optional[Decimal] = None,
         sort_by: str = "name_asc", # name_asc, name_desc, price_asc, price_desc
         skip: int = 0,
-        limit: int = 24
+        limit: int = 24,
+        product_ids: Optional[List[str]] = None,
+        postal_code: Optional[str] = None
     ) -> Tuple[List[ProductOut], int]:
         """
         Query catalogue showing only active products from approved retailers.
+        Supports filtering by specific product_ids and retailer postal_code locality.
         """
         # Base query joining Product, Category, and Inventory
         query = (
@@ -52,10 +55,20 @@ class CatalogService:
             .filter(Product.is_active == True)
         )
 
+        # Product IDs filter (for favorites or specific selection)
+        if product_ids is not None:
+            query = query.filter(Product.id.in_(product_ids))
+
         # Only link to approved retailers if an inventory item exists
         if retailer_id:
             query = query.filter(
                 Inventory.retailer_id == retailer_id,
+                Retailer.status == RetailerStatus.APPROVED
+            )
+        elif postal_code:
+            query = query.filter(
+                Inventory.retailer_id != None,
+                Retailer.postal_code == postal_code,
                 Retailer.status == RetailerStatus.APPROVED
             )
         else:
@@ -139,6 +152,8 @@ class CatalogService:
         )
         if retailer_id:
             inv_query = inv_query.filter(Inventory.retailer_id == retailer_id)
+        elif postal_code:
+            inv_query = inv_query.filter(Retailer.postal_code == postal_code)
 
         all_invs = inv_query.all()
         inv_by_product: Dict[str, List[Inventory]] = {pid: [] for pid in product_ids}

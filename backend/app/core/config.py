@@ -1,7 +1,7 @@
 import os
 from typing import List, Union
 from pydantic_settings import BaseSettings, SettingsConfigDict
-from pydantic import field_validator
+from pydantic import field_validator, model_validator
 
 class Settings(BaseSettings):
     PROJECT_NAME: str = "AlcoRez"
@@ -37,6 +37,36 @@ class Settings(BaseSettings):
         if isinstance(v, str):
             return [i.strip() for i in v.split(",") if i.strip()]
         return v
+
+    @model_validator(mode="after")
+    def validate_production_configuration(self) -> "Settings":
+        env = self.ENVIRONMENT.lower().strip()
+        if env in ["production", "prod"]:
+            # 1. Enforce debug mode disabled in production
+            if self.DEBUG:
+                raise ValueError("Security violation: DEBUG mode must be False in production.")
+
+            # 2. Enforce secure production JWT secret
+            dev_patterns = [
+                "insecure_dev_key",
+                "insecure_dev",
+                "change_this",
+                "default_key",
+                "telangana_alcomarket_secret"
+            ]
+            key_lower = self.JWT_SECRET_KEY.lower()
+            if len(self.JWT_SECRET_KEY) < 32 or any(pat in key_lower for pat in dev_patterns):
+                raise ValueError(
+                    "Security violation: Production requires a secure, high-entropy JWT_SECRET_KEY "
+                    "of at least 32 characters. Development default keys are forbidden in production."
+                )
+
+            # 3. Disallow wildcard CORS in production
+            origins = self.CORS_ORIGINS if isinstance(self.CORS_ORIGINS, list) else [self.CORS_ORIGINS]
+            if "*" in origins:
+                raise ValueError("Security violation: Wildcard CORS origin ('*') is prohibited in production.")
+
+        return self
 
     # Adapters (Simulated / Demo defaults)
     STORAGE_PROVIDER: str = "local"

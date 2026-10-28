@@ -50,6 +50,7 @@ export default function RetailerOrdersPage() {
       });
 
       setOrders(orders.map((o) => (o.id === orderId ? updated : o)));
+      window.dispatchEvent(new CustomEvent('alco_notification_refresh'));
       if (newStatus === 'confirmed') {
         setActionSuccess(
           language === 'te'

@@ -4,10 +4,12 @@ import { Filter, SlidersHorizontal, Search, ArrowLeft } from 'lucide-react';
 import { api } from '../services/api';
 import ProductCard from '../components/ProductCard';
 import { useLanguage } from '../context/LanguageContext';
+import { useLocation as useGeoLocation } from '../context/LocationContext';
 
 export default function CatalogPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const { t, tc, tr, ts, language } = useLanguage();
+  const { allZones } = useGeoLocation();
 
   const [products, setProducts] = useState([]);
   const [total, setTotal] = useState(0);
@@ -22,6 +24,7 @@ export default function CatalogPage() {
   const selectedBrand = searchParams.get('brand') || '';
   const selectedRetailer = searchParams.get('retailer_id') || '';
   const selectedBottleSize = searchParams.get('bottle_size') || '';
+  const selectedPostalCode = searchParams.get('postal_code') || '';
   const sortBy = searchParams.get('sort_by') || 'name_asc';
   const page = parseInt(searchParams.get('page') || '1', 10);
 
@@ -47,6 +50,7 @@ export default function CatalogPage() {
           brand: selectedBrand,
           retailer_id: selectedRetailer,
           bottle_size: selectedBottleSize,
+          postal_code: selectedPostalCode || undefined,
           sort_by: sortBy,
           page,
           limit: 20
@@ -60,7 +64,7 @@ export default function CatalogPage() {
       }
     }
     fetchCatalog();
-  }, [search, selectedCategory, selectedBrand, selectedRetailer, selectedBottleSize, sortBy, page]);
+  }, [search, selectedCategory, selectedBrand, selectedRetailer, selectedBottleSize, selectedPostalCode, sortBy, page]);
 
   const updateParam = (key, value) => {
     const next = new URLSearchParams(searchParams);
@@ -77,7 +81,7 @@ export default function CatalogPage() {
     setSearchParams(new URLSearchParams());
   };
 
-  const hasActiveFilters = Boolean(search || selectedCategory || selectedBrand || selectedRetailer || selectedBottleSize);
+  const hasActiveFilters = Boolean(search || selectedCategory || selectedBrand || selectedRetailer || selectedBottleSize || selectedPostalCode);
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6 transition-colors duration-200">
@@ -261,6 +265,49 @@ export default function CatalogPage() {
                     </button>
                   ))}
                 </div>
+              </div>
+            </div>
+
+            {/* Locality / Hyderabad Area Filter */}
+            <div className="space-y-2 pt-2 border-t border-stone-100 dark:border-stone-800">
+              <div className="flex items-center justify-between">
+                <h4 className="text-xs font-bold text-stone-700 dark:text-stone-300 uppercase tracking-wider">
+                  {language === 'te' ? 'ప్రాంతం (Locality)' : 'Locality & Area'}
+                </h4>
+                {selectedPostalCode && (
+                  <button
+                    onClick={() => updateParam('postal_code', '')}
+                    className="text-[10px] font-bold text-amber-700 dark:text-amber-400 hover:underline"
+                  >
+                    Clear
+                  </button>
+                )}
+              </div>
+              <div className="space-y-1">
+                <button
+                  onClick={() => updateParam('postal_code', '')}
+                  className={`w-full text-left px-2.5 py-1.5 rounded-lg text-xs font-medium transition ${
+                    !selectedPostalCode
+                      ? 'bg-amber-100 dark:bg-amber-950/80 text-amber-900 dark:text-amber-300 font-bold'
+                      : 'text-stone-600 dark:text-stone-400 hover:bg-stone-50 dark:hover:bg-stone-800'
+                  }`}
+                >
+                  {language === 'te' ? 'అన్ని హైదరాబాద్ ప్రాంతాలు' : 'All Hyderabad Areas'}
+                </button>
+                {allZones.map((z) => (
+                  <button
+                    key={z.id}
+                    onClick={() => updateParam('postal_code', z.postal_code)}
+                    className={`w-full text-left px-2.5 py-1.5 rounded-lg text-xs font-medium transition flex items-center justify-between ${
+                      selectedPostalCode === z.postal_code
+                        ? 'bg-amber-100 dark:bg-amber-950/80 text-amber-900 dark:text-amber-300 font-bold'
+                        : 'text-stone-600 dark:text-stone-400 hover:bg-stone-50 dark:hover:bg-stone-800'
+                    }`}
+                  >
+                    <span className="truncate pr-1">{language === 'te' ? z.te : z.locality}</span>
+                    {selectedPostalCode === z.postal_code && <span className="text-amber-700 dark:text-amber-400 font-bold">✓</span>}
+                  </button>
+                ))}
               </div>
             </div>
 

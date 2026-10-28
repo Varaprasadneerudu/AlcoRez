@@ -7,6 +7,7 @@ from app.api.v1.orders import router as orders_router
 from app.api.v1.retailer_portal import router as retailer_router
 from app.api.v1.admin import router as admin_router
 from app.api.v1.health import router as health_router
+from app.api.v1.notifications import router as notifications_router
 
 api_router = APIRouter()
 
@@ -18,3 +19,4 @@ api_router.include_router(cart_router)
 api_router.include_router(orders_router)
 api_router.include_router(retailer_router)
 api_router.include_router(admin_router)
+api_router.include_router(notifications_router)

@@ -101,6 +101,9 @@ export default function CheckoutDemoPage() {
 
       await fetchCart(); // refresh empty cart
 
+      // Refresh notification center immediately
+      window.dispatchEvent(new CustomEvent('alco_notification_refresh'));
+
       if (orders && orders.length > 0) {
         navigate(`/orders/${orders[0].id}`, { state: { justPlaced: true } });
       } else {

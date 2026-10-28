@@ -9,22 +9,26 @@ import { api } from '../services/api';
 import ProductCard from '../components/ProductCard';
 import RetailerCard from '../components/RetailerCard';
 import { useLanguage } from '../context/LanguageContext';
+import { useLocation as useGeoLocation } from '../context/LocationContext';
 
 export default function HomePage() {
   const [categories, setCategories] = useState([]);
   const [featuredProducts, setFeaturedProducts] = useState([]);
   const [retailers, setRetailers] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [filterByZone, setFilterByZone] = useState(false);
   const { t, tc, language } = useLanguage();
+  const { selectedZone, postalCode } = useGeoLocation();
 
   useEffect(() => {
     async function loadData() {
       try {
         setLoading(true);
+        const retailerParams = filterByZone ? { postal_code: postalCode } : {};
         const [cats, prods, rets] = await Promise.all([
           api.getCategories(),
-          api.getProducts({ limit: 8 }),
-          api.getRetailers(),
+          api.getProducts({ limit: 8, postal_code: filterByZone ? postalCode : undefined }),
+          api.getRetailers(retailerParams),
         ]);
         setCategories(cats || []);
         setFeaturedProducts(prods?.items || []);
@@ -38,7 +42,7 @@ export default function HomePage() {
       }
     }
     loadData();
-  }, []);
+  }, [filterByZone, postalCode]);
 
   return (
     <div className="space-y-12 pb-16 transition-colors duration-200">
@@ -133,7 +137,7 @@ export default function HomePage() {
 
       {/* Licensed Retailers Section */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-4">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div>
             <div className="flex items-center gap-2">
               <h2 className="text-xl font-extrabold text-stone-900 dark:text-stone-100 tracking-tight">{t('home.retailersTitle')}</h2>
@@ -143,9 +147,22 @@ export default function HomePage() {
             </div>
             <p className="text-xs text-stone-500 dark:text-stone-400 font-medium">{t('home.retailersSubtitle')}</p>
           </div>
-          <Link to="/products" className="text-xs font-bold text-amber-800 dark:text-amber-400 hover:text-amber-900 dark:hover:text-amber-300 flex items-center gap-1">
-            {t('home.allRetailers')} <ArrowRight className="w-3.5 h-3.5" />
-          </Link>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setFilterByZone(!filterByZone)}
+              className={`text-xs px-3 py-1.5 rounded-xl font-semibold border transition flex items-center gap-1.5 ${
+                filterByZone
+                  ? 'bg-amber-600 text-white border-amber-600 shadow-xs'
+                  : 'bg-white dark:bg-stone-800 text-stone-700 dark:text-stone-300 border-stone-200 dark:border-stone-700 hover:border-amber-400'
+              }`}
+            >
+              <span>📍 {selectedZone?.locality || 'My Area'} ({postalCode})</span>
+              <span className="text-[10px] opacity-80">{filterByZone ? '✓ Active' : '+ Filter'}</span>
+            </button>
+            <Link to="/products" className="text-xs font-bold text-amber-800 dark:text-amber-400 hover:text-amber-900 dark:hover:text-amber-300 flex items-center gap-1">
+              {t('home.allRetailers')} <ArrowRight className="w-3.5 h-3.5" />
+            </Link>
+          </div>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-4">

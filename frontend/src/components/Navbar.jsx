@@ -1,11 +1,9 @@
 import React, { useState } from 'react';
-import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import {
   MapPin,
   Search,
   ShoppingCart,
-  User as UserIcon,
-  Wine,
   Shield,
   Store,
   ChevronDown,
@@ -16,21 +14,17 @@ import {
   Package,
   Sun,
   Moon,
-  Globe
+  Globe,
+  Heart
 } from 'lucide-react';
 import { useAuth, DEMO_ACCOUNTS } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
+import { useLocation as useGeoLocation, HYDERABAD_ZONES } from '../context/LocationContext';
+import { useFavorites } from '../context/FavoritesContext';
+import NotificationCenter from './NotificationCenter';
 import { AlcoRezIcon } from './AlcoRezLogo';
-
-const HYDERABAD_ZONES = [
-  { id: '500081', en: 'Madhapur & HITEC City (500081)', te: 'మాదాపూర్ & హైటెక్ సిటీ (500081)' },
-  { id: '500033', en: 'Jubilee Hills (500033)', te: 'జూబ్లీ హిల్స్ (500033)' },
-  { id: '500034', en: 'Banjara Hills (500034)', te: 'బంజారా హిల్స్ (500034)' },
-  { id: '500032', en: 'Gachibowli (500032)', te: 'గచ్చిబౌలి (500032)' },
-  { id: '500084', en: 'Kondapur (500084)', te: 'కొండాపూర్ (500084)' }
-];
 
 const DEMO_ACCOUNT_LABELS = {
   customer: {
@@ -50,20 +44,19 @@ const DEMO_ACCOUNT_LABELS = {
 export default function Navbar() {
   const { user, role, isAuthenticated, logout, switchDemoAccount } = useAuth();
   const { itemCount, toggleDrawer } = useCart();
-  const { theme, toggleTheme, isDark } = useTheme();
+  const { toggleTheme, isDark } = useTheme();
   const { language, setLanguage, toggleLanguage, t } = useLanguage();
+  const { selectedZoneId, selectedZone, setZone } = useGeoLocation();
+  const { totalFavoritesCount } = useFavorites();
   const navigate = useNavigate();
-  const location = useLocation();
 
-  const [selectedZoneId, setSelectedZoneId] = useState(HYDERABAD_ZONES[0].id);
   const [searchQuery, setSearchQuery] = useState('');
   const [zoneOpen, setZoneOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [langMenuOpen, setLangMenuOpen] = useState(false);
 
-  const currentZoneObj = HYDERABAD_ZONES.find((z) => z.id === selectedZoneId) || HYDERABAD_ZONES[0];
-  const selectedZoneLabel = language === 'te' ? currentZoneObj.te : currentZoneObj.en;
+  const selectedZoneLabel = selectedZone ? (language === 'te' ? selectedZone.te : selectedZone.en) : 'Hyderabad';
 
   const handleSearchSubmit = (e) => {
     e.preventDefault();
@@ -123,7 +116,7 @@ export default function Navbar() {
                       <button
                         key={zone.id}
                         onClick={() => {
-                          setSelectedZoneId(zone.id);
+                          setZone(zone.id);
                           setZoneOpen(false);
                         }}
                         className="w-full text-left px-3 py-2 text-xs hover:bg-amber-50 dark:hover:bg-stone-800 hover:text-amber-900 dark:hover:text-amber-300 text-stone-700 dark:text-stone-300 flex items-center justify-between"
@@ -336,6 +329,26 @@ export default function Navbar() {
               </Link>
             )}
 
+            {/* Favorites Navigation Link - Only visible to Customers */}
+            {isAuthenticated && role === 'customer' && (
+              <Link
+                to="/favorites"
+                className="relative p-2 rounded-xl bg-stone-50 dark:bg-stone-800 hover:bg-rose-50 dark:hover:bg-rose-950/40 text-stone-700 dark:text-stone-300 hover:text-rose-600 dark:hover:text-rose-400 border border-stone-200 dark:border-stone-700 transition flex items-center justify-center cursor-pointer group"
+                title="Favorite spirits & stores"
+                aria-label="Favorites"
+              >
+                <Heart className="w-4 h-4 text-rose-500 fill-rose-500/20 group-hover:scale-110 transition-transform" />
+                {totalFavoritesCount > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-rose-600 text-white text-[10px] font-black w-4 h-4 rounded-full flex items-center justify-center shadow-xs animate-in zoom-in-75">
+                    {totalFavoritesCount}
+                  </span>
+                )}
+              </Link>
+            )}
+
+            {/* Notification Center */}
+            <NotificationCenter />
+
             {/* Direction 3 21+ Verified Indicator */}
             <div className="hidden xl:flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-500/10 dark:bg-amber-400/10 text-amber-700 dark:text-amber-300 border border-amber-300 dark:border-amber-800 text-[10px] font-extrabold uppercase tracking-wider">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
@@ -408,6 +421,12 @@ export default function Navbar() {
               {isAuthenticated && role === 'customer' && (
                 <Link to="/orders" onClick={() => setMobileMenuOpen(false)} className="p-2 bg-amber-50 dark:bg-amber-950/60 text-amber-900 dark:text-amber-300 border border-amber-200 dark:border-amber-800 rounded-lg text-center font-bold">
                   {t('nav.orders')}
+                </Link>
+              )}
+              {isAuthenticated && role === 'customer' && (
+                <Link to="/favorites" onClick={() => setMobileMenuOpen(false)} className="p-2 bg-rose-50 dark:bg-rose-950/40 text-rose-800 dark:text-rose-300 border border-rose-200 dark:border-rose-900/60 rounded-lg text-center font-bold flex items-center justify-center gap-1.5">
+                  <Heart className="w-3.5 h-3.5 fill-rose-500/20" />
+                  <span>Favorites ({totalFavoritesCount})</span>
                 </Link>
               )}
               {role === 'retailer' && (

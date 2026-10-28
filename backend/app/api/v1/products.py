@@ -30,6 +30,7 @@ def list_products(
     category: Optional[str] = Query(None, description="Category slug"),
     brand: Optional[str] = Query(None, description="Filter by brand name"),
     retailer_id: Optional[str] = Query(None, description="Filter by licensed retailer ID"),
+    postal_code: Optional[str] = Query(None, description="Filter by retailer locality PIN code (e.g. 500081)"),
     bottle_size: Optional[str] = Query(None, description="e.g. 750ml, 375ml"),
     min_price: Optional[Decimal] = Query(None, description="Minimum price filter"),
     max_price: Optional[Decimal] = Query(None, description="Maximum price filter"),
@@ -50,7 +51,8 @@ def list_products(
         max_price=max_price,
         sort_by=sort_by,
         skip=skip,
-        limit=limit
+        limit=limit,
+        postal_code=postal_code
     )
     return {
         "items": items,

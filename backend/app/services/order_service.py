@@ -11,6 +11,7 @@ from app.models.retailer import Retailer, RetailerMembership
 from app.models.user import User, Address
 from app.schemas.order import SimulatedCheckoutRequest, OrderOut, OrderItemOut, OrderStatusUpdate
 from app.services.audit_service import AuditService
+from app.services.notification_service import NotificationService
 
 VALID_ORDER_TRANSITIONS = {
     OrderStatus.CREATED: [OrderStatus.CONFIRMED, OrderStatus.REJECTED, OrderStatus.CANCELLED],
@@ -140,6 +141,14 @@ class OrderService:
             # Clear cart after checkout
             db.query(CartItem).filter(CartItem.cart_id == cart.id).delete()
             db.commit()
+
+            # Send order confirmation notifications to customer and retailer
+            for ord_obj in created_orders:
+                try:
+                    ret_obj = db.query(Retailer).filter(Retailer.id == ord_obj.retailer_id).first()
+                    NotificationService.notify_order_created(db, ord_obj, ret_obj, user)
+                except Exception as notif_err:
+                    print(f"Failed to create order notification: {notif_err}")
 
             # Prepare responses
             results = []
@@ -292,6 +301,23 @@ class OrderService:
             ip_address=ip_address,
             details={"previous_status": current_status.value, "new_status": status_in.status.value}
         )
+
+        # Notify customer of order status transition
+        try:
+            NotificationService.notify_order_status(db, order, current_status, status_in.status)
+            # If customer performed the action (e.g. cancelled), notify retailer as well
+            if actor_user.id == order.user_id:
+                ret_obj = db.query(Retailer).filter(Retailer.id == order.retailer_id).first()
+                if ret_obj and ret_obj.user_id:
+                    NotificationService.create_notification(
+                        db=db,
+                        user_id=ret_obj.user_id,
+                        title=f"Order Cancelled by Customer: #{order.order_number}",
+                        message=f"Customer {actor_user.full_name or 'Customer'} cancelled reservation #{order.order_number}.",
+                        notification_type="ORDER_UPDATE"
+                    )
+        except Exception as notif_err:
+            print(f"Failed to create order status update notification: {notif_err}")
 
         return OrderService.to_order_out(db, order)
 

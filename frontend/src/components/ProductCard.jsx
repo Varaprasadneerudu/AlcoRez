@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { ShoppingBag, ShoppingCart, Check, Loader2, Plus, Minus, Store } from 'lucide-react';
+import { ShoppingBag, ShoppingCart, Check, Loader2, Plus, Minus, Store, Heart } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
+import { useFavorites } from '../context/FavoritesContext';
 import { api } from '../services/api';
 
 /**
@@ -15,12 +16,16 @@ import { api } from '../services/api';
  * - Direct Add-to-Cart with instant interactive stepper state upon addition.
  * - Maximum purchase limits based on available stock and statutory limits (max 10).
  * - Telangana licensed retailer stock radar badge.
+ * - Customer favorites toggle.
  */
 export default function ProductCard({ product }) {
   const { t, tp, tb, tc, ts, language } = useLanguage();
   const { cart, addToCart, updateQuantity, removeItem } = useCart();
   const { isAuthenticated, role } = useAuth();
+  const { isProductFavorite, toggleProductFavorite } = useFavorites();
   const navigate = useNavigate();
+
+  const isFav = isProductFavorite(product.id);
 
   const [selectedSize, setSelectedSize] = useState(() => {
     if (product.available_sizes && product.available_sizes.length > 0) {
@@ -154,12 +159,31 @@ export default function ProductCard({ product }) {
           {t('product.demoBadge')}
         </span>
 
-        {/* ABV badge */}
-        {product.alcohol_by_volume && (
-          <span className="absolute top-2.5 right-2.5 bg-stone-900/80 dark:bg-stone-950/80 text-amber-300 font-semibold text-[10px] px-2 py-0.5 rounded-full backdrop-blur-sm">
-            {product.alcohol_by_volume}
-          </span>
-        )}
+        {/* ABV badge & Favorite Heart button */}
+        <div className="absolute top-2.5 right-2.5 flex items-center gap-1.5 z-10">
+          {product.alcohol_by_volume && (
+            <span className="bg-stone-900/80 dark:bg-stone-950/80 text-amber-300 font-semibold text-[10px] px-2 py-0.5 rounded-full backdrop-blur-sm">
+              {product.alcohol_by_volume}
+            </span>
+          )}
+          <button
+            type="button"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              toggleProductFavorite(product);
+            }}
+            title={isFav ? 'Remove from favorites' : 'Save to favorites'}
+            aria-label={isFav ? 'Remove from favorites' : 'Save to favorites'}
+            className={`p-1.5 rounded-full backdrop-blur-md shadow-xs border transition ${
+              isFav
+                ? 'bg-rose-50/90 dark:bg-rose-950/90 border-rose-300 dark:border-rose-800 text-rose-600 dark:text-rose-400'
+                : 'bg-white/80 dark:bg-stone-900/80 border-stone-200 dark:border-stone-700 text-stone-400 hover:text-rose-600 hover:bg-white'
+            }`}
+          >
+            <Heart className={`w-3.5 h-3.5 ${isFav ? 'fill-rose-500 text-rose-500' : ''}`} />
+          </button>
+        </div>
 
         {/* Stock Badge */}
         {!product.in_stock && (

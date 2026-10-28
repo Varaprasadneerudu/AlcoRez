@@ -91,6 +91,15 @@ class AdminService:
             }
         )
 
+        from app.services.notification_service import NotificationService
+        NotificationService.notify_retailer_review(
+            db=db,
+            retailer=retailer,
+            old_status=old_status,
+            new_status=review_in.status,
+            notes=retailer.review_notes
+        )
+
         return RetailerService.to_retailer_out(db, retailer)
 
     @staticmethod

@@ -454,6 +454,9 @@ class RetailerService:
         db.commit()
         db.refresh(inv)
 
+        from app.services.notification_service import NotificationService
+        NotificationService.check_and_notify_low_stock(db, inv)
+
         AuditService.log_event(
             db=db,
             action="INVENTORY_STOCK_ADJUSTED",
@@ -575,6 +578,9 @@ class RetailerService:
         db.commit()
         db.refresh(inv)
 
+        from app.services.notification_service import NotificationService
+        NotificationService.check_and_notify_low_stock(db, inv)
+
         AuditService.log_event(
             db=db,
             action="INVENTORY_UPDATED",
@@ -688,6 +694,9 @@ class RetailerService:
             is_expired = license_days < 0
             is_expiring_soon = 0 <= license_days <= 30
 
+            from app.services.notification_service import NotificationService
+            NotificationService.check_license_expiry_reminders(db, retailer)
+
         # Recent movements (up to 5)
         recent_m = db.query(InventoryMovement).filter(InventoryMovement.retailer_id == retailer.id).order_by(desc(InventoryMovement.created_at)).limit(5).all()
         movement_outs = [InventoryMovementOut.model_validate(m) for m in recent_m]
@@ -714,6 +723,14 @@ class RetailerService:
         else:
             lic = db.query(RetailerLicense).filter(RetailerLicense.retailer_id == retailer.id).first()
         lic_out = RetailerLicenseOut.model_validate(lic) if lic else None
+
+        last_inv_time = db.query(func.max(Inventory.updated_at)).filter(Inventory.retailer_id == retailer.id).scalar()
+        active_count = db.query(func.count(Inventory.id)).filter(
+            Inventory.retailer_id == retailer.id,
+            Inventory.is_available == True,
+            Inventory.stock_quantity > 0
+        ).scalar() or 0
+
         return RetailerOut(
             id=retailer.id,
             user_id=retailer.user_id,
@@ -729,5 +746,351 @@ class RetailerService:
             status=retailer.status,
             review_notes=retailer.review_notes,
             created_at=retailer.created_at,
-            license=lic_out
+            license=lic_out,
+            last_inventory_update=last_inv_time,
+            active_products_count=active_count
         )
+
+    # --- Bulk Inventory Import / Export (Feature D) ---
+
+    @staticmethod
+    def export_inventory_csv(db: Session, retailer: Retailer) -> str:
+        """
+        Exports the retailer's inventory as a clean, standardized CSV.
+        """
+        import csv
+        import io
+        from sqlalchemy.orm import joinedload
+
+        output = io.StringIO()
+        writer = csv.writer(output)
+        writer.writerow([
+            "Product Name",
+            "Brand",
+            "Category",
+            "Bottle Size",
+            "Price",
+            "Stock Quantity",
+            "Available",
+            "Low Stock Threshold",
+            "Product ID",
+            "Inventory ID"
+        ])
+
+        inventories = (
+            db.query(Inventory)
+            .options(joinedload(Inventory.product).joinedload(Product.category))
+            .filter(Inventory.retailer_id == retailer.id)
+            .order_by(Inventory.created_at.asc())
+            .all()
+        )
+
+        for inv in inventories:
+            p = inv.product
+            c_name = p.category.name if (p and p.category) else ""
+            writer.writerow([
+                p.name if p else "",
+                p.brand if p else "",
+                c_name,
+                inv.bottle_size,
+                str(inv.price),
+                inv.stock_quantity,
+                "TRUE" if inv.is_available else "FALSE",
+                inv.low_stock_threshold,
+                inv.product_id,
+                inv.id
+            ])
+
+        return output.getvalue()
+
+    @staticmethod
+    def preview_inventory_csv(
+        db: Session,
+        retailer: Retailer,
+        csv_text: str
+    ):
+        """
+        Parses CSV, validates each row against master product catalogue and business rules.
+        Returns actionable row-level previews without mutating database.
+        """
+        import csv
+        import io
+        from decimal import Decimal, InvalidOperation
+        from app.schemas.catalog import InventoryCsvRowPreview, InventoryImportPreviewResponse
+
+        if csv_text.startswith("\ufeff"):
+            csv_text = csv_text[1:]
+
+        reader = csv.reader(io.StringIO(csv_text))
+        rows_list = list(reader)
+        if not rows_list:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Uploaded CSV file is empty"
+            )
+
+        # Detect header mapping
+        header_idx = -1
+        col_map = {}
+        for i, row in enumerate(rows_list[:10]):
+            norm = [c.strip().lower() for c in row]
+            if any(k in norm for k in ["product name", "product_name", "product id", "product_id", "product"]):
+                header_idx = i
+                for col_pos, cell in enumerate(norm):
+                    if cell in ["product name", "product_name", "product"]:
+                        col_map["product_name"] = col_pos
+                    elif cell in ["brand"]:
+                        col_map["brand"] = col_pos
+                    elif cell in ["bottle size", "bottle_size", "size"]:
+                        col_map["bottle_size"] = col_pos
+                    elif cell in ["price", "price (inr)", "rate", "mrp"]:
+                        col_map["price"] = col_pos
+                    elif cell in ["stock quantity", "stock_quantity", "stock", "quantity", "units"]:
+                        col_map["stock_quantity"] = col_pos
+                    elif cell in ["available", "is_available"]:
+                        col_map["is_available"] = col_pos
+                    elif cell in ["low stock threshold", "low_stock_threshold", "threshold"]:
+                        col_map["low_stock_threshold"] = col_pos
+                    elif cell in ["product id", "product_id"]:
+                        col_map["product_id"] = col_pos
+                break
+
+        if header_idx == -1:
+            header_idx = 0
+            col_map = {
+                "product_name": 0,
+                "brand": 1,
+                "bottle_size": 3,
+                "price": 4,
+                "stock_quantity": 5,
+                "is_available": 6,
+                "low_stock_threshold": 7,
+                "product_id": 8
+            }
+
+        all_products = db.query(Product).filter(Product.is_active == True).all()
+        products_by_id = {str(p.id): p for p in all_products}
+        products_by_name = {p.name.strip().lower(): p for p in all_products}
+
+        current_inv = db.query(Inventory).filter(Inventory.retailer_id == retailer.id).all()
+        inv_by_sku = {f"{inv.product_id}_{inv.bottle_size}": inv for inv in current_inv}
+
+        seen_skus = set()
+        preview_rows = []
+        valid_count = 0
+        error_count = 0
+
+        data_rows = rows_list[header_idx + 1:]
+        for idx, r in enumerate(data_rows, start=header_idx + 2):
+            if not r or all(c.strip() == "" for c in r):
+                continue
+
+            row_errors = []
+            raw_pid = r[col_map["product_id"]].strip() if "product_id" in col_map and col_map["product_id"] < len(r) else ""
+            raw_pname = r[col_map["product_name"]].strip() if "product_name" in col_map and col_map["product_name"] < len(r) else ""
+            raw_brand = r[col_map["brand"]].strip() if "brand" in col_map and col_map["brand"] < len(r) else ""
+            raw_size = r[col_map["bottle_size"]].strip() if "bottle_size" in col_map and col_map["bottle_size"] < len(r) else ""
+            raw_price = r[col_map["price"]].strip() if "price" in col_map and col_map["price"] < len(r) else ""
+            raw_stock = r[col_map["stock_quantity"]].strip() if "stock_quantity" in col_map and col_map["stock_quantity"] < len(r) else ""
+            raw_avail = r[col_map["is_available"]].strip().lower() if "is_available" in col_map and col_map["is_available"] < len(r) else "true"
+            raw_thresh = r[col_map["low_stock_threshold"]].strip() if "low_stock_threshold" in col_map and col_map["low_stock_threshold"] < len(r) else "5"
+
+            # Match product
+            matched_product = None
+            if raw_pid and raw_pid in products_by_id:
+                matched_product = products_by_id[raw_pid]
+            elif raw_pname and raw_pname.lower() in products_by_name:
+                matched_product = products_by_name[raw_pname.lower()]
+            elif raw_pname:
+                for p in all_products:
+                    if p.name.strip().lower() == raw_pname.lower() or (
+                        raw_brand and p.brand.lower() == raw_brand.lower() and p.name.lower().startswith(raw_pname.lower()[:8])
+                    ):
+                        matched_product = p
+                        break
+
+            if not matched_product:
+                row_errors.append(f"Product '{raw_pname or raw_pid}' not found in catalogue")
+
+            if not raw_size:
+                row_errors.append("Bottle size is required (e.g. 750ml, 375ml)")
+
+            parsed_price = None
+            try:
+                clean_p = raw_price.replace("₹", "").replace(",", "").strip()
+                parsed_price = Decimal(clean_p)
+                if parsed_price <= 0:
+                    row_errors.append("Price must be greater than 0")
+            except (InvalidOperation, ValueError):
+                row_errors.append(f"Invalid price value '{raw_price}'")
+
+            parsed_stock = None
+            try:
+                clean_s = raw_stock.replace(",", "").strip()
+                parsed_stock = int(clean_s)
+                if parsed_stock < 0:
+                    row_errors.append("Stock quantity cannot be negative")
+            except ValueError:
+                row_errors.append(f"Invalid stock quantity '{raw_stock}'")
+
+            is_available = raw_avail not in ["false", "0", "no", "inactive"]
+            parsed_thresh = 5
+            try:
+                parsed_thresh = int(raw_thresh) if raw_thresh else 5
+                if parsed_thresh < 0:
+                    parsed_thresh = 5
+            except ValueError:
+                parsed_thresh = 5
+
+            sku_key = f"{matched_product.id if matched_product else raw_pname}_{raw_size}"
+            if sku_key in seen_skus:
+                row_errors.append(f"Duplicate entry in CSV for product size {raw_size}")
+            else:
+                seen_skus.add(sku_key)
+
+            action = "NEW"
+            changes_summary = None
+            if matched_product and not row_errors:
+                existing_inv = inv_by_sku.get(f"{matched_product.id}_{raw_size}")
+                if existing_inv:
+                    action = "UPDATE"
+                    changes_summary = f"Update: Price ₹{existing_inv.price} -> ₹{parsed_price}, Stock {existing_inv.stock_quantity} -> {parsed_stock}"
+                else:
+                    action = "NEW"
+                    changes_summary = f"New listing: ₹{parsed_price}, Stock: {parsed_stock} units"
+
+            status_str = "ERROR" if row_errors else "VALID"
+            if status_str == "VALID":
+                valid_count += 1
+            else:
+                error_count += 1
+
+            preview_rows.append(InventoryCsvRowPreview(
+                row_number=idx,
+                product_id=matched_product.id if matched_product else None,
+                product_name=matched_product.name if matched_product else (raw_pname or None),
+                brand=matched_product.brand if matched_product else (raw_brand or None),
+                bottle_size=raw_size,
+                price=parsed_price,
+                stock_quantity=parsed_stock,
+                is_available=is_available,
+                low_stock_threshold=parsed_thresh,
+                action=action if not row_errors else "INVALID",
+                status=status_str,
+                errors=row_errors,
+                changes_summary=changes_summary
+            ))
+
+        return InventoryImportPreviewResponse(
+            total_rows=len(preview_rows),
+            valid_rows=valid_count,
+            error_rows=error_count,
+            rows=preview_rows
+        )
+
+    @staticmethod
+    def apply_inventory_csv(
+        db: Session,
+        retailer: Retailer,
+        actor_user: User,
+        items: list,
+        ip_address: Optional[str] = None
+    ) -> dict:
+        """
+        Applies validated bulk CSV items within a transaction.
+        Preserves inventory movements history, concurrency versioning, and audit logs.
+        """
+        from app.services.notification_service import NotificationService
+        from app.services.audit_service import AuditService
+
+        imported_count = 0
+        updated_count = 0
+
+        for item in items:
+            existing = db.query(Inventory).filter(
+                Inventory.retailer_id == retailer.id,
+                Inventory.product_id == item.product_id,
+                Inventory.bottle_size == item.bottle_size
+            ).first()
+
+            if existing:
+                old_stock = existing.stock_quantity
+                change = item.stock_quantity - old_stock
+
+                existing.price = item.price
+                existing.stock_quantity = item.stock_quantity
+                existing.is_available = item.is_available
+                existing.low_stock_threshold = item.low_stock_threshold
+                existing.version = existing.version + 1
+
+                if change != 0:
+                    movement = InventoryMovement(
+                        inventory_id=existing.id,
+                        retailer_id=retailer.id,
+                        previous_quantity=old_stock,
+                        new_quantity=item.stock_quantity,
+                        change_quantity=change,
+                        reason="BULK_CSV_IMPORT",
+                        notes=f"Updated via bulk inventory CSV import (Price: ₹{item.price})",
+                        actor_user_id=actor_user.id,
+                        actor_name=actor_user.full_name,
+                        actor_role=actor_user.role.value
+                    )
+                    db.add(movement)
+
+                NotificationService.check_and_notify_low_stock(db, existing)
+                updated_count += 1
+            else:
+                new_inv = Inventory(
+                    retailer_id=retailer.id,
+                    product_id=item.product_id,
+                    bottle_size=item.bottle_size,
+                    price=item.price,
+                    stock_quantity=item.stock_quantity,
+                    is_available=item.is_available,
+                    low_stock_threshold=item.low_stock_threshold,
+                    version=1
+                )
+                db.add(new_inv)
+                db.flush()
+
+                movement = InventoryMovement(
+                    inventory_id=new_inv.id,
+                    retailer_id=retailer.id,
+                    previous_quantity=0,
+                    new_quantity=item.stock_quantity,
+                    change_quantity=item.stock_quantity,
+                    reason="BULK_CSV_IMPORT",
+                    notes="Created via bulk inventory CSV import",
+                    actor_user_id=actor_user.id,
+                    actor_name=actor_user.full_name,
+                    actor_role=actor_user.role.value
+                )
+                db.add(movement)
+
+                NotificationService.check_and_notify_low_stock(db, new_inv)
+                imported_count += 1
+
+        db.commit()
+
+        AuditService.log_event(
+            db=db,
+            action="INVENTORY_BULK_IMPORTED",
+            entity_type="retailer_inventory",
+            actor_user_id=actor_user.id,
+            actor_role=actor_user.role.value,
+            entity_id=retailer.id,
+            ip_address=ip_address,
+            details={
+                "imported_count": imported_count,
+                "updated_count": updated_count,
+                "total": imported_count + updated_count
+            }
+        )
+
+        return {
+            "imported_count": imported_count,
+            "updated_count": updated_count,
+            "total_processed": imported_count + updated_count,
+            "message": f"Successfully processed {imported_count + updated_count} inventory listings ({imported_count} new, {updated_count} updated)."
+        }

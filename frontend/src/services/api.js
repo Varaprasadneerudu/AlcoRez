@@ -117,8 +117,23 @@ export const api = {
   getProduct: (id) => apiRequest(`/products/${id}`),
 
   // Retailers public
-  getRetailers: () => cachedApiRequest('/retailers', 60000), // 1 min cache
+  getRetailers: (params = {}) => {
+    const query = new URLSearchParams();
+    if (params.postal_code) query.set('postal_code', params.postal_code);
+    if (params.search) query.set('search', params.search);
+    const qs = query.toString();
+    return apiRequest(`/retailers${qs ? `?${qs}` : ''}`);
+  },
   getRetailer: (id) => cachedApiRequest(`/retailers/${id}`, 30000),
+  getRetailerCatalogue: (id, params = {}) => {
+    const query = new URLSearchParams();
+    if (params.search) query.set('search', params.search);
+    if (params.category) query.set('category', params.category);
+    if (params.page) query.set('page', params.page);
+    if (params.limit) query.set('limit', params.limit);
+    const qs = query.toString();
+    return apiRequest(`/retailers/${id}/catalogue${qs ? `?${qs}` : ''}`);
+  },
 
   // Cart
   getCart: () => apiRequest('/cart'),
@@ -132,6 +147,27 @@ export const api = {
   }),
   removeCartItem: (itemId) => apiRequest(`/cart/items/${itemId}`, { method: 'DELETE' }),
   clearCart: () => apiRequest('/cart', { method: 'DELETE' }),
+
+  // Customer Favorites (Feature A)
+  getFavorites: () => apiRequest('/customer/favorites'),
+  getFavoriteIds: () => apiRequest('/customer/favorites/ids'),
+  addFavoriteProduct: (productId) => apiRequest(`/customer/favorites/products/${productId}`, { method: 'POST' }),
+  removeFavoriteProduct: (productId) => apiRequest(`/customer/favorites/products/${productId}`, { method: 'DELETE' }),
+  addFavoriteRetailer: (retailerId) => apiRequest(`/customer/favorites/retailers/${retailerId}`, { method: 'POST' }),
+  removeFavoriteRetailer: (retailerId) => apiRequest(`/customer/favorites/retailers/${retailerId}`, { method: 'DELETE' }),
+
+  // Notification Center (Feature C)
+  getNotifications: (params = {}) => {
+    const query = new URLSearchParams();
+    if (params.unread_only) query.set('unread_only', 'true');
+    if (params.page) query.set('page', params.page);
+    if (params.limit) query.set('limit', params.limit);
+    const qs = query.toString();
+    return apiRequest(`/notifications${qs ? `?${qs}` : ''}`);
+  },
+  getUnreadNotificationCount: () => apiRequest('/notifications/unread-count'),
+  markNotificationRead: (id) => apiRequest(`/notifications/${id}/read`, { method: 'PATCH' }),
+  markAllNotificationsRead: () => apiRequest('/notifications/mark-all-read', { method: 'POST' }),
 
   // Orders & Simulated Checkout
   createTestOrder: (checkoutData) => apiRequest('/test-orders', {
@@ -185,6 +221,25 @@ export const api = {
   deleteInventoryItem: (id) => apiRequest(`/retailer/inventory/${id}`, {
     method: 'DELETE',
   }),
+
+  // Bulk Inventory CSV (Feature D)
+  exportInventoryCsv: async () => {
+    const token = getStoredToken();
+    const res = await fetch(`${API_BASE}/retailer/inventory/export`, {
+      headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}) }
+    });
+    if (!res.ok) throw new Error('Failed to export inventory CSV');
+    return await res.text();
+  },
+  previewInventoryImport: (raw_csv) => apiRequest('/retailer/inventory/import/preview', {
+    method: 'POST',
+    body: JSON.stringify({ raw_csv }),
+  }),
+  applyInventoryImport: (items) => apiRequest('/retailer/inventory/import/apply', {
+    method: 'POST',
+    body: JSON.stringify({ items }),
+  }),
+
   getRetailerOrders: () => apiRequest('/retailer/orders'),
   updateOrderStatus: (orderId, statusData) => apiRequest(`/retailer/orders/${orderId}/status`, {
     method: 'PATCH',

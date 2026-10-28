@@ -22,13 +22,24 @@ router = APIRouter(tags=["Retailer Portal & Operations"])
 
 # Public endpoints
 @router.get("/retailers", response_model=List[RetailerOut])
-def list_approved_retailers(db: Session = Depends(get_db)):
-    retailers = (
+def list_approved_retailers(
+    postal_code: Optional[str] = Query(None, description="Filter retailers by locality PIN code (e.g. 500081)"),
+    search: Optional[str] = Query(None, description="Search retailers by shop name or trade name"),
+    db: Session = Depends(get_db)
+):
+    query = (
         db.query(Retailer)
         .options(joinedload(Retailer.licenses))
         .filter(Retailer.status == RetailerStatus.APPROVED)
-        .all()
     )
+    if postal_code:
+        query = query.filter(Retailer.postal_code == postal_code)
+    if search and search.strip():
+        term = f"%{search.strip()}%"
+        query = query.filter(
+            (Retailer.shop_name.ilike(term)) | (Retailer.trade_name.ilike(term))
+        )
+    retailers = query.order_by(Retailer.shop_name.asc()).all()
     return [RetailerService.to_retailer_out(db, r) for r in retailers]
 
 @router.get("/retailers/{retailer_id}", response_model=RetailerOut)
@@ -48,6 +59,36 @@ def get_retailer_public(retailer_id: str, db: Session = Depends(get_db)):
             detail="Retailer store not found or currently suspended under excise regulation"
         )
     return RetailerService.to_retailer_out(db, r)
+
+@router.get("/retailers/{retailer_id}/catalogue")
+def get_retailer_catalogue_public(
+    retailer_id: str,
+    search: Optional[str] = Query(None),
+    category: Optional[str] = Query(None),
+    page: int = Query(1, ge=1),
+    limit: int = Query(50, ge=1, le=100),
+    db: Session = Depends(get_db)
+):
+    r = db.query(Retailer).filter(Retailer.id == retailer_id, Retailer.status == RetailerStatus.APPROVED).first()
+    if not r:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Retailer not found or inactive")
+    from app.services.catalog_service import CatalogService
+    skip = (page - 1) * limit
+    items, total = CatalogService.get_products(
+        db=db,
+        retailer_id=retailer_id,
+        search=search,
+        category_slug=category,
+        skip=skip,
+        limit=limit
+    )
+    return {
+        "retailer": RetailerService.to_retailer_out(db, r),
+        "items": items,
+        "total": total,
+        "page": page,
+        "limit": limit
+    }
 
 # Authenticated Retailer Portal endpoints
 @router.post("/retailer/applications", response_model=RetailerOut, status_code=status.HTTP_201_CREATED)
@@ -148,6 +189,53 @@ def delete_or_deactivate_inventory_listing(
     user, retailer = auth_context
     ip = request.client.host if request.client else None
     return RetailerService.delete_or_deactivate_inventory_item(db, inventory_id, retailer, actor_user=user, ip_address=ip)
+
+# --- Bulk Inventory Import / Export Endpoints (Feature D) ---
+from fastapi import UploadFile, File, Body
+from fastapi.responses import Response
+from app.schemas.catalog import InventoryImportPreviewRequest, InventoryImportPreviewResponse, InventoryImportApplyRequest, InventoryImportApplyResponse
+
+@router.get("/retailer/inventory/export")
+def export_retailer_inventory(
+    auth_context=Depends(get_current_retailer_user),
+    db: Session = Depends(get_db)
+):
+    user, retailer = auth_context
+    csv_data = RetailerService.export_inventory_csv(db, retailer)
+    filename = f"inventory_{retailer.postal_code}_{retailer.shop_name[:12].replace(' ', '_')}.csv"
+    return Response(
+        content=csv_data,
+        media_type="text/csv",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'}
+    )
+
+@router.post("/retailer/inventory/import/preview", response_model=InventoryImportPreviewResponse)
+def preview_inventory_import(
+    payload: InventoryImportPreviewRequest,
+    auth_context=Depends(get_current_retailer_user),
+    db: Session = Depends(get_db)
+):
+    user, retailer = auth_context
+    if not payload.raw_csv or not payload.raw_csv.strip():
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="No CSV content provided")
+    return RetailerService.preview_inventory_csv(db, retailer, payload.raw_csv)
+
+@router.post("/retailer/inventory/import/apply", response_model=InventoryImportApplyResponse)
+def apply_inventory_import(
+    payload: InventoryImportApplyRequest,
+    request: Request,
+    auth_context=Depends(get_current_retailer_user),
+    db: Session = Depends(get_db)
+):
+    user, retailer = auth_context
+    ip = request.client.host if request.client else None
+    return RetailerService.apply_inventory_csv(
+        db=db,
+        retailer=retailer,
+        actor_user=user,
+        items=payload.items,
+        ip_address=ip
+    )
 
 @router.get("/retailer/orders", response_model=List[OrderOut])
 def get_retailer_orders(auth_context=Depends(get_current_retailer_user), db: Session = Depends(get_db)):

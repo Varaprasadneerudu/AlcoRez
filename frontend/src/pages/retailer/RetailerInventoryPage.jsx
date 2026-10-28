@@ -23,7 +23,10 @@ import {
   TrendingDown,
   Info,
   RefreshCw,
-  Boxes
+  Boxes,
+  Download,
+  Upload,
+  FileSpreadsheet
 } from 'lucide-react';
 import { api } from '../../services/api';
 import { useLanguage } from '../../context/LanguageContext';
@@ -477,6 +480,112 @@ export default function RetailerInventoryPage() {
     }
   };
 
+  // ==========================================
+  // Feature D: Bulk Inventory CSV Import/Export
+  // ==========================================
+  const [showBulkModal, setShowBulkModal] = useState(false);
+  const [csvFile, setCsvFile] = useState(null);
+  const [csvText, setCsvText] = useState('');
+  const [previewLoading, setPreviewLoading] = useState(false);
+  const [importPreview, setImportPreview] = useState(null);
+  const [applyingImport, setApplyingImport] = useState(false);
+
+  const handleExportCsv = async () => {
+    try {
+      const csvData = await api.exportInventoryCsv();
+      const blob = new Blob([csvData], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `inventory_export_${new Date().toISOString().slice(0, 10)}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+      addToast(
+        language === 'te'
+          ? 'ఇన్వెంటరీ CSV విజయవంతంగా డౌన్‌లోడ్ చేయబడింది!'
+          : 'Inventory CSV exported successfully!',
+        'success'
+      );
+    } catch (err) {
+      addToast(err.message || 'Failed to export inventory CSV', 'error');
+    }
+  };
+
+  const handleCsvFileUpload = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setCsvFile(file);
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const text = event.target?.result || '';
+      setCsvText(text);
+    };
+    reader.readAsText(file);
+  };
+
+  const handlePreviewCsv = async () => {
+    if (!csvText.trim()) {
+      addToast(
+        language === 'te'
+          ? 'దయచేసి ప్రివ్యూ చేయడానికి CSV ఫైల్‌ను అప్‌లోడ్ చేయండి లేదా టెక్స్ట్‌ను అతికించండి.'
+          : 'Please upload or paste CSV text to preview.',
+        'info'
+      );
+      return;
+    }
+    try {
+      setPreviewLoading(true);
+      const res = await api.previewInventoryImport(csvText);
+      setImportPreview(res);
+    } catch (err) {
+      addToast(err.message || 'Failed to preview CSV import', 'error');
+    } finally {
+      setPreviewLoading(false);
+    }
+  };
+
+  const handleApplyImport = async () => {
+    if (!importPreview || !importPreview.items) return;
+    const validItems = importPreview.items
+      .filter((item) => item.is_valid && item.action !== 'error')
+      .map((item) => ({
+        product_id: item.product_id,
+        product_name: item.product_name,
+        bottle_size: item.bottle_size,
+        price: item.price,
+        stock_quantity: item.stock_quantity,
+        low_stock_threshold: item.low_stock_threshold,
+        is_available: item.is_available,
+      }));
+
+    if (validItems.length === 0) {
+      addToast('No valid rows available to apply.', 'error');
+      return;
+    }
+
+    try {
+      setApplyingImport(true);
+      const res = await api.applyInventoryImport(validItems);
+      addToast(
+        language === 'te'
+          ? `బల్క్ దిగుమతి పూర్తయింది: ${res.created_count} కొత్తవి, ${res.updated_count} నవీకరించబడ్డాయి!`
+          : `Bulk import applied: ${res.created_count} created, ${res.updated_count} updated!`,
+        'success'
+      );
+      setShowBulkModal(false);
+      setImportPreview(null);
+      setCsvText('');
+      setCsvFile(null);
+      fetchInventory(true);
+    } catch (err) {
+      addToast(err.message || 'Failed to apply inventory import', 'error');
+    } finally {
+      setApplyingImport(false);
+    }
+  };
+
   // Active Menu Dropdown state for rows
   const [activeMenuId, setActiveMenuId] = useState(null);
 
@@ -559,13 +668,36 @@ export default function RetailerInventoryPage() {
           </p>
         </div>
 
-        <button
-          onClick={openAddModal}
-          className="py-2.5 px-4 rounded-xl text-xs font-bold bg-amber-600 hover:bg-amber-700 text-white shadow transition flex items-center justify-center gap-2 cursor-pointer"
-        >
-          <Plus className="w-4 h-4" />
-          {t('inventory.addBtn')}
-        </button>
+        <div className="flex flex-wrap items-center gap-2.5">
+          <button
+            onClick={handleExportCsv}
+            className="py-2 px-3.5 rounded-xl text-xs font-bold bg-white dark:bg-stone-800 text-stone-700 dark:text-stone-300 hover:bg-stone-50 dark:hover:bg-stone-700/80 border border-stone-200 dark:border-stone-700 shadow-xs transition flex items-center gap-1.5 cursor-pointer"
+            title="Download complete shop inventory in CSV format"
+          >
+            <Download className="w-3.5 h-3.5 text-stone-500 dark:text-stone-400" />
+            <span>Export CSV</span>
+          </button>
+
+          <button
+            onClick={() => {
+              setShowBulkModal(true);
+              setImportPreview(null);
+            }}
+            className="py-2 px-3.5 rounded-xl text-xs font-bold bg-amber-50 dark:bg-amber-950/40 text-amber-900 dark:text-amber-300 hover:bg-amber-100 dark:hover:bg-amber-900/60 border border-amber-200 dark:border-amber-800 shadow-xs transition flex items-center gap-1.5 cursor-pointer"
+            title="Upload CSV to update prices and stock quantities"
+          >
+            <Upload className="w-3.5 h-3.5 text-amber-700 dark:text-amber-400" />
+            <span>Import Bulk CSV</span>
+          </button>
+
+          <button
+            onClick={openAddModal}
+            className="py-2.5 px-4 rounded-xl text-xs font-bold bg-amber-600 hover:bg-amber-700 text-white shadow transition flex items-center justify-center gap-2 cursor-pointer"
+          >
+            <Plus className="w-4 h-4" />
+            {t('inventory.addBtn')}
+          </button>
+        </div>
       </div>
 
       {/* 1. Inventory Summary Cards (Clickable & dynamically bound to filters) */}
@@ -1675,6 +1807,203 @@ export default function RetailerInventoryPage() {
                 {deleting ? 'Processing...' : (language === 'te' ? 'నిర్ధారించండి' : 'Confirm Removal')}
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* ==========================================
+          Bulk Inventory CSV Import Modal
+      ========================================== */}
+      {showBulkModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-sm p-4 overflow-y-auto animate-in fade-in duration-200">
+          <div className="max-w-3xl w-full bg-white dark:bg-stone-900 rounded-3xl p-6 shadow-2xl border border-stone-200 dark:border-stone-800 space-y-5 my-8">
+            <div className="flex items-center justify-between border-b border-stone-100 dark:border-stone-800 pb-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-2xl bg-amber-50 dark:bg-amber-950/60 flex items-center justify-center text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-800">
+                  <FileSpreadsheet className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="font-extrabold text-lg text-stone-900 dark:text-stone-100">
+                    Bulk Inventory Import (CSV)
+                  </h3>
+                  <p className="text-xs text-stone-500 dark:text-stone-400">
+                    Upload or paste inventory CSV to create or update product SKUs in bulk
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => {
+                  setShowBulkModal(false);
+                  setImportPreview(null);
+                }}
+                className="text-stone-400 hover:text-stone-700 dark:hover:text-stone-200 p-1.5 rounded-lg hover:bg-stone-100 dark:hover:bg-stone-800 transition"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Template format hint */}
+            <div className="p-3.5 bg-stone-50 dark:bg-stone-800/60 rounded-2xl border border-stone-200 dark:border-stone-700/80 text-xs space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="font-bold text-stone-700 dark:text-stone-300">Expected CSV Columns:</span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const sample = "product_name,bottle_size,price,stock_quantity,low_stock_threshold,is_available\nRoyal Challenge Whisky,750ml,920.00,45,10,true\nAmrut Fusion Single Malt,750ml,4800.00,12,3,true\nOld Monk Rum,750ml,680.00,30,8,true";
+                    setCsvText(sample);
+                  }}
+                  className="text-amber-700 dark:text-amber-400 font-bold hover:underline cursor-pointer"
+                >
+                  Load Sample CSV
+                </button>
+              </div>
+              <code className="block bg-stone-200/70 dark:bg-stone-950/70 p-2 rounded-xl text-[11px] font-mono text-stone-800 dark:text-stone-200 overflow-x-auto">
+                product_name,bottle_size,price,stock_quantity,low_stock_threshold,is_available
+              </code>
+            </div>
+
+            {/* File upload or raw text paste */}
+            <div className="space-y-3">
+              <div className="flex items-center gap-3">
+                <label className="flex-1 flex flex-col items-center justify-center p-4 border-2 border-dashed border-stone-300 dark:border-stone-700 hover:border-amber-500 rounded-2xl cursor-pointer bg-stone-50/50 dark:bg-stone-800/50 transition">
+                  <Upload className="w-6 h-6 text-stone-400 mb-1" />
+                  <span className="text-xs font-semibold text-stone-700 dark:text-stone-300">
+                    {csvFile ? csvFile.name : 'Choose CSV file or drag & drop'}
+                  </span>
+                  <input
+                    type="file"
+                    accept=".csv,text/csv"
+                    onChange={handleCsvFileUpload}
+                    className="hidden"
+                  />
+                </label>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-stone-700 dark:text-stone-300 mb-1">
+                  Or Paste Raw CSV Data:
+                </label>
+                <textarea
+                  rows={4}
+                  value={csvText}
+                  onChange={(e) => setCsvText(e.target.value)}
+                  placeholder="product_name,bottle_size,price,stock_quantity,low_stock_threshold,is_available..."
+                  className="w-full p-3 rounded-2xl border border-stone-200 dark:border-stone-700 outline-none bg-stone-50/50 dark:bg-stone-800/50 text-xs font-mono text-stone-900 dark:text-stone-100 focus:ring-2 focus:ring-amber-500/20"
+                />
+              </div>
+
+              <div className="flex items-center justify-end">
+                <button
+                  type="button"
+                  onClick={handlePreviewCsv}
+                  disabled={previewLoading || !csvText.trim()}
+                  className="py-2 px-4 rounded-xl text-xs font-bold bg-stone-900 dark:bg-stone-100 text-white dark:text-stone-900 hover:bg-stone-800 dark:hover:bg-white disabled:opacity-50 transition flex items-center gap-2 cursor-pointer"
+                >
+                  {previewLoading && <RefreshCw className="w-3.5 h-3.5 animate-spin" />}
+                  <span>{previewLoading ? 'Parsing CSV...' : 'Preview Validation'}</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Validation Preview Results */}
+            {importPreview && (
+              <div className="space-y-3 pt-3 border-t border-stone-100 dark:border-stone-800">
+                <div className="flex items-center justify-between">
+                  <h4 className="text-xs font-extrabold uppercase tracking-wider text-stone-600 dark:text-stone-400">
+                    Import Preview & Validation
+                  </h4>
+                  <div className="flex items-center gap-2 text-[11px] font-bold">
+                    <span className="px-2 py-0.5 rounded-full bg-stone-100 dark:bg-stone-800 text-stone-700 dark:text-stone-300">
+                      Total: {importPreview.total_rows}
+                    </span>
+                    <span className="px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950/80 text-emerald-800 dark:text-emerald-300">
+                      Valid: {importPreview.valid_rows}
+                    </span>
+                    {importPreview.error_rows > 0 && (
+                      <span className="px-2 py-0.5 rounded-full bg-rose-100 dark:bg-rose-950/80 text-rose-800 dark:text-rose-300">
+                        Errors: {importPreview.error_rows}
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                <div className="max-h-56 overflow-y-auto rounded-2xl border border-stone-200 dark:border-stone-800">
+                  <table className="w-full text-left text-xs">
+                    <thead className="bg-stone-100 dark:bg-stone-800/80 text-stone-500 dark:text-stone-400 font-bold sticky top-0">
+                      <tr>
+                        <th className="py-2 px-3">Row</th>
+                        <th className="py-2 px-3">Product SKU</th>
+                        <th className="py-2 px-3">Size</th>
+                        <th className="py-2 px-3">Price</th>
+                        <th className="py-2 px-3">Qty</th>
+                        <th className="py-2 px-3">Action</th>
+                        <th className="py-2 px-3">Status</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-stone-100 dark:divide-stone-800">
+                      {importPreview.items?.map((row, idx) => (
+                        <tr
+                          key={idx}
+                          className={row.is_valid ? 'hover:bg-stone-50 dark:hover:bg-stone-800/40' : 'bg-rose-50/50 dark:bg-rose-950/30'}
+                        >
+                          <td className="py-2 px-3 font-mono text-[11px] text-stone-400">{row.row_number}</td>
+                          <td className="py-2 px-3 font-semibold text-stone-900 dark:text-stone-100">{row.product_name}</td>
+                          <td className="py-2 px-3 text-stone-600 dark:text-stone-400">{row.bottle_size}</td>
+                          <td className="py-2 px-3 font-bold text-stone-800 dark:text-stone-200">
+                            {row.price ? `₹${row.price}` : '—'}
+                          </td>
+                          <td className="py-2 px-3 font-bold">{row.stock_quantity ?? '—'}</td>
+                          <td className="py-2 px-3">
+                            <span
+                              className={`text-[10px] font-extrabold uppercase px-1.5 py-0.5 rounded ${
+                                row.action === 'create'
+                                  ? 'bg-blue-100 dark:bg-blue-950/80 text-blue-800 dark:text-blue-300'
+                                  : row.action === 'update'
+                                  ? 'bg-amber-100 dark:bg-amber-950/80 text-amber-800 dark:text-amber-300'
+                                  : 'bg-stone-200 dark:bg-stone-800 text-stone-600 dark:text-stone-400'
+                              }`}
+                            >
+                              {row.action}
+                            </span>
+                          </td>
+                          <td className="py-2 px-3">
+                            {row.is_valid ? (
+                              <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-600 dark:text-emerald-400">
+                                <Check className="w-3.5 h-3.5" /> Valid
+                              </span>
+                            ) : (
+                              <span className="text-[11px] font-medium text-rose-600 dark:text-rose-400 flex items-center gap-1" title={row.error_message}>
+                                <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
+                                <span className="truncate max-w-[150px]">{row.error_message}</span>
+                              </span>
+                            )}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+
+                <div className="flex items-center justify-end gap-2 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setImportPreview(null)}
+                    className="py-2 px-4 rounded-xl text-stone-600 dark:text-stone-400 hover:bg-stone-100 dark:hover:bg-stone-800 text-xs font-semibold cursor-pointer"
+                  >
+                    Reset Preview
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleApplyImport}
+                    disabled={applyingImport || !importPreview.valid_rows}
+                    className="py-2 px-5 rounded-xl bg-amber-600 hover:bg-amber-700 disabled:opacity-50 text-white text-xs font-bold shadow transition flex items-center gap-2 cursor-pointer"
+                  >
+                    {applyingImport && <RefreshCw className="w-3.5 h-3.5 animate-spin" />}
+                    <span>{applyingImport ? 'Applying...' : `Apply ${importPreview.valid_rows} Valid SKUs`}</span>
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       )}

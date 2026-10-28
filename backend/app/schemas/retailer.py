@@ -53,6 +53,8 @@ class RetailerOut(BaseModel):
     review_notes: Optional[str] = None
     created_at: datetime
     license: Optional[RetailerLicenseOut] = None
+    last_inventory_update: Optional[datetime] = None
+    active_products_count: Optional[int] = 0
 
 class RetailerReviewRequest(BaseModel):
     status: RetailerStatus = Field(..., description="approved, rejected, or suspended")

@@ -168,3 +168,46 @@ class ProductCreate(BaseModel):
     bottle_size: str = "750ml"
     price: Decimal = Field(..., gt=0)
     stock_quantity: int = Field(default=10, ge=0)
+
+# --- Bulk CSV Import/Export Schemas ---
+class InventoryCsvRowPreview(BaseModel):
+    row_number: int
+    product_id: Optional[str] = None
+    product_name: Optional[str] = None
+    brand: Optional[str] = None
+    bottle_size: str
+    price: Optional[Decimal] = None
+    stock_quantity: Optional[int] = None
+    is_available: bool = True
+    low_stock_threshold: int = 5
+    action: str = "NEW"  # NEW, UPDATE, INVALID
+    status: str = "VALID"  # VALID, ERROR
+    errors: List[str] = []
+    changes_summary: Optional[str] = None
+
+class InventoryImportPreviewRequest(BaseModel):
+    raw_csv: str
+
+class InventoryImportPreviewResponse(BaseModel):
+    total_rows: int
+    valid_rows: int
+    error_rows: int
+    rows: List[InventoryCsvRowPreview]
+
+class InventoryImportApplyItem(BaseModel):
+    product_id: str
+    bottle_size: str
+    price: Decimal = Field(..., gt=0)
+    stock_quantity: int = Field(..., ge=0)
+    is_available: bool = True
+    low_stock_threshold: int = Field(default=5, ge=0)
+
+class InventoryImportApplyRequest(BaseModel):
+    items: List[InventoryImportApplyItem]
+
+class InventoryImportApplyResponse(BaseModel):
+    imported_count: int
+    updated_count: int
+    total_processed: int
+    message: str
+

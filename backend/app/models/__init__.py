@@ -5,6 +5,7 @@ from app.models.retailer import Retailer, RetailerStatus, RetailerLicense, Retai
 from app.models.product import Category, Product, ProductImage, Inventory, InventoryMovement
 from app.models.order import Cart, CartItem, Order, OrderItem, OrderStatus, PaymentAttempt
 from app.models.compliance import ComplianceApproval, ServiceArea, Notification, AuditLog
+from app.models.favorite import FavoriteProduct, FavoriteRetailer
 
 __all__ = [
     "Base",
@@ -31,5 +32,7 @@ __all__ = [
     "ComplianceApproval",
     "ServiceArea",
     "Notification",
-    "AuditLog"
+    "AuditLog",
+    "FavoriteProduct",
+    "FavoriteRetailer"
 ]
