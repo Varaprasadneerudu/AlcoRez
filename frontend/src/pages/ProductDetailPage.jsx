@@ -7,6 +7,7 @@ import {
   Plus,
   Minus,
   ShoppingCart,
+  Loader2,
   AlertTriangle,
   CheckCircle2,
   Globe2
@@ -248,7 +249,7 @@ export default function ProductDetailPage() {
           </div>
 
           {/* Quantity & Add to Cart */}
-          {selectedInventory && (
+          {selectedInventory ? (
             <div className="space-y-4 pt-2">
               <div className="flex items-center gap-4">
                 <span className="text-xs font-bold text-stone-700 dark:text-stone-300">{t('productDetail.quantity')}</span>
@@ -277,10 +278,14 @@ export default function ProductDetailPage() {
               <button
                 onClick={handleAddToCart}
                 disabled={cartLoading || !selectedInventory.is_available || selectedInventory.stock_quantity === 0}
-                className="w-full sm:w-auto py-3.5 px-8 rounded-xl font-bold text-sm bg-gradient-to-r from-amber-600 to-amber-700 hover:from-amber-700 hover:to-amber-800 text-white shadow-lg shadow-amber-700/20 flex items-center justify-center gap-2 transition disabled:opacity-50"
+                className="w-full sm:w-auto py-3.5 px-8 rounded-xl font-bold text-sm bg-gradient-to-r from-amber-600 to-amber-700 hover:from-amber-700 hover:to-amber-800 text-white shadow-lg shadow-amber-700/20 flex items-center justify-center gap-2 transition disabled:opacity-50 active:scale-98 cursor-pointer"
               >
-                <ShoppingCart className="w-4 h-4" />
-                <span>{t('productDetail.addToDemoCart')}</span>
+                {cartLoading ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <ShoppingCart className="w-4 h-4" />
+                )}
+                <span>{t('product.addToCartBtn')}</span>
               </button>
 
               {successMessage && (
@@ -292,6 +297,16 @@ export default function ProductDetailPage() {
                   <Link to="/cart" className="font-bold underline text-emerald-900 dark:text-emerald-200">{t('productDetail.viewCart')}</Link>
                 </div>
               )}
+            </div>
+          ) : (
+            <div className="pt-2">
+              <button
+                disabled
+                className="w-full sm:w-auto py-3.5 px-8 rounded-xl font-bold text-sm bg-stone-300 dark:bg-stone-800 text-stone-500 dark:text-stone-400 flex items-center justify-center gap-2 cursor-not-allowed opacity-60"
+              >
+                <ShoppingCart className="w-4 h-4" />
+                <span>{t('product.outOfStock')}</span>
+              </button>
             </div>
           )}
 

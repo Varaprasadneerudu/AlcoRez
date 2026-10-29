@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { ShoppingBag, ShoppingCart, Check, Loader2, Plus, Minus, Heart } from 'lucide-react';
+import { Check, Loader2, Plus, Minus, Heart } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
@@ -265,39 +265,31 @@ export default function ProductCard({ product }) {
           </div>
 
           <div className="flex items-center gap-1 sm:gap-1.5 shrink-0">
-            {/* Details Button - hidden on mobile so bottle price is 100% visible and un-truncated; visible on web */}
-            <Link
-              to={`/products/${product.id}`}
-              className="hidden sm:flex p-1.5 sm:px-2.5 sm:py-1.5 rounded-xl bg-amber-50 dark:bg-amber-950/60 hover:bg-amber-100 dark:hover:bg-amber-900/60 text-amber-900 dark:text-amber-200 font-semibold text-xs border border-amber-200 dark:border-amber-800/80 transition items-center gap-1"
-              title={t('product.detailsBtn')}
-            >
-              <ShoppingBag className="w-3.5 h-3.5" />
-              <span>{t('product.detailsBtn')}</span>
-            </Link>
-
-            {/* Direct Add to Cart OR Interactive Stepper if already in cart */}
+            {/* Direct Add to Cart (Only "+" icon) OR Interactive Stepper if already in cart */}
             {cartItem ? (
-              <div className="flex items-center border border-amber-300 dark:border-amber-700/80 rounded-xl bg-amber-50/80 dark:bg-amber-950/50 shadow-xs overflow-hidden">
+              <div className="flex items-center border border-amber-300 dark:border-amber-700/80 rounded-xl bg-amber-50/80 dark:bg-amber-950/50 shadow-xs overflow-hidden h-8 sm:h-9">
                 <button
                   type="button"
                   onClick={(e) => handleStepQuantity(e, -1)}
                   disabled={isAdding}
-                  className="px-1.5 sm:px-2 py-1 sm:py-1.5 text-amber-900 dark:text-amber-200 hover:bg-amber-200/60 dark:hover:bg-amber-900/80 transition disabled:opacity-50"
+                  className="px-2 py-1 text-amber-900 dark:text-amber-200 hover:bg-amber-200/60 dark:hover:bg-amber-900/80 transition disabled:opacity-50"
                   title="Decrease"
+                  aria-label="Decrease quantity"
                 >
-                  <Minus className="w-3 h-3" />
+                  <Minus className="w-3.5 h-3.5" />
                 </button>
-                <span className="px-1 sm:px-2 text-xs font-black text-amber-950 dark:text-amber-100">
+                <span className="px-1 text-xs font-black text-amber-950 dark:text-amber-100 min-w-[1.25rem] text-center">
                   {cartItem.quantity}
                 </span>
                 <button
                   type="button"
                   onClick={(e) => handleStepQuantity(e, 1)}
                   disabled={isAdding || cartItem.quantity >= maxStockLimit}
-                  className="px-1.5 sm:px-2 py-1 sm:py-1.5 text-amber-900 dark:text-amber-200 hover:bg-amber-200/60 dark:hover:bg-amber-900/80 transition disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+                  className="px-2 py-1 text-amber-900 dark:text-amber-200 hover:bg-amber-200/60 dark:hover:bg-amber-900/80 transition disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
                   title={cartItem.quantity >= maxStockLimit ? `Max limit (${maxStockLimit})` : "Increase"}
+                  aria-label="Increase quantity"
                 >
-                  <Plus className="w-3 h-3" />
+                  <Plus className="w-3.5 h-3.5" />
                 </button>
               </div>
             ) : (
@@ -305,28 +297,21 @@ export default function ProductCard({ product }) {
                 type="button"
                 onClick={handleAddToCart}
                 disabled={isAdding || !product.in_stock}
-                className={`px-2 sm:px-2.5 py-1.5 rounded-xl font-bold text-xs transition-all duration-200 flex items-center gap-1 sm:gap-1.5 shadow-sm active:scale-95 ${
+                className={`w-8 h-8 sm:w-9 sm:h-9 rounded-xl font-bold transition-all duration-200 flex items-center justify-center shadow-sm active:scale-90 ${
                   isAdded
                     ? 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-emerald-600/30 ring-2 ring-emerald-500/30'
-                    : 'bg-gradient-to-r from-amber-600 to-amber-700 hover:from-amber-700 hover:to-amber-800 text-white shadow-amber-700/20'
+                    : 'bg-gradient-to-r from-amber-600 to-amber-700 hover:from-amber-700 hover:to-amber-800 text-white shadow-amber-700/20 hover:shadow-amber-700/40'
                 } disabled:opacity-50 disabled:cursor-not-allowed`}
                 title={product.in_stock ? t('product.addToCartBtn') : t('product.outOfStock')}
+                aria-label={product.in_stock ? t('product.addToCartBtn') : t('product.outOfStock')}
               >
                 {isAdding ? (
-                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  <Loader2 className="w-4 h-4 animate-spin" />
                 ) : isAdded ? (
-                  <Check className="w-3.5 h-3.5" />
+                  <Check className="w-4 h-4" />
                 ) : (
-                  <ShoppingCart className="w-3.5 h-3.5" />
+                  <Plus className="w-4 h-4 sm:w-5 sm:h-5 stroke-[2.5]" />
                 )}
-                <span>
-                  {isAdded ? t('product.addedBtn') : isAdding ? t('product.addingBtn') : (
-                    <>
-                      <span className="hidden sm:inline">{t('product.addToCartBtn')}</span>
-                      <span className="sm:hidden">{t('product.addBtn')}</span>
-                    </>
-                  )}
-                </span>
               </button>
             )}
           </div>
