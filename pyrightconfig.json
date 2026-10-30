@@ -1,23 +1,7 @@
 {
-  "include": [
-    "backend"
-  ],
+  "include": ["backend"],
   "extraPaths": [
     "backend",
     "C:/Users/varap/AppData/Local/Programs/Python/Python314/Lib/site-packages"
-  ],
-  "executionEnvironments": [
-    {
-      "root": "backend",
-      "extraPaths": [
-        "backend",
-        "C:/Users/varap/AppData/Local/Programs/Python/Python314/Lib/site-packages"
-      ]
-    }
-  ],
-  "typeCheckingMode": "basic",
-  "reportAttributeAccessIssue": "none",
-  "reportArgumentType": "none",
-  "reportGeneralTypeIssues": "none",
-  "reportOptionalMemberAccess": "none"
+  ]
 }

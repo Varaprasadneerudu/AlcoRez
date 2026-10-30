@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
 import { Filter, SlidersHorizontal, Search, ArrowLeft, X } from 'lucide-react';
 import { api } from '../services/api';
@@ -29,6 +29,7 @@ export default function CatalogPage() {
   const page = parseInt(searchParams.get('page') || '1', 10);
 
   const [mobileFilterOpen, setMobileFilterOpen] = useState(false);
+  const isFirstMount = useRef(true);
 
   useEffect(() => {
     Promise.all([api.getCategories(), api.getRetailers(), api.getBrands()]).then(([cats, rets, brs]) => {
@@ -43,7 +44,9 @@ export default function CatalogPage() {
   useEffect(() => {
     async function fetchCatalog() {
       try {
-        setLoading(true);
+        if (isFirstMount.current) {
+          setLoading(true);
+        }
         const res = await api.getProducts({
           search,
           category: selectedCategory,
@@ -60,6 +63,7 @@ export default function CatalogPage() {
       } catch (err) {
         console.error('Catalog fetch failed:', err);
       } finally {
+        isFirstMount.current = false;
         setLoading(false);
       }
     }

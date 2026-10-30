@@ -49,7 +49,7 @@ def list_approved_retailers(
             (Retailer.shop_name.ilike(term)) | (Retailer.trade_name.ilike(term))
         )
     retailers = query.order_by(Retailer.shop_name.asc()).all()
-    return [RetailerService.to_retailer_out(db, r) for r in retailers]
+    return RetailerService.to_retailer_out_batch(db, retailers)
 
 @router.get("/retailers/{retailer_id}", response_model=RetailerOut)
 def get_retailer_public(retailer_id: str, db: Session = Depends(get_db)):

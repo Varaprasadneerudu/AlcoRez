@@ -54,39 +54,58 @@ class CatalogService:
         Query catalogue showing only active products from approved retailers.
         Supports filtering by specific product_ids and retailer postal_code locality.
         """
-        # Base query joining Product, Category, and Inventory
-        query = (
-            db.query(Product)
-            .join(Category, Product.category_id == Category.id)
-            .outerjoin(Inventory, Product.id == Inventory.product_id)
-            .outerjoin(Retailer, Inventory.retailer_id == Retailer.id)
-            .filter(Product.is_active == True)
+        # Determine if inventory/retailer joins are needed for filtering or sorting
+        needs_inventory_join = bool(
+            retailer_id
+            or postal_code
+            or bottle_size
+            or min_price is not None
+            or max_price is not None
+            or sort_by in ("price_asc", "price_desc")
         )
+
+        # Base query joining Product and Category
+        query = db.query(Product).join(Category, Product.category_id == Category.id).filter(Product.is_active == True)
+
+        if needs_inventory_join:
+            query = (
+                query
+                .outerjoin(Inventory, Product.id == Inventory.product_id)
+                .outerjoin(Retailer, Inventory.retailer_id == Retailer.id)
+            )
+
+            # Only link to approved retailers if an inventory item exists
+            if retailer_id:
+                query = query.filter(
+                    Inventory.retailer_id == retailer_id,
+                    Retailer.status == RetailerStatus.APPROVED
+                )
+            elif postal_code:
+                query = query.filter(
+                    Inventory.retailer_id.is_not(None),
+                    Retailer.postal_code == postal_code,
+                    Retailer.status == RetailerStatus.APPROVED
+                )
+            else:
+                query = query.filter(
+                    or_(
+                        Inventory.id.is_(None),
+                        Retailer.status == RetailerStatus.APPROVED
+                    )
+                )
+
+            if bottle_size:
+                query = query.filter(Inventory.bottle_size == bottle_size)
+            if min_price is not None:
+                query = query.filter(Inventory.price >= min_price)
+            if max_price is not None:
+                query = query.filter(Inventory.price <= max_price)
+
+            query = query.distinct()
 
         # Product IDs filter (for favorites or specific selection)
         if product_ids is not None:
             query = query.filter(Product.id.in_(product_ids))
-
-        # Only link to approved retailers if an inventory item exists
-        if retailer_id:
-            query = query.filter(
-                Inventory.retailer_id == retailer_id,
-                Retailer.status == RetailerStatus.APPROVED
-            )
-        elif postal_code:
-            query = query.filter(
-                Inventory.retailer_id.is_not(None),
-                Retailer.postal_code == postal_code,
-                Retailer.status == RetailerStatus.APPROVED
-            )
-        else:
-            # If no retailer filter, filter out inventory from non-approved retailers
-            query = query.filter(
-                or_(
-                    Inventory.id.is_(None),
-                    Retailer.status == RetailerStatus.APPROVED
-                )
-            )
 
         # Filters
         if search:
@@ -105,25 +124,19 @@ class CatalogService:
         if brand and brand.strip():
             query = query.filter(Product.brand.ilike(brand.strip()))
 
-        if bottle_size:
-            query = query.filter(Inventory.bottle_size == bottle_size)
-
-        if min_price is not None:
-            query = query.filter(Inventory.price >= min_price)
-
-        if max_price is not None:
-            query = query.filter(Inventory.price <= max_price)
-
-        # Deduplicate product query
-        query = query.distinct()
-
         # Sorting
         if sort_by == "name_desc":
             query = query.order_by(Product.name.desc())
         elif sort_by == "price_asc":
-            query = query.order_by(Inventory.price.asc())
+            if needs_inventory_join:
+                query = query.order_by(Inventory.price.asc())
+            else:
+                query = query.order_by(Product.name.asc())
         elif sort_by == "price_desc":
-            query = query.order_by(Inventory.price.desc())
+            if needs_inventory_join:
+                query = query.order_by(Inventory.price.desc())
+            else:
+                query = query.order_by(Product.name.desc())
         else:
             query = query.order_by(Product.name.asc())
 
@@ -133,12 +146,12 @@ class CatalogService:
         if not products:
             return [], total
 
-        product_ids: list[str] = [str(p.id) for p in products]
+        fetched_product_ids: list[str] = [str(p.id) for p in products]
 
         # 1. Batch fetch primary & secondary images for all products in 1 query
         images = (
             db.query(ProductImage)
-            .filter(ProductImage.product_id.in_(product_ids))
+            .filter(ProductImage.product_id.in_(fetched_product_ids))
             .order_by(ProductImage.is_primary.desc())
             .all()
         )
@@ -153,7 +166,7 @@ class CatalogService:
             db.query(Inventory)
             .join(Retailer, Inventory.retailer_id == Retailer.id)
             .filter(
-                Inventory.product_id.in_(product_ids),
+                Inventory.product_id.in_(fetched_product_ids),
                 Inventory.is_available == True,
                 Retailer.status == RetailerStatus.APPROVED
             )
@@ -164,7 +177,7 @@ class CatalogService:
             inv_query = inv_query.filter(Retailer.postal_code == postal_code)
 
         all_invs = inv_query.all()
-        inv_by_product: dict[str, list[Inventory]] = {pid: [] for pid in product_ids}
+        inv_by_product: dict[str, list[Inventory]] = {pid: [] for pid in fetched_product_ids}
         for inv in all_invs:
             inv_pid = str(inv.product_id)
             if inv_pid in inv_by_product:

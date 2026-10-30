@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import {
   Store,
@@ -43,11 +43,14 @@ export default function RetailerDetailPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const prevIdRef = useRef(null);
 
   useEffect(() => {
     async function fetchRetailerData() {
       try {
-        setLoading(true);
+        if (prevIdRef.current !== id) {
+          setLoading(true);
+        }
         setError(null);
 
         const [catData, categoriesList] = await Promise.all([
@@ -66,6 +69,7 @@ export default function RetailerDetailPage() {
         console.error('Failed to load store catalogue:', err);
         setError('Licensed retailer store not found or currently suspended under excise regulation.');
       } finally {
+        prevIdRef.current = id;
         setLoading(false);
       }
     }

@@ -27,9 +27,10 @@ from app.schemas.retailer import (
     RetailerOut,
 )
 from app.services.audit_service import AuditService
+from app.services.notification_service import NotificationService
 from fastapi import HTTPException, status
-from sqlalchemy import asc, desc, func, or_
-from sqlalchemy.orm import Session
+from sqlalchemy import and_, asc, case, desc, func, or_
+from sqlalchemy.orm import Session, joinedload
 
 
 class RetailerService:
@@ -462,7 +463,6 @@ class RetailerService:
         db.commit()
         db.refresh(inv)
 
-        from app.services.notification_service import NotificationService
         NotificationService.check_and_notify_low_stock(db, inv)
 
         AuditService.log_event(
@@ -586,7 +586,6 @@ class RetailerService:
         db.commit()
         db.refresh(inv)
 
-        from app.services.notification_service import NotificationService
         NotificationService.check_and_notify_low_stock(db, inv)
 
         AuditService.log_event(
@@ -702,7 +701,6 @@ class RetailerService:
             is_expired = license_days < 0
             is_expiring_soon = 0 <= license_days <= 30
 
-            from app.services.notification_service import NotificationService
             NotificationService.check_license_expiry_reminders(db, retailer)
 
         # Recent movements (up to 5)
@@ -725,39 +723,87 @@ class RetailerService:
         )
 
     @staticmethod
-    def to_retailer_out(db: Session, retailer: Retailer) -> RetailerOut:
-        if "licenses" in retailer.__dict__ and retailer.licenses:
-            lic = retailer.licenses[0]
-        else:
-            lic = db.query(RetailerLicense).filter(RetailerLicense.retailer_id == retailer.id).first()
-        lic_out = RetailerLicenseOut.model_validate(lic) if lic else None
+    def to_retailer_out_batch(db: Session, retailers: list[Retailer]) -> list[RetailerOut]:
+        valid_retailers = [r for r in retailers if r is not None]
+        if not valid_retailers:
+            return []
 
-        last_inv_time = db.query(func.max(Inventory.updated_at)).filter(Inventory.retailer_id == retailer.id).scalar()
-        active_count = db.query(func.count(Inventory.id)).filter(
-            Inventory.retailer_id == retailer.id,
-            Inventory.is_available == True,
-            Inventory.stock_quantity > 0
-        ).scalar() or 0
+        retailer_ids = [r.id for r in valid_retailers]
 
-        return RetailerOut(
-            id=retailer.id,
-            user_id=retailer.user_id,
-            shop_name=retailer.shop_name,
-            trade_name=retailer.trade_name,
-            contact_person=retailer.contact_person,
-            phone=retailer.phone,
-            email=retailer.email,
-            address_line=retailer.address_line,
-            city=retailer.city,
-            state=retailer.state,
-            postal_code=retailer.postal_code,
-            status=retailer.status,
-            review_notes=retailer.review_notes,
-            created_at=retailer.created_at,
-            license=lic_out,
-            last_inventory_update=last_inv_time,
-            active_products_count=active_count
+        # 1. Batch license lookup for all retailers in a single query
+        fetched_licenses = (
+            db.query(RetailerLicense)
+            .filter(RetailerLicense.retailer_id.in_(retailer_ids))
+            .order_by(RetailerLicense.created_at.desc())
+            .all()
         )
+        licenses_by_retailer: dict[str, RetailerLicense] = {}
+        for lic in fetched_licenses:
+            lic_rid = str(lic.retailer_id)
+            if lic_rid not in licenses_by_retailer:
+                licenses_by_retailer[lic_rid] = lic
+
+        # 2. Batch fetch last inventory update time and active count in single grouped query
+        inv_stats = (
+            db.query(
+                Inventory.retailer_id,
+                func.max(Inventory.updated_at).label("last_update"),
+                func.coalesce(
+                    func.sum(
+                        case(
+                            (
+                                and_(Inventory.is_available == True, Inventory.stock_quantity > 0),
+                                1
+                            ),
+                            else_=0
+                        )
+                    ),
+                    0
+                ).label("active_count")
+            )
+            .filter(Inventory.retailer_id.in_(retailer_ids))
+            .group_by(Inventory.retailer_id)
+            .all()
+        )
+        stats_by_retailer = {
+            stat.retailer_id: (stat.last_update, int(stat.active_count or 0))
+            for stat in inv_stats
+        }
+
+        # 3. Assemble response objects
+        results = []
+        for r in valid_retailers:
+            lic = licenses_by_retailer.get(r.id)
+            lic_out = RetailerLicenseOut.model_validate(lic) if lic else None
+            last_inv_time, active_count = stats_by_retailer.get(r.id, (None, 0))
+
+            results.append(
+                RetailerOut(
+                    id=r.id,
+                    user_id=r.user_id,
+                    shop_name=r.shop_name,
+                    trade_name=r.trade_name,
+                    contact_person=r.contact_person,
+                    phone=r.phone,
+                    email=r.email,
+                    address_line=r.address_line,
+                    city=r.city,
+                    state=r.state,
+                    postal_code=r.postal_code,
+                    status=r.status,
+                    review_notes=r.review_notes,
+                    created_at=r.created_at,
+                    license=lic_out,
+                    last_inventory_update=last_inv_time,
+                    active_products_count=active_count
+                )
+            )
+        return results
+
+    @staticmethod
+    def to_retailer_out(db: Session, retailer: Retailer) -> RetailerOut:
+        batch = RetailerService.to_retailer_out_batch(db, [retailer])
+        return batch[0]
 
     # --- Bulk Inventory Import / Export (Feature D) ---
 
@@ -768,8 +814,6 @@ class RetailerService:
         """
         import csv
         import io
-
-        from sqlalchemy.orm import joinedload
 
         output = io.StringIO()
         writer = csv.writer(output)
@@ -1012,9 +1056,6 @@ class RetailerService:
         Applies validated bulk CSV items within a transaction.
         Preserves inventory movements history, concurrency versioning, and audit logs.
         """
-        from app.services.audit_service import AuditService
-        from app.services.notification_service import NotificationService
-
         imported_count = 0
         updated_count = 0
 

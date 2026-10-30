@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import {
   ShieldCheck,
@@ -19,11 +19,14 @@ export default function HomePage() {
   const [filterByZone, setFilterByZone] = useState(false);
   const { t, tc, language } = useLanguage();
   const { selectedZone, postalCode } = useGeoLocation();
+  const isFirstMount = useRef(true);
 
   useEffect(() => {
     async function loadData() {
       try {
-        setLoading(true);
+        if (isFirstMount.current) {
+          setLoading(true);
+        }
         const retailerParams = filterByZone ? { postal_code: postalCode } : {};
         const [cats, prods, rets] = await Promise.all([
           api.getCategories(),
@@ -38,6 +41,7 @@ export default function HomePage() {
       } catch (err) {
         console.error('Failed to load homepage data:', err);
       } finally {
+        isFirstMount.current = false;
         setLoading(false);
       }
     }

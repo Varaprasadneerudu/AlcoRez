@@ -29,7 +29,7 @@ class AdminService:
     @staticmethod
     def get_pending_retailers(db: Session) -> list[RetailerOut]:
         retailers = db.query(Retailer).filter(Retailer.status == RetailerStatus.PENDING_REVIEW).order_by(Retailer.created_at.asc()).all()
-        return [RetailerService.to_retailer_out(db, r) for r in retailers]
+        return RetailerService.to_retailer_out_batch(db, retailers)
 
     @staticmethod
     def get_all_retailers(db: Session, status_filter: str | None = None) -> list[RetailerOut]:
@@ -37,7 +37,7 @@ class AdminService:
         if status_filter:
             query = query.filter(Retailer.status == status_filter)
         retailers = query.order_by(Retailer.created_at.desc()).all()
-        return [RetailerService.to_retailer_out(db, r) for r in retailers]
+        return RetailerService.to_retailer_out_batch(db, retailers)
 
     @staticmethod
     def review_retailer(

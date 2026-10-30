@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import {
   ArrowLeft,
@@ -29,11 +29,14 @@ export default function ProductDetailPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [successMessage, setSuccessMessage] = useState(null);
+  const prevIdRef = useRef(null);
 
   useEffect(() => {
     async function loadProduct() {
       try {
-        setLoading(true);
+        if (prevIdRef.current !== id) {
+          setLoading(true);
+        }
         const data = await api.getProduct(id);
         setProduct(data);
         if (data.inventories && data.inventories.length > 0) {
@@ -43,6 +46,7 @@ export default function ProductDetailPage() {
       } catch (err) {
         setError(err.message || 'Failed to load product details');
       } finally {
+        prevIdRef.current = id;
         setLoading(false);
       }
     }

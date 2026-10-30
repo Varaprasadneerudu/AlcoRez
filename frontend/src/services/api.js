@@ -133,9 +133,10 @@ export const api = {
         query.append(key, val);
       }
     });
-    return apiRequest(`/products?${query.toString()}`);
+    const qs = query.toString();
+    return cachedApiRequest(`/products${qs ? `?${qs}` : ''}`, 30000); // 30s cache
   },
-  getProduct: (id) => apiRequest(`/products/${id}`),
+  getProduct: (id) => cachedApiRequest(`/products/${id}`, 60000), // 1 min cache
 
   // Retailers public
   getRetailers: (params = {}) => {
@@ -143,7 +144,7 @@ export const api = {
     if (params.postal_code) query.set('postal_code', params.postal_code);
     if (params.search) query.set('search', params.search);
     const qs = query.toString();
-    return apiRequest(`/retailers${qs ? `?${qs}` : ''}`);
+    return cachedApiRequest(`/retailers${qs ? `?${qs}` : ''}`, 60000); // 1 min cache
   },
   getRetailer: (id) => cachedApiRequest(`/retailers/${id}`, 30000),
   getRetailerCatalogue: (id, params = {}) => {
@@ -153,29 +154,53 @@ export const api = {
     if (params.page) query.set('page', params.page);
     if (params.limit) query.set('limit', params.limit);
     const qs = query.toString();
-    return apiRequest(`/retailers/${id}/catalogue${qs ? `?${qs}` : ''}`);
+    return cachedApiRequest(`/retailers/${id}/catalogue${qs ? `?${qs}` : ''}`, 30000); // 30s cache
   },
 
   // Cart
   getCart: () => apiRequest('/cart'),
-  addToCart: (inventoryId, quantity = 1) => apiRequest('/cart/items', {
-    method: 'POST',
-    body: JSON.stringify({ inventory_id: inventoryId, quantity }),
-  }),
-  updateCartItem: (itemId, quantity) => apiRequest(`/cart/items/${itemId}`, {
-    method: 'PATCH',
-    body: JSON.stringify({ quantity }),
-  }),
-  removeCartItem: (itemId) => apiRequest(`/cart/items/${itemId}`, { method: 'DELETE' }),
-  clearCart: () => apiRequest('/cart', { method: 'DELETE' }),
+  addToCart: (inventoryId, quantity = 1) => {
+    invalidateCache('/cart');
+    return apiRequest('/cart/items', {
+      method: 'POST',
+      body: JSON.stringify({ inventory_id: inventoryId, quantity }),
+    });
+  },
+  updateCartItem: (itemId, quantity) => {
+    invalidateCache('/cart');
+    return apiRequest(`/cart/items/${itemId}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ quantity }),
+    });
+  },
+  removeCartItem: (itemId) => {
+    invalidateCache('/cart');
+    return apiRequest(`/cart/items/${itemId}`, { method: 'DELETE' });
+  },
+  clearCart: () => {
+    invalidateCache('/cart');
+    return apiRequest('/cart', { method: 'DELETE' });
+  },
 
   // Customer Favorites (Feature A)
-  getFavorites: () => apiRequest('/customer/favorites'),
-  getFavoriteIds: () => apiRequest('/customer/favorites/ids'),
-  addFavoriteProduct: (productId) => apiRequest(`/customer/favorites/products/${productId}`, { method: 'POST' }),
-  removeFavoriteProduct: (productId) => apiRequest(`/customer/favorites/products/${productId}`, { method: 'DELETE' }),
-  addFavoriteRetailer: (retailerId) => apiRequest(`/customer/favorites/retailers/${retailerId}`, { method: 'POST' }),
-  removeFavoriteRetailer: (retailerId) => apiRequest(`/customer/favorites/retailers/${retailerId}`, { method: 'DELETE' }),
+  getFavorites: () => cachedApiRequest('/customer/favorites', 30000),
+  getFavoriteIds: () => cachedApiRequest('/customer/favorites/ids', 30000),
+  addFavoriteProduct: (productId) => {
+    invalidateCache('/customer/favorites');
+    return apiRequest(`/customer/favorites/products/${productId}`, { method: 'POST' });
+  },
+  removeFavoriteProduct: (productId) => {
+    invalidateCache('/customer/favorites');
+    return apiRequest(`/customer/favorites/products/${productId}`, { method: 'DELETE' });
+  },
+  addFavoriteRetailer: (retailerId) => {
+    invalidateCache('/customer/favorites');
+    return apiRequest(`/customer/favorites/retailers/${retailerId}`, { method: 'POST' });
+  },
+  removeFavoriteRetailer: (retailerId) => {
+    invalidateCache('/customer/favorites');
+    return apiRequest(`/customer/favorites/retailers/${retailerId}`, { method: 'DELETE' });
+  },
 
   // Notification Center (Feature C)
   getNotifications: (params = {}) => {
@@ -191,10 +216,15 @@ export const api = {
   markAllNotificationsRead: () => apiRequest('/notifications/mark-all-read', { method: 'POST' }),
 
   // Orders & Simulated Checkout
-  createTestOrder: (checkoutData) => apiRequest('/test-orders', {
-    method: 'POST',
-    body: JSON.stringify(checkoutData),
-  }),
+  createTestOrder: (checkoutData) => {
+    invalidateCache('/cart');
+    invalidateCache('/products');
+    invalidateCache('/orders');
+    return apiRequest('/test-orders', {
+      method: 'POST',
+      body: JSON.stringify(checkoutData),
+    });
+  },
   getOrders: () => apiRequest('/orders'),
   getOrder: (id) => apiRequest(`/orders/${id}`),
   attemptLivePayment: (payload) => apiRequest('/orders/live-payment-attempt', {
@@ -226,22 +256,38 @@ export const api = {
     const qs = query.toString();
     return apiRequest(`/retailer/inventory${qs ? `?${qs}` : ''}`);
   },
-  createInventoryItem: (invData) => apiRequest('/retailer/inventory', {
-    method: 'POST',
-    body: JSON.stringify(invData),
-  }),
-  updateInventoryItem: (id, updateData) => apiRequest(`/retailer/inventory/${id}`, {
-    method: 'PATCH',
-    body: JSON.stringify(updateData),
-  }),
-  adjustInventoryStock: (id, adjustmentData) => apiRequest(`/retailer/inventory/${id}/adjust-stock`, {
-    method: 'POST',
-    body: JSON.stringify(adjustmentData),
-  }),
+  createInventoryItem: (invData) => {
+    invalidateCache('/products');
+    invalidateCache('/retailer');
+    return apiRequest('/retailer/inventory', {
+      method: 'POST',
+      body: JSON.stringify(invData),
+    });
+  },
+  updateInventoryItem: (id, updateData) => {
+    invalidateCache('/products');
+    invalidateCache('/retailer');
+    return apiRequest(`/retailer/inventory/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(updateData),
+    });
+  },
+  adjustInventoryStock: (id, adjustmentData) => {
+    invalidateCache('/products');
+    invalidateCache('/retailer');
+    return apiRequest(`/retailer/inventory/${id}/adjust-stock`, {
+      method: 'POST',
+      body: JSON.stringify(adjustmentData),
+    });
+  },
   getInventoryMovements: (id) => apiRequest(`/retailer/inventory/${id}/movements`),
-  deleteInventoryItem: (id) => apiRequest(`/retailer/inventory/${id}`, {
-    method: 'DELETE',
-  }),
+  deleteInventoryItem: (id) => {
+    invalidateCache('/products');
+    invalidateCache('/retailer');
+    return apiRequest(`/retailer/inventory/${id}`, {
+      method: 'DELETE',
+    });
+  },
 
   // Bulk Inventory CSV (Feature D)
   exportInventoryCsv: async () => {
@@ -256,16 +302,23 @@ export const api = {
     method: 'POST',
     body: JSON.stringify({ raw_csv }),
   }),
-  applyInventoryImport: (items) => apiRequest('/retailer/inventory/import/apply', {
-    method: 'POST',
-    body: JSON.stringify({ items }),
-  }),
+  applyInventoryImport: (items) => {
+    invalidateCache('/products');
+    invalidateCache('/retailer');
+    return apiRequest('/retailer/inventory/import/apply', {
+      method: 'POST',
+      body: JSON.stringify({ items }),
+    });
+  },
 
   getRetailerOrders: () => apiRequest('/retailer/orders'),
-  updateOrderStatus: (orderId, statusData) => apiRequest(`/retailer/orders/${orderId}/status`, {
-    method: 'PATCH',
-    body: JSON.stringify(statusData),
-  }),
+  updateOrderStatus: (orderId, statusData) => {
+    invalidateCache('/orders');
+    return apiRequest(`/retailer/orders/${orderId}/status`, {
+      method: 'PATCH',
+      body: JSON.stringify(statusData),
+    });
+  },
   submitRetailerApplication: (appData) => {
     invalidateCache('/retailers');
     return apiRequest('/retailer/applications', {
@@ -294,6 +347,7 @@ export const api = {
   getAllRetailers: (status) => apiRequest(`/admin/retailers${status ? `?status=${status}` : ''}`),
   reviewRetailer: (id, reviewData) => {
     invalidateCache('/retailers');
+    invalidateCache('/products');
     return apiRequest(`/admin/retailers/${id}/review`, {
       method: 'PATCH',
       body: JSON.stringify(reviewData),
@@ -304,6 +358,6 @@ export const api = {
   getAllOrders: (page = 1, limit = 50) => apiRequest(`/admin/orders?page=${page}&limit=${limit}`),
 
   // Public Compliance & Health
-  getComplianceStatus: () => apiRequest('/compliance-status'),
+  getComplianceStatus: () => cachedApiRequest('/compliance-status', 300000),
   getHealth: () => apiRequest('/health'),
 };
