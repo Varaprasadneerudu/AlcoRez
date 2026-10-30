@@ -30,6 +30,14 @@ async def lifespan(app: FastAPI):
         f"Alco Telangana Marketplace initialized. "
         f"Alcohol Transactions Enabled: {settings.ALCOHOL_TRANSACTIONS_ENABLED} (FAIL-CLOSED)."
     )
+    # Auto-seed initial demo dataset (users, products, licensed retailers)
+    try:
+        from seed_data import seed_database
+        seed_database()
+        logger.info("Demo database verified/seeded successfully.")
+    except Exception as e:
+        logger.warning(f"Auto-seed notification: {e}")
+
     yield
     logger.info("Application shutting down...")
 
@@ -48,10 +56,11 @@ app = FastAPI(
     redoc_url="/redoc"
 )
 
-# CORS Configuration
+# CORS Configuration - explicitly supports Vercel frontend deployments
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.CORS_ORIGINS if isinstance(settings.CORS_ORIGINS, list) else [settings.CORS_ORIGINS],
+    allow_origin_regex=r"^https:\/\/.*\.vercel\.app$",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -69,7 +78,7 @@ async def compliance_violation_handler(request: Request, exc: ComplianceViolatio
 # Include v1 router
 app.include_router(api_router, prefix=settings.API_V1_STR)
 
-@app.get("/")
+@app.api_route("/", methods=["GET", "HEAD"])
 def root():
     return {
         "name": settings.PROJECT_NAME,
@@ -79,7 +88,7 @@ def root():
         "compliance_status": f"{settings.API_V1_STR}/compliance-status"
     }
 
-@app.get("/health")
+@app.api_route("/health", methods=["GET", "HEAD"])
 def health_check():
     return {
         "status": "healthy",

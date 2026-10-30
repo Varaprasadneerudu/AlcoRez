@@ -30,6 +30,8 @@ class Settings(BaseSettings):
         "http://127.0.0.1:5173",
         "http://localhost:3000",
         "http://127.0.0.1:3000",
+        "https://alco-rez.vercel.app",
+        "https://alcorez.onrender.com",
     ]
 
     @field_validator("CORS_ORIGINS", mode="before")
@@ -58,21 +60,20 @@ class Settings(BaseSettings):
             if len(self.JWT_SECRET_KEY) < 32 or any(pat in key_lower for pat in dev_patterns):
                 raise ValueError(
                     "Security violation: Production requires a secure, high-entropy JWT_SECRET_KEY "
-                    "of at least 32 characters. Development default keys are forbidden in production."
+                    "with at least 32 characters."
                 )
 
-            # 3. Disallow wildcard CORS in production
-            origins = self.CORS_ORIGINS if isinstance(self.CORS_ORIGINS, list) else [self.CORS_ORIGINS]
-            if "*" in origins:
-                raise ValueError("Security violation: Wildcard CORS origin ('*') is prohibited in production.")
+            # 3. Disallow wildcards in production CORS
+            if any(origin in ["*", "http://*", "https://*"] for origin in self.CORS_ORIGINS):
+                raise ValueError("Security violation: Wildcard CORS origin (*) is forbidden in production.")
 
         return self
 
-    # Adapters (Simulated / Demo defaults)
-    STORAGE_PROVIDER: str = "local"
-    PAYMENT_GATEWAY_PROVIDER: str = "simulated"
-    GOOGLE_MAPS_API_KEY: str = ""
-
-    model_config = SettingsConfigDict(env_file=".env", extra="ignore")
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        env_file_encoding="utf-8",
+        case_sensitive=True,
+        extra="ignore"
+    )
 
 settings = Settings()
