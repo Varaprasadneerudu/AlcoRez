@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Lock, Mail, Sparkles, ArrowRight, ArrowLeft, AlertCircle } from 'lucide-react';
+import { Lock, Mail, Sparkles, ArrowRight, ArrowLeft, AlertCircle, Loader2 } from 'lucide-react';
 import { useAuth, DEMO_ACCOUNTS } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
 import { AlcoRezIcon } from '../components/AlcoRezLogo';
@@ -13,6 +13,7 @@ export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState(null);
+  const [loadingDemoKey, setLoadingDemoKey] = useState(null);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -33,12 +34,16 @@ export default function LoginPage() {
 
   const handleQuickDemo = async (key) => {
     try {
+      setLoadingDemoKey(key);
+      setError(null);
       const data = await switchDemoAccount(key);
       if (data.role === 'retailer') navigate('/retailer');
       else if (data.role === 'admin') navigate('/admin');
       else navigate('/');
     } catch (err) {
       setError(err.message);
+    } finally {
+      setLoadingDemoKey(null);
     }
   };
 
@@ -88,22 +93,34 @@ export default function LoginPage() {
           <span>{t('auth.quickDemoTitle', 'Quick 1-Click Demo Personas')}</span>
         </div>
         <div className="space-y-1.5">
-          {Object.entries(DEMO_ACCOUNTS).map(([key, acc]) => (
-            <button
-              key={key}
-              type="button"
-              onClick={() => handleQuickDemo(key)}
-              className="w-full py-2 px-3 rounded-xl bg-white dark:bg-stone-900 hover:bg-amber-100/60 dark:hover:bg-amber-900/40 border border-amber-200/80 dark:border-amber-800 text-left text-xs font-semibold text-stone-800 dark:text-stone-200 flex items-center justify-between transition shadow-sm"
-            >
-              <div>
-                <span className="block text-stone-900 dark:text-stone-100 font-bold">
-                  {getDemoLabel(key, acc.label)}
-                </span>
-                <span className="text-[10px] text-stone-500 dark:text-stone-400 font-normal">{acc.email}</span>
-              </div>
-              <ArrowRight className="w-3.5 h-3.5 text-amber-700 dark:text-amber-400" />
-            </button>
-          ))}
+          {Object.entries(DEMO_ACCOUNTS).map(([key, acc]) => {
+            const isThisLoading = loadingDemoKey === key;
+            return (
+              <button
+                key={key}
+                type="button"
+                disabled={loading || Boolean(loadingDemoKey)}
+                onClick={() => handleQuickDemo(key)}
+                className={`w-full py-2 px-3 rounded-xl border text-left text-xs font-semibold flex items-center justify-between transition shadow-sm ${
+                  isThisLoading
+                    ? 'bg-amber-100 dark:bg-amber-900/60 border-amber-400 text-amber-900 dark:text-amber-200'
+                    : 'bg-white dark:bg-stone-900 hover:bg-amber-100/60 dark:hover:bg-amber-900/40 border-amber-200/80 dark:border-amber-800 text-stone-800 dark:text-stone-200'
+                } disabled:opacity-60`}
+              >
+                <div>
+                  <span className="block text-stone-900 dark:text-stone-100 font-bold">
+                    {getDemoLabel(key, acc.label)}
+                  </span>
+                  <span className="text-[10px] text-stone-500 dark:text-stone-400 font-normal">{acc.email}</span>
+                </div>
+                {isThisLoading ? (
+                  <Loader2 className="w-3.5 h-3.5 text-amber-700 dark:text-amber-400 animate-spin shrink-0" />
+                ) : (
+                  <ArrowRight className="w-3.5 h-3.5 text-amber-700 dark:text-amber-400 shrink-0" />
+                )}
+              </button>
+            );
+          })}
         </div>
       </div>
 
@@ -154,10 +171,11 @@ export default function LoginPage() {
 
         <button
           type="submit"
-          disabled={loading}
-          className="w-full py-3 rounded-xl font-bold text-xs bg-amber-600 hover:bg-amber-700 text-white shadow-md shadow-amber-600/20 transition disabled:opacity-50"
+          disabled={loading || Boolean(loadingDemoKey)}
+          className="w-full py-3 rounded-xl font-bold text-xs bg-amber-600 hover:bg-amber-700 text-white shadow-md shadow-amber-600/20 transition disabled:opacity-50 flex items-center justify-center gap-2"
         >
-          {loading ? t('auth.authenticating', 'Authenticating...') : t('auth.signIn', 'Sign In')}
+          {loading && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+          <span>{loading ? t('auth.authenticating', 'Authenticating...') : t('auth.signIn', 'Sign In')}</span>
         </button>
 
         <div className="text-center pt-2">

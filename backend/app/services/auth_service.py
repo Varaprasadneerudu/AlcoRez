@@ -104,6 +104,15 @@ class AuthService:
         access_token = create_access_token(subject=user.id, role=user.role.value)
         refresh_token = create_refresh_token(subject=user.id, role=user.role.value)
 
+        # Transparently upgrade legacy high-cost hashes to rounds=10 for faster mobile logins
+        if user.hashed_password.startswith(("$2b$12$", "$2a$12$")):
+            try:
+                user.hashed_password = hash_password(login_in.password)
+                db.add(user)
+                db.commit()
+            except Exception:
+                pass
+
         AuditService.log_event(
             db=db,
             action="USER_LOGIN_SUCCESS",

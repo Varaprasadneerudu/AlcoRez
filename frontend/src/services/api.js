@@ -113,11 +113,15 @@ export function invalidateCache(endpointPrefix) {
 export const api = {
   // Auth
   login: (credentials) => {
-    invalidateCache();
+    invalidateCache('/cart');
+    invalidateCache('/orders');
+    invalidateCache('/auth');
     return apiRequest('/auth/login', { method: 'POST', body: JSON.stringify(credentials) });
   },
   register: (userData) => {
-    invalidateCache();
+    invalidateCache('/cart');
+    invalidateCache('/orders');
+    invalidateCache('/auth');
     return apiRequest('/auth/register', { method: 'POST', body: JSON.stringify(userData) });
   },
   getMe: () => apiRequest('/auth/me'),

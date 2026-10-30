@@ -63,12 +63,19 @@ export default function ProductDetailPage() {
 
     try {
       setError(null);
-      await addToCart(selectedInventory.id, quantity);
       const prodName = tp(product.name);
       setSuccessMessage(`${prodName} (${ts(selectedInventory.bottle_size)}): ${t('productDetail.addedSuccess')}`);
       setTimeout(() => setSuccessMessage(null), 4000);
+
+      await addToCart(selectedInventory.id, quantity, {
+        product,
+        matchedInventory: selectedInventory,
+        selectedSize: selectedInventory.bottle_size,
+        price: selectedInventory.price
+      });
     } catch (err) {
       setError(err.message);
+      setSuccessMessage(null);
     }
   };
 

@@ -30,5 +30,4 @@ class AuditService:
         )
         db.add(log_entry)
         db.commit()
-        db.refresh(log_entry)
         return log_entry

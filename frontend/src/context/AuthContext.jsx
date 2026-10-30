@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import { api, setStoredToken, getStoredToken, invalidateCache } from '../services/api';
 
 const AuthContext = createContext(null);
@@ -39,6 +39,7 @@ export function AuthProvider({ children }) {
     return localStorage.getItem('alco_age_verified') === 'true';
   });
   const [loading, setLoading] = useState(false);
+  const initialValidationDone = useRef(false);
 
   const logout = useCallback(() => {
     setToken(null);
@@ -46,31 +47,37 @@ export function AuthProvider({ children }) {
     setRole('customer');
     setStoredToken(null);
     invalidateCache();
+    initialValidationDone.current = false;
   }, []);
 
   useEffect(() => {
-    if (token) {
-      api.getMe()
-        .then((userData) => {
-          setUser(userData);
-          setRole(userData.role);
-          setStoredToken(token, userData.role, userData);
-        })
-        .catch(() => {
-          logout();
-        });
+    // Only fetch /auth/me on initial app load if a stored token exists without user profile
+    if (token && !initialValidationDone.current) {
+      initialValidationDone.current = true;
+      if (!user) {
+        api.getMe()
+          .then((userData) => {
+            setUser(userData);
+            setRole(userData.role);
+            setStoredToken(token, userData.role, userData);
+          })
+          .catch(() => {
+            logout();
+          });
+      }
     }
-  }, [token, logout]);
+  }, [token, user, logout]);
 
   const login = async (email, password) => {
     setLoading(true);
     try {
       const data = await api.login({ email, password });
-      setToken(data.access_token);
-      setRole(data.role);
+      initialValidationDone.current = true; // Mark validated so /auth/me isn't called redundantly
       const userProfile = { id: data.user_id, email: data.email, full_name: data.full_name, role: data.role };
       setUser(userProfile);
+      setRole(data.role);
       setStoredToken(data.access_token, data.role, userProfile);
+      setToken(data.access_token);
       setAgeVerified(true);
       localStorage.setItem('alco_age_verified', 'true');
       return data;

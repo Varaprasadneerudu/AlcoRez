@@ -69,7 +69,6 @@ export default function ProductCard({ product }) {
     }
 
     try {
-      setIsAdding(true);
       setErrorMessage(null);
 
       let targetInventoryId = null;
@@ -88,8 +87,11 @@ export default function ProductCard({ product }) {
         }
       } else if (product.default_inventory_id) {
         targetInventoryId = product.default_inventory_id;
-      } else {
+      }
+
+      if (!targetInventoryId) {
         // Fallback: fetch product details if catalog items didn't have inventories attached
+        setIsAdding(true);
         const details = await api.getProduct(product.id);
         const inStock = details?.inventories?.find((inv) => inv.is_available && inv.stock_quantity > 0);
         targetInventoryId = inStock ? inStock.id : details?.inventories?.[0]?.id;
@@ -99,13 +101,20 @@ export default function ProductCard({ product }) {
         throw new Error('No available stock for this item.');
       }
 
-      await addToCart(targetInventoryId, 1);
       setIsAdded(true);
       setTimeout(() => {
         setIsAdded(false);
-      }, 2000);
+      }, 1500);
+
+      await addToCart(targetInventoryId, 1, {
+        product,
+        matchedInventory,
+        selectedSize: selectedSize || matchedInventory?.bottle_size,
+        price: displayPrice
+      });
     } catch (err) {
       console.error('Failed to add to cart:', err);
+      setIsAdded(false);
       setErrorMessage(err.message || 'Could not add to cart');
       setTimeout(() => setErrorMessage(null), 3500);
     } finally {
@@ -118,20 +127,21 @@ export default function ProductCard({ product }) {
     e.stopPropagation();
     if (!cartItem) return;
 
-    try {
-      setIsAdding(true);
-      setErrorMessage(null);
-      const newQty = cartItem.quantity + delta;
+    const newQty = cartItem.quantity + delta;
+    if (delta > 0 && newQty > maxStockLimit) {
+      setErrorMessage(
+        language === 'te'
+          ? `గరిష్ట పరిమితి చేరింది (${maxStockLimit})`
+          : `Max available limit reached (${maxStockLimit})`
+      );
+      setTimeout(() => setErrorMessage(null), 3000);
+      return;
+    }
 
+    try {
+      setErrorMessage(null);
       if (newQty <= 0) {
         await removeItem(cartItem.id);
-      } else if (delta > 0 && newQty > maxStockLimit) {
-        setErrorMessage(
-          language === 'te'
-            ? `గరిష్ట పరిమితి చేరింది (${maxStockLimit})`
-            : `Max available limit reached (${maxStockLimit})`
-        );
-        setTimeout(() => setErrorMessage(null), 3000);
       } else {
         await updateQuantity(cartItem.id, newQty);
       }
@@ -139,8 +149,6 @@ export default function ProductCard({ product }) {
       console.error('Update quantity failed:', err);
       setErrorMessage(err.message || 'Could not update quantity');
       setTimeout(() => setErrorMessage(null), 3500);
-    } finally {
-      setIsAdding(false);
     }
   };
 
@@ -275,8 +283,7 @@ export default function ProductCard({ product }) {
                 <button
                   type="button"
                   onClick={(e) => handleStepQuantity(e, -1)}
-                  disabled={isAdding}
-                  className="px-2 py-1 text-amber-900 dark:text-amber-200 hover:bg-amber-200/60 dark:hover:bg-amber-900/80 transition disabled:opacity-50"
+                  className="px-2 py-1 text-amber-900 dark:text-amber-200 hover:bg-amber-200/60 dark:hover:bg-amber-900/80 transition cursor-pointer"
                   title="Decrease"
                   aria-label="Decrease quantity"
                 >
@@ -288,7 +295,7 @@ export default function ProductCard({ product }) {
                 <button
                   type="button"
                   onClick={(e) => handleStepQuantity(e, 1)}
-                  disabled={isAdding || cartItem.quantity >= maxStockLimit}
+                  disabled={cartItem.quantity >= maxStockLimit}
                   className="px-2 py-1 text-amber-900 dark:text-amber-200 hover:bg-amber-200/60 dark:hover:bg-amber-900/80 transition disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
                   title={cartItem.quantity >= maxStockLimit ? `Max limit (${maxStockLimit})` : "Increase"}
                   aria-label="Increase quantity"

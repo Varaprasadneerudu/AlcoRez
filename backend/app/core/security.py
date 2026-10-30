@@ -7,8 +7,8 @@ from app.core.config import settings
 
 
 def hash_password(password: str) -> str:
-    """Hash a password using bcrypt."""
-    salt = bcrypt.gensalt(rounds=12)
+    """Hash a password using bcrypt (work factor 10 for responsive authentication)."""
+    salt = bcrypt.gensalt(rounds=10)
     hashed = bcrypt.hashpw(password.encode("utf-8"), salt)
     return hashed.decode("utf-8")
 
