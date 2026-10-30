@@ -1,4 +1,5 @@
-const API_BASE = import.meta.env.VITE_API_BASE_URL || '/api/v1';
+const isDev = import.meta.env.DEV;
+const API_BASE = import.meta.env.VITE_API_BASE_URL || (isDev ? '/api/v1' : 'https://alcorez.onrender.com/api/v1');
 
 export function getStoredToken() {
   return localStorage.getItem('alco_access_token');
