@@ -1,4 +1,4 @@
-const API_BASE = '/api/v1';
+const API_BASE = import.meta.env.VITE_API_BASE_URL || '/api/v1';
 
 export function getStoredToken() {
   return localStorage.getItem('alco_access_token');
@@ -24,10 +24,17 @@ export async function apiRequest(endpoint, options = {}) {
     ...(options.headers || {}),
   };
 
-  const response = await fetch(`${API_BASE}${endpoint}`, {
-    ...options,
-    headers,
-  });
+  let response;
+  try {
+    response = await fetch(`${API_BASE}${endpoint}`, {
+      ...options,
+      headers,
+    });
+  } catch (networkErr) {
+    throw new Error(
+      'Unable to reach backend server. The free instance may be waking up (takes ~30s), or connection was blocked.'
+    );
+  }
 
   if (response.status === 204) {
     return null;
@@ -36,7 +43,18 @@ export async function apiRequest(endpoint, options = {}) {
   const data = await response.json().catch(() => null);
 
   if (!response.ok) {
-    const errorMsg = data?.detail?.message || data?.detail || data?.message || 'Request failed';
+    let errorMsg = data?.detail?.message || data?.detail || data?.message;
+    if (!errorMsg) {
+      if (response.status === 404) {
+        errorMsg = `API route not found (404) at ${API_BASE}${endpoint}`;
+      } else if (response.status === 401) {
+        errorMsg = 'Incorrect email or password.';
+      } else if (response.status === 502 || response.status === 503) {
+        errorMsg = 'Backend server is starting up. Please try again in 15 seconds.';
+      } else {
+        errorMsg = `Request failed with status ${response.status}`;
+      }
+    }
     const error = new Error(typeof errorMsg === 'string' ? errorMsg : JSON.stringify(errorMsg));
     error.status = response.status;
     error.payload = data;
