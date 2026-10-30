@@ -10,6 +10,7 @@ import ProductCard from '../components/ProductCard';
 import RetailerCard from '../components/RetailerCard';
 import { useLanguage } from '../context/LanguageContext';
 import { useLocation as useGeoLocation } from '../context/LocationContext';
+import { optimizeImageUrl } from '../utils/imageUtils';
 
 export default function HomePage() {
   const [categories, setCategories] = useState([]);
@@ -127,9 +128,11 @@ export default function HomePage() {
             >
               <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-amber-50 dark:bg-stone-800 overflow-hidden mb-2 group-hover:scale-105 transition">
                 <img
-                  src={cat.image_url || 'https://images.unsplash.com/photo-1527061011665-3652c757a4d4?auto=format&fit=crop&w=300&q=80'}
+                  src={optimizeImageUrl(cat.image_url, 120, 75)}
                   alt={tc(cat.name)}
                   className="w-full h-full object-cover"
+                  loading="lazy"
+                  decoding="async"
                 />
               </div>
               <span className="font-bold text-xs text-stone-900 dark:text-stone-100 group-hover:text-amber-800 dark:group-hover:text-amber-400 transition line-clamp-1">

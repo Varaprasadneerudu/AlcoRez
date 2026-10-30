@@ -14,6 +14,7 @@ import {
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
+import { optimizeImageUrl } from '../utils/imageUtils';
 
 export default function CartPage() {
   const { cart, itemCount, subtotal, updateQuantity, removeItem, clearCart, loading } = useCart();
@@ -125,8 +126,10 @@ export default function CartPage() {
               <div className="flex items-center gap-4">
                 <div className="w-16 h-16 rounded-xl bg-stone-50 dark:bg-stone-800 border border-stone-100 dark:border-stone-700 flex items-center justify-center p-2 shrink-0">
                   <img
-                    src={item.image_url || 'https://images.unsplash.com/photo-1527061011665-3652c757a4d4?auto=format&fit=crop&w=200&q=80'}
+                    src={optimizeImageUrl(item.image_url, 160)}
                     alt={tp(item.product_name)}
+                    loading="lazy"
+                    decoding="async"
                     className="w-full h-full object-contain"
                   />
                 </div>

@@ -16,6 +16,7 @@ import { api } from '../services/api';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
+import { optimizeImageUrl } from '../utils/imageUtils';
 
 export default function ProductDetailPage() {
   const { id } = useParams();
@@ -98,7 +99,7 @@ export default function ProductDetailPage() {
   const primaryImage = product.images?.[0]?.image_url || 'https://images.unsplash.com/photo-1527061011665-3652c757a4d4?auto=format&fit=crop&w=800&q=80';
 
   return (
-    <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-6 sm:py-8 space-y-6 sm:space-y-8 transition-colors duration-200">
+    <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-6 sm:py-8 pb-24 sm:pb-8 space-y-6 sm:space-y-8 transition-colors duration-200">
       
       {/* Breadcrumb & Back */}
       <Link
@@ -114,12 +115,14 @@ export default function ProductDetailPage() {
         {/* Left: Product Image */}
         <div className="lg:col-span-5 bg-white dark:bg-stone-900 rounded-3xl border border-stone-200 dark:border-stone-800 p-6 sm:p-8 shadow-sm flex flex-col items-center justify-center relative overflow-hidden">
           <img
-            src={primaryImage}
+            src={optimizeImageUrl(primaryImage, 600, 80)}
             alt={tp(product.name)}
             className="w-full max-h-[420px] object-contain drop-shadow-lg"
+            loading="lazy"
+            decoding="async"
             onError={(e) => {
               e.currentTarget.onerror = null;
-              e.currentTarget.src = 'https://images.unsplash.com/photo-1527061011665-3652c757a4d4?auto=format&fit=crop&w=600&q=80';
+              e.currentTarget.src = optimizeImageUrl(null, 600);
             }}
           />
         </div>
@@ -327,6 +330,28 @@ export default function ProductDetailPage() {
         </div>
 
       </div>
+
+      {/* Mobile Sticky Quick-Reserve Bar */}
+      {product.in_stock && selectedInventory && (
+        <div className="sm:hidden fixed bottom-0 left-0 right-0 p-3 bg-white/95 dark:bg-stone-900/95 backdrop-blur-md border-t border-stone-200 dark:border-stone-800 z-30 shadow-xl flex items-center justify-between gap-3">
+          <div className="min-w-0">
+            <div className="text-[10px] text-stone-500 dark:text-stone-400 font-semibold uppercase tracking-wider truncate">
+              {selectedInventory.bottle_size} • {selectedInventory.retailer_shop_name}
+            </div>
+            <div className="text-base font-black text-amber-900 dark:text-amber-400">
+              ₹{Number(selectedInventory.price).toLocaleString('en-IN')}
+            </div>
+          </div>
+          <button
+            onClick={handleAddToCart}
+            disabled={cartLoading}
+            className="py-2.5 px-4 rounded-xl font-bold text-xs bg-gradient-to-r from-amber-600 to-amber-700 active:from-amber-700 text-white shadow-md flex items-center gap-1.5 shrink-0"
+          >
+            {cartLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <ShoppingCart className="w-4 h-4" />}
+            <span>{t('productDetail.addToCart')}</span>
+          </button>
+        </div>
+      )}
     </div>
   );
 }

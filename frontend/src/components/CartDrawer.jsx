@@ -4,6 +4,7 @@ import { X, ShoppingBag, Plus, Minus, Trash2, ShieldCheck, ArrowRight, Store } f
 import { useCart } from '../context/CartContext';
 import { useLanguage } from '../context/LanguageContext';
 import { useAuth } from '../context/AuthContext';
+import { optimizeImageUrl } from '../utils/imageUtils';
 
 /**
  * CartDrawer Component
@@ -56,7 +57,6 @@ export default function CartDrawer() {
     <div
       className="fixed inset-0 z-50 overflow-hidden animate-in fade-in duration-200"
       onWheel={(e) => e.stopPropagation()}
-      onTouchMove={(e) => e.stopPropagation()}
     >
       {/* Backdrop */}
       <div
@@ -131,9 +131,11 @@ export default function CartDrawer() {
                 return (
                   <div key={item.id} className="pt-4 first:pt-0 flex gap-3.5 items-start">
                     <img
-                      src={itemImage}
+                      src={optimizeImageUrl(itemImage, 160)}
                       alt={tp(item.product_name)}
                       className="w-16 h-16 rounded-xl object-contain bg-stone-50 dark:bg-stone-800 p-1.5 border border-stone-200 dark:border-stone-700 shrink-0"
+                      loading="lazy"
+                      decoding="async"
                     />
 
                     <div className="flex-1 min-w-0 space-y-1">

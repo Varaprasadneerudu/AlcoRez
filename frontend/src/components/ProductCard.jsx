@@ -6,6 +6,7 @@ import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
 import { useFavorites } from '../context/FavoritesContext';
 import { api } from '../services/api';
+import { optimizeImageUrl, getImageSrcSet } from '../utils/imageUtils';
 
 /**
  * ProductCard Component
@@ -148,13 +149,16 @@ export default function ProductCard({ product }) {
       {/* Product Image & Badges */}
       <Link to={`/products/${product.id}`} className="block relative aspect-square bg-stone-50 dark:bg-stone-800/50 overflow-hidden">
         <img
-          src={product.primary_image_url || 'https://images.unsplash.com/photo-1527061011665-3652c757a4d4?auto=format&fit=crop&w=600&q=80'}
+          src={optimizeImageUrl(product.primary_image_url, 360)}
+          srcSet={getImageSrcSet(product.primary_image_url, [280, 360, 540])}
+          sizes="(max-width: 640px) 45vw, (max-width: 1024px) 30vw, 260px"
           alt={tp(product.name)}
           className="w-full h-full object-contain p-3 sm:p-4 group-hover:scale-105 transition-transform duration-300"
           loading="lazy"
+          decoding="async"
           onError={(e) => {
             e.currentTarget.onerror = null;
-            e.currentTarget.src = 'https://images.unsplash.com/photo-1527061011665-3652c757a4d4?auto=format&fit=crop&w=600&q=80';
+            e.currentTarget.src = optimizeImageUrl(null, 360);
           }}
         />
 
