@@ -1,15 +1,15 @@
-from typing import Optional
+
+from app.core.database import get_db
+from app.core.security import decode_token
+from app.models.retailer import Retailer, RetailerMembership
+from app.models.user import User, UserRole
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session
-from app.core.database import get_db
-from app.core.security import decode_token
-from app.models.user import User, UserRole
-from app.models.retailer import Retailer, RetailerMembership
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/login", auto_error=False)
 
-def get_current_user(token: Optional[str] = Depends(oauth2_scheme), db: Session = Depends(get_db)) -> User:
+def get_current_user(token: str | None = Depends(oauth2_scheme), db: Session = Depends(get_db)) -> User:
     if not token:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -37,7 +37,7 @@ def get_current_user(token: Optional[str] = Depends(oauth2_scheme), db: Session 
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="User account is deactivated")
     return user
 
-def get_current_user_optional(token: Optional[str] = Depends(oauth2_scheme), db: Session = Depends(get_db)) -> Optional[User]:
+def get_current_user_optional(token: str | None = Depends(oauth2_scheme), db: Session = Depends(get_db)) -> User | None:
     if not token:
         return None
     payload = decode_token(token)

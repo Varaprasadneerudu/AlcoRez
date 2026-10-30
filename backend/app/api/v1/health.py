@@ -1,9 +1,9 @@
-from fastapi import APIRouter, Depends
-from sqlalchemy.orm import Session
-from sqlalchemy import text
-from app.core.database import get_db
 from app.core.compliance import ComplianceEngine
 from app.core.config import settings
+from app.core.database import get_db
+from fastapi import APIRouter, Depends
+from sqlalchemy import text
+from sqlalchemy.orm import Session
 
 router = APIRouter(tags=["Health & Statutory Compliance"])
 
@@ -13,7 +13,7 @@ def health_check(db: Session = Depends(get_db)):
     try:
         db.execute(text("SELECT 1"))
     except Exception as e:
-        db_status = f"unhealthy: {str(e)}"
+        db_status = f"unhealthy: {e!s}"
 
     return {
         "status": "online",

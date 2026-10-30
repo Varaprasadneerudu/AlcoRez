@@ -1,9 +1,10 @@
 import enum
 from decimal import Decimal
-from typing import Optional
-from sqlalchemy import String, Text, Boolean, Numeric, Integer, Enum, ForeignKey
-from sqlalchemy.orm import relationship, Mapped, mapped_column
+
 from app.models.base import TimeStampedUUIDModel
+from sqlalchemy import Boolean, Enum, ForeignKey, Integer, Numeric, String, Text
+from sqlalchemy.orm import Mapped, mapped_column, relationship
+
 
 class OrderStatus(str, enum.Enum):
     CREATED = "created"
@@ -47,7 +48,7 @@ class Order(TimeStampedUUIDModel):
     total_amount: Mapped[Decimal] = mapped_column(Numeric(10, 2), nullable=False)
     address_snapshot: Mapped[str] = mapped_column(Text, nullable=False)
     is_simulated: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
-    notes: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    notes: Mapped[str | None] = mapped_column(Text, nullable=True)
 
     user = relationship("User", back_populates="orders")
     retailer = relationship("Retailer", back_populates="orders")
@@ -58,7 +59,7 @@ class OrderItem(TimeStampedUUIDModel):
     __tablename__ = "order_items"
 
     order_id: Mapped[str] = mapped_column(String(36), ForeignKey("orders.id", ondelete="CASCADE"), nullable=False, index=True)
-    inventory_id: Mapped[Optional[str]] = mapped_column(String(36), ForeignKey("inventory.id", ondelete="SET NULL"), nullable=True)
+    inventory_id: Mapped[str | None] = mapped_column(String(36), ForeignKey("inventory.id", ondelete="SET NULL"), nullable=True)
     product_name: Mapped[str] = mapped_column(String(255), nullable=False)
     brand: Mapped[str] = mapped_column(String(150), nullable=False)
     bottle_size: Mapped[str] = mapped_column(String(50), nullable=False)
@@ -77,7 +78,7 @@ class PaymentAttempt(TimeStampedUUIDModel):
     amount: Mapped[Decimal] = mapped_column(Numeric(10, 2), nullable=False)
     currency: Mapped[str] = mapped_column(String(10), default="INR", nullable=False)
     status: Mapped[str] = mapped_column(String(50), default="SUCCESS", nullable=False)
-    gateway_response: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    gateway_response: Mapped[str | None] = mapped_column(Text, nullable=True)
     is_simulated: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
 
     order = relationship("Order", back_populates="payments")

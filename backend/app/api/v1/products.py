@@ -1,19 +1,19 @@
 from decimal import Decimal
-from typing import List, Optional
+
+from app.core.database import get_db
+from app.models.product import Category
+from app.schemas.catalog import CategoryOut, ProductDetailOut
+from app.services.catalog_service import CatalogService
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
-from app.core.database import get_db
-from app.schemas.catalog import ProductOut, ProductDetailOut, CategoryOut
-from app.services.catalog_service import CatalogService
-from app.models.product import Category
 
 router = APIRouter(tags=["Catalog & Products"])
 
-@router.get("/categories", response_model=List[CategoryOut])
+@router.get("/categories", response_model=list[CategoryOut])
 def list_categories(db: Session = Depends(get_db)):
     return CatalogService.get_categories(db, active_only=True)
 
-@router.get("/brands", response_model=List[str])
+@router.get("/brands", response_model=list[str])
 def list_brands(db: Session = Depends(get_db)):
     return CatalogService.get_brands(db)
 
@@ -26,14 +26,14 @@ def get_category_by_slug(slug: str, db: Session = Depends(get_db)):
 
 @router.get("/products")
 def list_products(
-    search: Optional[str] = Query(None, description="Search by product name or brand"),
-    category: Optional[str] = Query(None, description="Category slug"),
-    brand: Optional[str] = Query(None, description="Filter by brand name"),
-    retailer_id: Optional[str] = Query(None, description="Filter by licensed retailer ID"),
-    postal_code: Optional[str] = Query(None, description="Filter by retailer locality PIN code (e.g. 500081)"),
-    bottle_size: Optional[str] = Query(None, description="e.g. 750ml, 375ml"),
-    min_price: Optional[Decimal] = Query(None, description="Minimum price filter"),
-    max_price: Optional[Decimal] = Query(None, description="Maximum price filter"),
+    search: str | None = Query(None, description="Search by product name or brand"),
+    category: str | None = Query(None, description="Category slug"),
+    brand: str | None = Query(None, description="Filter by brand name"),
+    retailer_id: str | None = Query(None, description="Filter by licensed retailer ID"),
+    postal_code: str | None = Query(None, description="Filter by retailer locality PIN code (e.g. 500081)"),
+    bottle_size: str | None = Query(None, description="e.g. 750ml, 375ml"),
+    min_price: Decimal | None = Query(None, description="Minimum price filter"),
+    max_price: Decimal | None = Query(None, description="Maximum price filter"),
     sort_by: str = Query("name_asc", description="name_asc, name_desc, price_asc, price_desc"),
     page: int = Query(1, ge=1),
     limit: int = Query(24, ge=1, le=250),

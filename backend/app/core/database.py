@@ -1,6 +1,6 @@
+from app.core.config import settings
 from sqlalchemy import create_engine, event
 from sqlalchemy.orm import declarative_base, sessionmaker
-from app.core.config import settings
 
 # Render and older cloud providers provide 'postgres://' which SQLAlchemy 1.4+ rejected in favor of 'postgresql://'
 db_url = settings.DATABASE_URL

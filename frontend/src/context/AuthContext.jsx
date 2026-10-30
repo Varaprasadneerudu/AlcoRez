@@ -27,8 +27,12 @@ export const DEMO_ACCOUNTS = {
 export function AuthProvider({ children }) {
   const [token, setToken] = useState(() => getStoredToken());
   const [user, setUser] = useState(() => {
-    const saved = localStorage.getItem('alco_user_profile');
-    return saved ? JSON.parse(saved) : null;
+    try {
+      const saved = localStorage.getItem('alco_user_profile');
+      return saved && saved !== 'undefined' ? JSON.parse(saved) : null;
+    } catch {
+      return null;
+    }
   });
   const [role, setRole] = useState(() => localStorage.getItem('alco_user_role') || 'customer');
   const [ageVerified, setAgeVerified] = useState(() => {

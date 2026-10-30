@@ -1,10 +1,10 @@
+from app.api.deps import get_current_customer
+from app.core.database import get_db
+from app.models.user import User
+from app.schemas.cart import CartItemAdd, CartItemUpdate, CartOut
+from app.services.cart_service import CartService
 from fastapi import APIRouter, Depends, status
 from sqlalchemy.orm import Session
-from app.core.database import get_db
-from app.api.deps import get_current_customer
-from app.models.user import User
-from app.schemas.cart import CartOut, CartItemAdd, CartItemUpdate
-from app.services.cart_service import CartService
 
 router = APIRouter(prefix="/cart", tags=["Shopping Cart"])
 
@@ -27,4 +27,3 @@ def remove_item(item_id: str, current_user: User = Depends(get_current_customer)
 @router.delete("", status_code=status.HTTP_204_NO_CONTENT)
 def clear_cart(current_user: User = Depends(get_current_customer), db: Session = Depends(get_db)):
     CartService.clear_cart(db, current_user)
-    return None

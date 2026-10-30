@@ -1,26 +1,36 @@
-from datetime import datetime, timezone, date
+from datetime import date
 from decimal import Decimal
-from typing import List, Optional
-from fastapi import HTTPException, status
-from sqlalchemy import or_, desc, asc, func
-from sqlalchemy.orm import Session
-from app.models.retailer import Retailer, RetailerLicense, RetailerStatus, RetailerMembership
-from app.models.product import Inventory, Product, ProductImage, Category, InventoryMovement
+
 from app.models.order import Order, OrderItem
+from app.models.product import Category, Inventory, InventoryMovement, Product
+from app.models.retailer import (
+    Retailer,
+    RetailerLicense,
+    RetailerMembership,
+    RetailerStatus,
+)
 from app.models.user import User
-from app.schemas.retailer import RetailerApplicationCreate, RetailerOut, RetailerLicenseOut, RetailerDashboardOut
 from app.schemas.catalog import (
-    InventoryCreate,
-    InventoryUpdate,
-    InventoryOut,
-    ProductCreate,
     CategoryOut,
+    InventoryCreate,
     InventoryMovementOut,
-    StockAdjustmentRequest,
+    InventoryOut,
     InventorySummaryOut,
+    InventoryUpdate,
     PaginatedInventoryResponse,
+    StockAdjustmentRequest,
+)
+from app.schemas.retailer import (
+    RetailerApplicationCreate,
+    RetailerDashboardOut,
+    RetailerLicenseOut,
+    RetailerOut,
 )
 from app.services.audit_service import AuditService
+from fastapi import HTTPException, status
+from sqlalchemy import asc, desc, func, or_
+from sqlalchemy.orm import Session
+
 
 class RetailerService:
     @staticmethod
@@ -28,7 +38,7 @@ class RetailerService:
         db: Session,
         user: User,
         app_in: RetailerApplicationCreate,
-        ip_address: Optional[str] = None
+        ip_address: str | None = None
     ) -> RetailerOut:
         """
         Submit a retailer onboarding application.
@@ -147,7 +157,7 @@ class RetailerService:
         return RetailerService.to_retailer_out(db, retailer)
 
     @staticmethod
-    def get_retailer_by_user(db: Session, user_id: str) -> Optional[Retailer]:
+    def get_retailer_by_user(db: Session, user_id: str) -> Retailer | None:
         retailer = db.query(Retailer).filter(Retailer.user_id == user_id).first()
         if not retailer:
             membership = db.query(RetailerMembership).filter(RetailerMembership.user_id == user_id).first()
@@ -192,7 +202,7 @@ class RetailerService:
         )
 
     @staticmethod
-    def get_retailer_inventory(db: Session, retailer_id: str) -> List[InventoryOut]:
+    def get_retailer_inventory(db: Session, retailer_id: str) -> list[InventoryOut]:
         inventories = db.query(Inventory).filter(Inventory.retailer_id == retailer_id).order_by(desc(Inventory.updated_at)).all()
         return [RetailerService.to_inventory_out(inv) for inv in inventories]
 
@@ -200,13 +210,13 @@ class RetailerService:
     def get_retailer_inventory_paginated(
         db: Session,
         retailer_id: str,
-        search: Optional[str] = None,
-        category_id: Optional[str] = None,
-        brand: Optional[str] = None,
-        stock_status: Optional[str] = None,
-        listing_status: Optional[str] = None,
-        sort_by: Optional[str] = "updated_at",
-        sort_order: Optional[str] = "desc",
+        search: str | None = None,
+        category_id: str | None = None,
+        brand: str | None = None,
+        stock_status: str | None = None,
+        listing_status: str | None = None,
+        sort_by: str | None = "updated_at",
+        sort_order: str | None = "desc",
         page: int = 1,
         page_size: int = 20,
     ) -> PaginatedInventoryResponse:
@@ -284,10 +294,8 @@ class RetailerService:
         elif sort_by == "updated_at":
             order_col = Inventory.updated_at
 
-        if sort_order == "asc":
-            query = query.order_by(asc(order_col))
-        else:
-            query = query.order_by(desc(order_col))
+        order_direction = asc(order_col) if sort_order == "asc" else desc(order_col)
+        query = query.order_by(order_direction)
 
         offset = (page - 1) * page_size
         items = query.offset(offset).limit(page_size).all()
@@ -314,7 +322,7 @@ class RetailerService:
         retailer: Retailer,
         inv_in: InventoryCreate,
         actor_user: User,
-        ip_address: Optional[str] = None
+        ip_address: str | None = None
     ) -> InventoryOut:
         # Check retailer status
         if retailer.status != RetailerStatus.APPROVED and actor_user.role.value != "admin":
@@ -396,7 +404,7 @@ class RetailerService:
         retailer: Retailer,
         adj_in: StockAdjustmentRequest,
         actor_user: User,
-        ip_address: Optional[str] = None
+        ip_address: str | None = None
     ) -> InventoryOut:
         inv = db.query(Inventory).filter(Inventory.id == inventory_id).first()
         if not inv:
@@ -483,7 +491,7 @@ class RetailerService:
         inventory_id: str,
         retailer: Retailer,
         actor_user: User
-    ) -> List[InventoryMovementOut]:
+    ) -> list[InventoryMovementOut]:
         inv = db.query(Inventory).filter(Inventory.id == inventory_id).first()
         if not inv:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Inventory listing not found")
@@ -504,7 +512,7 @@ class RetailerService:
         retailer: Retailer,
         inv_update: InventoryUpdate,
         actor_user: User,
-        ip_address: Optional[str] = None
+        ip_address: str | None = None
     ) -> InventoryOut:
         inv = db.query(Inventory).filter(Inventory.id == inventory_id).first()
         if not inv:
@@ -604,7 +612,7 @@ class RetailerService:
         inventory_id: str,
         retailer: Retailer,
         actor_user: User,
-        ip_address: Optional[str] = None
+        ip_address: str | None = None
     ) -> dict:
         inv = db.query(Inventory).filter(Inventory.id == inventory_id).first()
         if not inv:
@@ -760,6 +768,7 @@ class RetailerService:
         """
         import csv
         import io
+
         from sqlalchemy.orm import joinedload
 
         output = io.StringIO()
@@ -815,11 +824,14 @@ class RetailerService:
         """
         import csv
         import io
-        from decimal import Decimal, InvalidOperation
-        from app.schemas.catalog import InventoryCsvRowPreview, InventoryImportPreviewResponse
+        from decimal import InvalidOperation
 
-        if csv_text.startswith("\ufeff"):
-            csv_text = csv_text[1:]
+        from app.schemas.catalog import (
+            InventoryCsvRowPreview,
+            InventoryImportPreviewResponse,
+        )
+
+        csv_text = csv_text.removeprefix("\ufeff")
 
         reader = csv.reader(io.StringIO(csv_text))
         rows_list = list(reader)
@@ -994,14 +1006,14 @@ class RetailerService:
         retailer: Retailer,
         actor_user: User,
         items: list,
-        ip_address: Optional[str] = None
+        ip_address: str | None = None
     ) -> dict:
         """
         Applies validated bulk CSV items within a transaction.
         Preserves inventory movements history, concurrency versioning, and audit logs.
         """
-        from app.services.notification_service import NotificationService
         from app.services.audit_service import AuditService
+        from app.services.notification_service import NotificationService
 
         imported_count = 0
         updated_count = 0

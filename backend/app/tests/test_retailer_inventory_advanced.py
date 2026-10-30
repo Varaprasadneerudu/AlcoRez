@@ -1,10 +1,10 @@
-import pytest
 import uuid
 from decimal import Decimal
-from app.models.retailer import Retailer, RetailerStatus, RetailerLicense, RetailerMembership
-from app.models.product import Inventory, Product, Category, InventoryMovement
+
 from app.models.order import Order, OrderItem, OrderStatus
+from app.models.product import Inventory
 from app.models.user import User, UserRole
+
 
 def get_auth_retailer(client, email_prefix="adv_retailer"):
     email = f"{email_prefix}_{uuid.uuid4().hex[:6]}@telanganamock.gov"
@@ -55,7 +55,7 @@ def get_auth_retailer(client, email_prefix="adv_retailer"):
     return headers, retailer_id
 
 def test_summary_metrics_correctness(client):
-    headers, retailer_id = get_auth_retailer(client, "metrics_user")
+    headers, _ = get_auth_retailer(client, "metrics_user")
     cat_res = client.get("/api/v1/products")
     products = cat_res.json()["items"]
     p1 = products[0]["id"]
@@ -125,7 +125,7 @@ def test_summary_metrics_correctness(client):
     assert summary["total_units"] == 39
 
 def test_search_filters_and_sorting(client):
-    headers, retailer_id = get_auth_retailer(client, "filter_user")
+    headers, _ = get_auth_retailer(client, "filter_user")
     cat_res = client.get("/api/v1/products")
     products = cat_res.json()["items"]
 
@@ -172,7 +172,7 @@ def test_search_filters_and_sorting(client):
     assert data["total_pages"] == 2
 
 def test_low_stock_threshold_boundaries(client):
-    headers, retailer_id = get_auth_retailer(client, "boundary_user")
+    headers, _ = get_auth_retailer(client, "boundary_user")
     p_id = client.get("/api/v1/products").json()["items"][0]["id"]
 
     # Boundary test: stock == low_stock_threshold (5 == 5) -> must be classified as low stock
@@ -192,7 +192,7 @@ def test_low_stock_threshold_boundaries(client):
     assert inv_res.json()["summary"]["low_stock_listings"] == 1
 
 def test_stock_adjustment_and_movement_history(client):
-    headers, retailer_id = get_auth_retailer(client, "adj_user")
+    headers, _ = get_auth_retailer(client, "adj_user")
     p_id = client.get("/api/v1/products").json()["items"][0]["id"]
 
     # 1. Create listing with initial stock 10
@@ -254,7 +254,7 @@ def test_stock_adjustment_and_movement_history(client):
     assert all_movs[1]["change_quantity"] == 15
 
 def test_negative_stock_rejection(client):
-    headers, retailer_id = get_auth_retailer(client, "neg_user")
+    headers, _ = get_auth_retailer(client, "neg_user")
     p_id = client.get("/api/v1/products").json()["items"][0]["id"]
 
     # 1. Negative in creation -> 422 / 400
@@ -283,7 +283,7 @@ def test_negative_stock_rejection(client):
     assert res_neg_adj.status_code in [400, 422]
 
 def test_duplicate_listing_prevention(client):
-    headers, retailer_id = get_auth_retailer(client, "dup_user")
+    headers, _ = get_auth_retailer(client, "dup_user")
     p_id = client.get("/api/v1/products").json()["items"][0]["id"]
 
     # 1. Create 750ml listing
@@ -306,7 +306,7 @@ def test_duplicate_listing_prevention(client):
     assert "already exists for this product" in dup.json()["detail"]
 
 def test_concurrency_optimistic_locking(client):
-    headers, retailer_id = get_auth_retailer(client, "conc_user")
+    headers, _ = get_auth_retailer(client, "conc_user")
     p_id = client.get("/api/v1/products").json()["items"][0]["id"]
 
     create_res = client.post("/api/v1/retailer/inventory", json={
@@ -343,8 +343,8 @@ def test_concurrency_optimistic_locking(client):
     assert valid_adj.json()["version"] == 3
 
 def test_cross_retailer_authorization(client):
-    headers_a, ret_a_id = get_auth_retailer(client, "retailer_a")
-    headers_b, ret_b_id = get_auth_retailer(client, "retailer_b")
+    headers_a, _ = get_auth_retailer(client, "retailer_a")
+    headers_b, _ = get_auth_retailer(client, "retailer_b")
 
     p_id = client.get("/api/v1/products").json()["items"][0]["id"]
 
@@ -438,7 +438,7 @@ def test_order_reference_soft_deactivation(client, db_session):
 
 def test_automatic_stock_deduction_on_order_acceptance(client, db_session):
     # 1. Setup retailer and product inventory with 20 bottles
-    headers, retailer_id = get_auth_retailer(client, "stock_deduct_owner")
+    headers, _ = get_auth_retailer(client, "stock_deduct_owner")
     cat_res = client.get("/api/v1/products")
     p_id = cat_res.json()["items"][0]["id"]
 

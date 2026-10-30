@@ -9,8 +9,7 @@ import {
   Clock,
   Package,
   Info,
-  X,
-  ExternalLink
+  X
 } from 'lucide-react';
 import { api } from '../services/api';
 import { useAuth } from '../context/AuthContext';
@@ -83,10 +82,10 @@ export default function NotificationCenter() {
     try {
       const res = await api.getUnreadNotificationCount();
       setUnreadCount(res?.unread_count || 0);
-    } catch (err) {
+    } catch {
       // silent fallback
     }
-  }, [isAuthenticated, user?.id]);
+  }, [isAuthenticated]);
 
   const loadNotifications = useCallback(async () => {
     if (!isAuthenticated) return;
@@ -100,7 +99,7 @@ export default function NotificationCenter() {
     } finally {
       setLoading(false);
     }
-  }, [isAuthenticated, user?.id, tab]);
+  }, [isAuthenticated, tab]);
 
   // Refetch on mount, on user switch, and on interval / event triggers
   useEffect(() => {

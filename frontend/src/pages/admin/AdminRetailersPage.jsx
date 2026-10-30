@@ -4,8 +4,6 @@ import {
   Store,
   X,
   ArrowLeft,
-  ShieldCheck,
-  ShieldAlert,
   AlertTriangle,
   CheckCircle2,
   XCircle,

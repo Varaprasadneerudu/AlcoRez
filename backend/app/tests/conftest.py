@@ -1,18 +1,19 @@
-import pytest
+import contextlib
 import os
 import sys
-from fastapi.testclient import TestClient
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
 
 # Ensure backend root is on path
 backend_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 if backend_dir not in sys.path:
     sys.path.insert(0, backend_dir)
 
-from app.main import app
+import pytest
 from app.core.database import Base, get_db
+from app.main import app
+from fastapi.testclient import TestClient
 from seed_data import seed_database
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
 
 TEST_DB_FILE = os.path.join(backend_dir, "test_alcodelivery.db")
 TEST_DATABASE_URL = f"sqlite:///{TEST_DB_FILE}"
@@ -31,20 +32,16 @@ app.dependency_overrides[get_db] = override_get_db
 @pytest.fixture(scope="session", autouse=True)
 def setup_test_db():
     if os.path.exists(TEST_DB_FILE):
-        try:
+        with contextlib.suppress(OSError):
             os.remove(TEST_DB_FILE)
-        except OSError:
-            pass
 
     Base.metadata.create_all(bind=test_engine)
     seed_database(target_engine=test_engine, target_session=TestSessionLocal)
     yield
     test_engine.dispose()
     if os.path.exists(TEST_DB_FILE):
-        try:
+        with contextlib.suppress(OSError):
             os.remove(TEST_DB_FILE)
-        except OSError:
-            pass
 
 @pytest.fixture
 def client():

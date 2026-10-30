@@ -8,8 +8,10 @@ export function getStoredToken() {
 export function setStoredToken(token, role, user) {
   if (token) {
     localStorage.setItem('alco_access_token', token);
-    localStorage.setItem('alco_user_role', role);
-    localStorage.setItem('alco_user_profile', JSON.stringify(user));
+    localStorage.setItem('alco_user_role', role || 'customer');
+    if (user) {
+      localStorage.setItem('alco_user_profile', JSON.stringify(user));
+    }
   } else {
     localStorage.removeItem('alco_access_token');
     localStorage.removeItem('alco_user_role');
@@ -31,7 +33,7 @@ export async function apiRequest(endpoint, options = {}) {
       ...options,
       headers,
     });
-  } catch (networkErr) {
+  } catch {
     throw new Error(
       'Unable to reach backend server. The free instance may be waking up (takes ~30s), or connection was blocked.'
     );

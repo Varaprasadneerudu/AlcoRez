@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Heart, Wine, Store, ArrowRight, Sparkles, RefreshCw } from 'lucide-react';
+import { Heart, Wine, Store, ArrowRight, RefreshCw } from 'lucide-react';
 import { api } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { useFavorites } from '../context/FavoritesContext';

@@ -1,4 +1,3 @@
-import pytest
 
 def test_live_payment_strictly_blocked_by_compliance(client):
     # Direct attempt to trigger live payment endpoint

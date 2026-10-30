@@ -3,9 +3,11 @@ Centralized Legal Compliance & Regulatory Enforcement Engine
 Telangana Excise Act, 1968 & Applicable State Notifications
 """
 from datetime import datetime, timezone
-from typing import Dict, Any, Optional
-from fastapi import HTTPException, status
+from typing import Any
+
 from app.core.config import settings
+from fastapi import HTTPException, status
+
 
 class ComplianceViolationException(HTTPException):
     def __init__(self, detail: str, requirement_code: str = "EXCISE_COMPLIANCE_RESTRICTION"):
@@ -52,7 +54,7 @@ class ComplianceEngine:
             )
 
     @classmethod
-    def validate_customer_age(cls, date_of_birth: Optional[str]) -> bool:
+    def validate_customer_age(cls, date_of_birth: str | None) -> bool:
         """
         In Telangana, legal drinking and purchasing age is 21 years old.
         """
@@ -67,7 +69,7 @@ class ComplianceEngine:
             return False
 
     @classmethod
-    def get_compliance_posture(cls) -> Dict[str, Any]:
+    def get_compliance_posture(cls) -> dict[str, Any]:
         """Provides full statutory compliance posture report."""
         return {
             "alcohol_transactions_enabled": settings.ALCOHOL_TRANSACTIONS_ENABLED,

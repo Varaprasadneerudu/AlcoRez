@@ -67,7 +67,7 @@ export function FavoritesProvider({ children }) {
       try {
         await api.removeFavoriteProduct(product.id);
         showToast(`Removed "${product.name}" from favorites`);
-      } catch (err) {
+      } catch {
         nextSet.add(product.id);
         setFavoriteProductIds(nextSet);
         showToast('Failed to update favorites. Please try again.');
@@ -78,7 +78,7 @@ export function FavoritesProvider({ children }) {
       try {
         await api.addFavoriteProduct(product.id);
         showToast(`Saved "${product.name}" to your favorites`);
-      } catch (err) {
+      } catch {
         nextSet.delete(product.id);
         setFavoriteProductIds(nextSet);
         showToast('Failed to update favorites. Please try again.');
@@ -106,7 +106,7 @@ export function FavoritesProvider({ children }) {
       try {
         await api.removeFavoriteRetailer(retailer.id);
         showToast(`Removed "${retailer.shop_name}" from favorite stores`);
-      } catch (err) {
+      } catch {
         nextSet.add(retailer.id);
         setFavoriteRetailerIds(nextSet);
         showToast('Failed to update favorite stores. Please try again.');
@@ -117,7 +117,7 @@ export function FavoritesProvider({ children }) {
       try {
         await api.addFavoriteRetailer(retailer.id);
         showToast(`Saved "${retailer.shop_name}" to favorite stores`);
-      } catch (err) {
+      } catch {
         nextSet.delete(retailer.id);
         setFavoriteRetailerIds(nextSet);
         showToast('Failed to update favorite stores. Please try again.');

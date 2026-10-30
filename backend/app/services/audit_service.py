@@ -1,7 +1,9 @@
 import json
-from typing import Any, Dict, Optional
-from sqlalchemy.orm import Session
+from typing import Any
+
 from app.models.compliance import AuditLog
+from sqlalchemy.orm import Session
+
 
 class AuditService:
     @staticmethod
@@ -9,11 +11,11 @@ class AuditService:
         db: Session,
         action: str,
         entity_type: str,
-        actor_user_id: Optional[str] = None,
-        actor_role: Optional[str] = None,
-        entity_id: Optional[str] = None,
-        ip_address: Optional[str] = None,
-        details: Optional[Dict[str, Any]] = None
+        actor_user_id: str | None = None,
+        actor_role: str | None = None,
+        entity_id: str | None = None,
+        ip_address: str | None = None,
+        details: dict[str, Any] | None = None
     ) -> AuditLog:
         """Create an immutable audit log record for compliance and accountability."""
         details_str = json.dumps(details) if details is not None else None

@@ -1,6 +1,7 @@
 from datetime import datetime
-from typing import List, Optional
+
 from pydantic import BaseModel, ConfigDict
+
 
 class NotificationOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
@@ -15,7 +16,7 @@ class NotificationOut(BaseModel):
     updated_at: datetime
 
 class NotificationListOut(BaseModel):
-    items: List[NotificationOut]
+    items: list[NotificationOut]
     total: int
     unread_count: int
     page: int

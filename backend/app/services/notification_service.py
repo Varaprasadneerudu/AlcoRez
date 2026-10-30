@@ -1,12 +1,14 @@
-from datetime import datetime, timezone, timedelta, date
-from typing import List, Optional, Tuple
-from sqlalchemy.orm import Session
-from sqlalchemy import desc, func
-from fastapi import HTTPException, status
+from datetime import date, datetime, timedelta, timezone
+
 from app.models.compliance import Notification
-from app.models.retailer import Retailer, RetailerStatus, RetailerLicense
-from app.models.product import Inventory
 from app.models.order import Order, OrderStatus
+from app.models.product import Inventory
+from app.models.retailer import Retailer, RetailerLicense, RetailerStatus
+from app.models.user import User
+from fastapi import HTTPException, status
+from sqlalchemy import desc, func
+from sqlalchemy.orm import Session
+
 
 class NotificationService:
     @staticmethod
@@ -36,7 +38,7 @@ class NotificationService:
         unread_only: bool = False,
         page: int = 1,
         limit: int = 20
-    ) -> Tuple[List[Notification], int, int]:
+    ) -> tuple[list[Notification], int, int]:
         base_query = db.query(Notification).filter(Notification.user_id == user_id)
         unread_count = db.query(func.count(Notification.id)).filter(
             Notification.user_id == user_id,
@@ -125,7 +127,7 @@ class NotificationService:
         retailer: Retailer,
         old_status: RetailerStatus,
         new_status: RetailerStatus,
-        notes: Optional[str] = None
+        notes: str | None = None
     ):
         """
         Generates a notification to the retailer user when an administrator reviews their application.
@@ -188,7 +190,7 @@ class NotificationService:
             )
 
     @staticmethod
-    def notify_order_created(db: Session, order: Order, retailer: Optional[Retailer], customer: User):
+    def notify_order_created(db: Session, order: Order, retailer: Retailer | None, customer: User):
         """
         Notifies both customer and retailer when a new simulated order is placed.
         """

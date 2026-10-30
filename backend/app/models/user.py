@@ -1,8 +1,10 @@
 import enum
-from typing import Optional
-from sqlalchemy import Column, String, Boolean, Enum, ForeignKey, Date
-from sqlalchemy.orm import relationship, Mapped, mapped_column
+from datetime import date
+
 from app.models.base import TimeStampedUUIDModel
+from sqlalchemy import Boolean, Date, Enum, ForeignKey, String
+from sqlalchemy.orm import Mapped, mapped_column, relationship
+
 
 class UserRole(str, enum.Enum):
     CUSTOMER = "customer"
@@ -15,7 +17,7 @@ class User(TimeStampedUUIDModel):
     email: Mapped[str] = mapped_column(String(255), unique=True, index=True, nullable=False)
     hashed_password: Mapped[str] = mapped_column(String(255), nullable=False)
     full_name: Mapped[str] = mapped_column(String(255), nullable=False)
-    phone: Mapped[Optional[str]] = mapped_column(String(20), nullable=True)
+    phone: Mapped[str | None] = mapped_column(String(20), nullable=True)
     role: Mapped[UserRole] = mapped_column(Enum(UserRole), default=UserRole.CUSTOMER, nullable=False, index=True)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
     is_verified: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
@@ -30,17 +32,15 @@ class User(TimeStampedUUIDModel):
     favorite_products = relationship("FavoriteProduct", back_populates="user", cascade="all, delete-orphan")
     favorite_retailers = relationship("FavoriteRetailer", back_populates="user", cascade="all, delete-orphan")
 
-from datetime import date
-from typing import Optional
 
 class CustomerProfile(TimeStampedUUIDModel):
     __tablename__ = "customer_profiles"
 
     user_id: Mapped[str] = mapped_column(String(36), ForeignKey("users.id", ondelete="CASCADE"), unique=True, nullable=False)
-    date_of_birth: Mapped[Optional[date]] = mapped_column(Date, nullable=True)
+    date_of_birth: Mapped[date | None] = mapped_column(Date, nullable=True)
     age_verified: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
-    id_proof_type: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
-    id_proof_number: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
+    id_proof_type: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    id_proof_number: Mapped[str | None] = mapped_column(String(100), nullable=True)
 
     user = relationship("User", back_populates="customer_profile")
 
@@ -50,13 +50,13 @@ class Address(TimeStampedUUIDModel):
     user_id: Mapped[str] = mapped_column(String(36), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
     label: Mapped[str] = mapped_column(String(50), default="Home", nullable=False)
     address_line1: Mapped[str] = mapped_column(String(255), nullable=False)
-    address_line2: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
-    landmark: Mapped[Optional[str]] = mapped_column(String(150), nullable=True)
+    address_line2: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    landmark: Mapped[str | None] = mapped_column(String(150), nullable=True)
     city: Mapped[str] = mapped_column(String(100), default="Hyderabad", nullable=False)
     state: Mapped[str] = mapped_column(String(100), default="Telangana", nullable=False)
     postal_code: Mapped[str] = mapped_column(String(20), nullable=False)
-    latitude: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
-    longitude: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
+    latitude: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    longitude: Mapped[str | None] = mapped_column(String(50), nullable=True)
     is_default: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
 
     user = relationship("User", back_populates="addresses")

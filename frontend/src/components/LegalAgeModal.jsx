@@ -1,5 +1,5 @@
 import React from 'react';
-import { ShieldAlert, CheckCircle2, XCircle } from 'lucide-react';
+import { CheckCircle2, XCircle } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
 import { AlcoRezIcon } from './AlcoRezLogo';

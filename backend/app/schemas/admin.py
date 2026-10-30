@@ -1,15 +1,16 @@
 from datetime import datetime
-from typing import Dict, List, Optional
-from pydantic import BaseModel, ConfigDict, EmailStr
+
 from app.models.user import UserRole
+from pydantic import BaseModel, ConfigDict, EmailStr
+
 
 class UserUpdateAdmin(BaseModel):
-    full_name: Optional[str] = None
-    email: Optional[EmailStr] = None
-    phone: Optional[str] = None
-    role: Optional[UserRole] = None
-    is_active: Optional[bool] = None
-    is_verified: Optional[bool] = None
+    full_name: str | None = None
+    email: EmailStr | None = None
+    phone: str | None = None
+    role: UserRole | None = None
+    is_active: bool | None = None
+    is_verified: bool | None = None
 
 class ComplianceApprovalOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
@@ -19,26 +20,26 @@ class ComplianceApprovalOut(BaseModel):
     title: str
     legal_reference: str
     is_approved: bool
-    approved_by_user_id: Optional[str] = None
-    approved_at: Optional[datetime] = None
-    notes: Optional[str] = None
+    approved_by_user_id: str | None = None
+    approved_at: datetime | None = None
+    notes: str | None = None
 
 class ComplianceToggleRequest(BaseModel):
     requirement_code: str
     is_approved: bool
-    notes: Optional[str] = None
+    notes: str | None = None
 
 class AuditLogOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: str
-    actor_user_id: Optional[str] = None
-    actor_role: Optional[str] = None
+    actor_user_id: str | None = None
+    actor_role: str | None = None
     action: str
     entity_type: str
-    entity_id: Optional[str] = None
-    ip_address: Optional[str] = None
-    details: Optional[str] = None
+    entity_id: str | None = None
+    ip_address: str | None = None
+    details: str | None = None
     timestamp: datetime
 
 class AdminDashboardStats(BaseModel):
@@ -51,4 +52,4 @@ class AdminDashboardStats(BaseModel):
     total_products: int
     total_inventory_items: int
     total_simulated_orders: int
-    compliance_posture: Dict[str, object]
+    compliance_posture: dict[str, object]

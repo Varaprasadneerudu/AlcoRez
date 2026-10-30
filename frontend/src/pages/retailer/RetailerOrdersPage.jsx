@@ -4,19 +4,13 @@ import {
   Clock,
   ArrowLeft,
   CheckCircle2,
-  Package,
-  Store,
-  MapPin,
-  ChevronRight,
   AlertTriangle
 } from 'lucide-react';
 import { api } from '../../services/api';
-import { useAuth } from '../../context/AuthContext';
 import { useLanguage } from '../../context/LanguageContext';
 
 export default function RetailerOrdersPage() {
-  const { role } = useAuth();
-  const { t, tp, tb, ts, language, tstatus } = useLanguage();
+  const { language } = useLanguage();
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [updatingId, setUpdatingId] = useState(null);

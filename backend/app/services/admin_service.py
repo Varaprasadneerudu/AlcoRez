@@ -1,27 +1,38 @@
 from datetime import datetime, timezone
-from typing import List, Optional
+
+from app.core.compliance import ComplianceEngine
+from app.models.compliance import AuditLog, ComplianceApproval
+from app.models.order import Order, OrderItem
+from app.models.product import Inventory, Product
+from app.models.retailer import (
+    Retailer,
+    RetailerLicense,
+    RetailerMembership,
+    RetailerStatus,
+)
+from app.models.user import User, UserRole
+from app.schemas.admin import (
+    AdminDashboardStats,
+    AuditLogOut,
+    ComplianceApprovalOut,
+    UserUpdateAdmin,
+)
+from app.schemas.auth import UserOut
+from app.schemas.retailer import RetailerOut, RetailerReviewRequest
+from app.services.audit_service import AuditService
+from app.services.retailer_service import RetailerService
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
-from app.models.retailer import Retailer, RetailerLicense, RetailerStatus, RetailerMembership
-from app.models.product import Product, Inventory
-from app.models.order import Order, OrderItem
-from app.models.user import User, UserRole
-from app.models.compliance import AuditLog, ComplianceApproval
-from app.schemas.retailer import RetailerOut, RetailerReviewRequest
-from app.schemas.auth import UserOut
-from app.schemas.admin import AdminDashboardStats, AuditLogOut, ComplianceApprovalOut, UserUpdateAdmin
-from app.services.retailer_service import RetailerService
-from app.services.audit_service import AuditService
-from app.core.compliance import ComplianceEngine
+
 
 class AdminService:
     @staticmethod
-    def get_pending_retailers(db: Session) -> List[RetailerOut]:
+    def get_pending_retailers(db: Session) -> list[RetailerOut]:
         retailers = db.query(Retailer).filter(Retailer.status == RetailerStatus.PENDING_REVIEW).order_by(Retailer.created_at.asc()).all()
         return [RetailerService.to_retailer_out(db, r) for r in retailers]
 
     @staticmethod
-    def get_all_retailers(db: Session, status_filter: Optional[str] = None) -> List[RetailerOut]:
+    def get_all_retailers(db: Session, status_filter: str | None = None) -> list[RetailerOut]:
         query = db.query(Retailer)
         if status_filter:
             query = query.filter(Retailer.status == status_filter)
@@ -34,7 +45,7 @@ class AdminService:
         retailer_id: str,
         review_in: RetailerReviewRequest,
         admin_user: User,
-        ip_address: Optional[str] = None
+        ip_address: str | None = None
     ) -> RetailerOut:
         retailer = db.query(Retailer).filter(Retailer.id == retailer_id).first()
         if not retailer:
@@ -129,17 +140,17 @@ class AdminService:
         )
 
     @staticmethod
-    def get_audit_logs(db: Session, skip: int = 0, limit: int = 50) -> List[AuditLogOut]:
+    def get_audit_logs(db: Session, skip: int = 0, limit: int = 50) -> list[AuditLogOut]:
         logs = db.query(AuditLog).order_by(AuditLog.timestamp.desc()).offset(skip).limit(limit).all()
-        return [AuditLogOut.model_validate(l) for l in logs]
+        return [AuditLogOut.model_validate(log_entry) for log_entry in logs]
 
     @staticmethod
-    def get_compliance_approvals(db: Session) -> List[ComplianceApprovalOut]:
+    def get_compliance_approvals(db: Session) -> list[ComplianceApprovalOut]:
         approvals = db.query(ComplianceApproval).all()
         return [ComplianceApprovalOut.model_validate(a) for a in approvals]
 
     @staticmethod
-    def get_users(db: Session, role_filter: Optional[str] = None, search: Optional[str] = None) -> List[UserOut]:
+    def get_users(db: Session, role_filter: str | None = None, search: str | None = None) -> list[UserOut]:
         query = db.query(User)
         if role_filter and role_filter != "all":
             query = query.filter(User.role == role_filter)
@@ -159,7 +170,7 @@ class AdminService:
         user_id: str,
         user_in: UserUpdateAdmin,
         admin_user: User,
-        ip_address: Optional[str] = None
+        ip_address: str | None = None
     ) -> UserOut:
         target = db.query(User).filter(User.id == user_id).first()
         if not target:
@@ -202,7 +213,7 @@ class AdminService:
         db: Session,
         user_id: str,
         admin_user: User,
-        ip_address: Optional[str] = None
+        ip_address: str | None = None
     ):
         target = db.query(User).filter(User.id == user_id).first()
         if not target:

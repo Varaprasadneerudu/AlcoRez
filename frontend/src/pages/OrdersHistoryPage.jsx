@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import {
   Package,
@@ -71,7 +71,7 @@ export default function OrdersHistoryPage() {
   const [reviewComment, setReviewComment] = useState('');
   const [reviewSubmitted, setReviewSubmitted] = useState(false);
 
-  const fetchOrders = () => {
+  const fetchOrders = useCallback(() => {
     if (isAuthenticated && role === 'customer') {
       setLoading(true);
       api.getOrders()
@@ -81,11 +81,11 @@ export default function OrdersHistoryPage() {
     } else {
       setLoading(false);
     }
-  };
+  }, [isAuthenticated, role]);
 
   useEffect(() => {
     fetchOrders();
-  }, [isAuthenticated, role]);
+  }, [fetchOrders]);
 
   const toggleExpand = (orderId) => {
     setExpandedOrders((prev) => ({

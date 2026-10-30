@@ -1,15 +1,27 @@
-from typing import List
-from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy.orm import Session
-from app.core.database import get_db
+
 from app.api.deps import get_current_customer
-from app.models.user import User, Address, CustomerProfile
-from app.schemas.customer import AddressCreate, AddressOut, CustomerProfileOut, CustomerProfileUpdate
-from app.core.compliance import ComplianceEngine
+from app.core.database import get_db
+from app.models.favorite import FavoriteProduct, FavoriteRetailer
+from app.models.product import Product
+from app.models.retailer import Retailer, RetailerStatus
+from app.models.user import Address, CustomerProfile, User
+from app.schemas.customer import (
+    AddressCreate,
+    AddressOut,
+    CustomerFavoritesOut,
+    CustomerProfileOut,
+    FavoriteIdsOut,
+    FavoriteProductOut,
+    FavoriteRetailerOut,
+)
+from app.services.catalog_service import CatalogService
+from app.services.retailer_service import RetailerService
+from fastapi import APIRouter, Depends, HTTPException, status
+from sqlalchemy.orm import Session, joinedload
 
 router = APIRouter(prefix="/customer", tags=["Customer"])
 
-@router.get("/addresses", response_model=List[AddressOut])
+@router.get("/addresses", response_model=list[AddressOut])
 def get_addresses(current_user: User = Depends(get_current_customer), db: Session = Depends(get_db)):
     addresses = db.query(Address).filter(Address.user_id == current_user.id).order_by(Address.is_default.desc(), Address.created_at.desc()).all()
     return addresses
@@ -42,7 +54,6 @@ def delete_address(address_id: str, current_user: User = Depends(get_current_cus
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Address not found")
     db.delete(addr)
     db.commit()
-    return None
 
 @router.get("/profile", response_model=CustomerProfileOut)
 def get_customer_profile(current_user: User = Depends(get_current_customer), db: Session = Depends(get_db)):
@@ -55,13 +66,6 @@ def get_customer_profile(current_user: User = Depends(get_current_customer), db:
     return profile
 
 # --- Customer Favorites Endpoints ---
-from sqlalchemy.orm import joinedload
-from app.models.favorite import FavoriteProduct, FavoriteRetailer
-from app.models.product import Product
-from app.models.retailer import Retailer, RetailerStatus
-from app.schemas.customer import CustomerFavoritesOut, FavoriteIdsOut, FavoriteProductOut, FavoriteRetailerOut
-from app.services.catalog_service import CatalogService
-from app.services.retailer_service import RetailerService
 
 @router.get("/favorites", response_model=CustomerFavoritesOut)
 def get_customer_favorites(
@@ -166,7 +170,6 @@ def remove_favorite_product(
     if fav:
         db.delete(fav)
         db.commit()
-    return None
 
 @router.post("/favorites/retailers/{retailer_id}", status_code=status.HTTP_201_CREATED)
 def add_favorite_retailer(
@@ -203,4 +206,3 @@ def remove_favorite_retailer(
     if fav:
         db.delete(fav)
         db.commit()
-    return None

@@ -1,6 +1,7 @@
-from sqlalchemy import String, ForeignKey, UniqueConstraint
-from sqlalchemy.orm import relationship, Mapped, mapped_column
 from app.models.base import TimeStampedUUIDModel
+from sqlalchemy import ForeignKey, String, UniqueConstraint
+from sqlalchemy.orm import Mapped, mapped_column, relationship
+
 
 class FavoriteProduct(TimeStampedUUIDModel):
     __tablename__ = "favorite_products"

@@ -4,6 +4,8 @@ import { Link } from 'react-router-dom';
 import { useLanguage } from '../context/LanguageContext';
 import { AlcoRezIcon } from './AlcoRezLogo';
 
+const CURRENT_YEAR = new Date().getFullYear();
+
 export default function Footer() {
   const { t } = useLanguage();
 
@@ -83,7 +85,7 @@ export default function Footer() {
         </div>
 
         <div className="border-t border-stone-800 pt-6 flex flex-col sm:flex-row items-center justify-between text-stone-500 text-[11px] gap-2">
-          <p>© {new Date().getFullYear()} {t('footer.copyright')}</p>
+          <p>© {CURRENT_YEAR} {t('footer.copyright')}</p>
           <p>{t('footer.techStack')}</p>
         </div>
       </div>

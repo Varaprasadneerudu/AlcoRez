@@ -1,6 +1,7 @@
 from decimal import Decimal
-from typing import List, Optional
-from pydantic import BaseModel, Field, ConfigDict
+
+from pydantic import BaseModel, ConfigDict, Field
+
 
 class CartItemAdd(BaseModel):
     inventory_id: str
@@ -19,7 +20,7 @@ class CartItemOut(BaseModel):
     unit_price: Decimal
     quantity: int
     total_price: Decimal
-    image_url: Optional[str] = None
+    image_url: str | None = None
     retailer_id: str
     retailer_name: str
     is_available: bool
@@ -29,7 +30,7 @@ class CartItemOut(BaseModel):
 class CartOut(BaseModel):
     id: str
     user_id: str
-    items: List[CartItemOut] = []
+    items: list[CartItemOut] = []
     subtotal: Decimal
     delivery_fee: Decimal
     taxes: Decimal

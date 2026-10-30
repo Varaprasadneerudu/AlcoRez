@@ -1,12 +1,13 @@
 from datetime import datetime
 from decimal import Decimal
-from typing import List, Optional
-from pydantic import BaseModel, ConfigDict, Field
+
 from app.models.order import OrderStatus
+from pydantic import BaseModel, ConfigDict
+
 
 class SimulatedCheckoutRequest(BaseModel):
-    address_id: Optional[str] = None
-    customer_notes: Optional[str] = None
+    address_id: str | None = None
+    customer_notes: str | None = None
     simulate_payment_success: bool = True
 
 class OrderItemOut(BaseModel):
@@ -27,7 +28,7 @@ class OrderOut(BaseModel):
     order_number: str
     user_id: str
     retailer_id: str
-    retailer_name: Optional[str] = None
+    retailer_name: str | None = None
     status: OrderStatus
     subtotal: Decimal
     delivery_fee: Decimal
@@ -35,15 +36,15 @@ class OrderOut(BaseModel):
     total_amount: Decimal
     address_snapshot: str
     is_simulated: bool
-    notes: Optional[str] = None
+    notes: str | None = None
     created_at: datetime
     updated_at: datetime
-    items: List[OrderItemOut] = []
-    payment_status: Optional[str] = None
+    items: list[OrderItemOut] = []
+    payment_status: str | None = None
 
 class OrderStatusUpdate(BaseModel):
     status: OrderStatus
-    notes: Optional[str] = None
+    notes: str | None = None
 
 class LivePaymentAttemptRequest(BaseModel):
     order_id: str

@@ -1,17 +1,29 @@
 import uuid
 from datetime import datetime, timezone
 from decimal import Decimal
-from typing import List, Optional
-from fastapi import HTTPException, status
-from sqlalchemy.orm import Session
+
 from app.core.compliance import ComplianceEngine
-from app.models.order import Order, OrderItem, OrderStatus, PaymentAttempt, Cart, CartItem
-from app.models.product import Inventory, Product, InventoryMovement
+from app.models.order import (
+    Cart,
+    CartItem,
+    Order,
+    OrderItem,
+    OrderStatus,
+    PaymentAttempt,
+)
+from app.models.product import Inventory, InventoryMovement, Product
 from app.models.retailer import Retailer, RetailerMembership
-from app.models.user import User, Address
-from app.schemas.order import SimulatedCheckoutRequest, OrderOut, OrderItemOut, OrderStatusUpdate
+from app.models.user import Address, User
+from app.schemas.order import (
+    OrderItemOut,
+    OrderOut,
+    OrderStatusUpdate,
+    SimulatedCheckoutRequest,
+)
 from app.services.audit_service import AuditService
 from app.services.notification_service import NotificationService
+from fastapi import HTTPException, status
+from sqlalchemy.orm import Session
 
 VALID_ORDER_TRANSITIONS = {
     OrderStatus.CREATED: [OrderStatus.CONFIRMED, OrderStatus.REJECTED, OrderStatus.CANCELLED],
@@ -30,8 +42,8 @@ class OrderService:
         db: Session,
         user: User,
         checkout_in: SimulatedCheckoutRequest,
-        ip_address: Optional[str] = None
-    ) -> List[OrderOut]:
+        ip_address: str | None = None
+    ) -> list[OrderOut]:
         """
         Creates simulated test orders from customer's cart.
         Partitions cart items by retailer, snapshots item details, decrements mock stock,
@@ -72,7 +84,6 @@ class OrderService:
         # Execute order creation in transaction
         try:
             for retailer_id, items_list in items_by_retailer.items():
-                retailer = db.query(Retailer).filter(Retailer.id == retailer_id).first()
                 order_num = f"SIM-TS-{datetime.now(timezone.utc).strftime('%Y%m%d')}-{uuid.uuid4().hex[:6].upper()}"
 
                 subtotal = Decimal("0.00")
@@ -158,7 +169,7 @@ class OrderService:
 
         except Exception as e:
             db.rollback()
-            raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Order checkout failed: {str(e)}")
+            raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Order checkout failed: {e!s}") from e
 
     @staticmethod
     def get_order_by_id(db: Session, order_id: str, requesting_user: User) -> OrderOut:
@@ -184,12 +195,12 @@ class OrderService:
         return OrderService.to_order_out(db, order)
 
     @staticmethod
-    def get_customer_orders(db: Session, user: User) -> List[OrderOut]:
+    def get_customer_orders(db: Session, user: User) -> list[OrderOut]:
         orders = db.query(Order).filter(Order.user_id == user.id).order_by(Order.created_at.desc()).all()
         return [OrderService.to_order_out(db, o) for o in orders]
 
     @staticmethod
-    def get_retailer_orders(db: Session, retailer_id: str) -> List[OrderOut]:
+    def get_retailer_orders(db: Session, retailer_id: str) -> list[OrderOut]:
         orders = db.query(Order).filter(Order.retailer_id == retailer_id).order_by(Order.created_at.desc()).all()
         return [OrderService.to_order_out(db, o) for o in orders]
 
@@ -199,7 +210,7 @@ class OrderService:
         order_id: str,
         status_in: OrderStatusUpdate,
         actor_user: User,
-        ip_address: Optional[str] = None
+        ip_address: str | None = None
     ) -> OrderOut:
         order = db.query(Order).filter(Order.id == order_id).first()
         if not order:

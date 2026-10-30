@@ -1,30 +1,39 @@
-from typing import List, Optional
-from fastapi import APIRouter, Depends, HTTPException, Request, Query, status
-from sqlalchemy.orm import Session, joinedload
+
+from app.api.deps import get_current_retailer_user, get_current_user
 from app.core.database import get_db
-from app.api.deps import get_current_user, get_current_retailer_user
-from app.models.user import User
 from app.models.retailer import Retailer, RetailerStatus
-from app.schemas.retailer import RetailerApplicationCreate, RetailerOut, RetailerDashboardOut
+from app.models.user import User
 from app.schemas.catalog import (
     InventoryCreate,
-    InventoryUpdate,
-    InventoryOut,
-    StockAdjustmentRequest,
+    InventoryImportApplyRequest,
+    InventoryImportApplyResponse,
+    InventoryImportPreviewRequest,
+    InventoryImportPreviewResponse,
     InventoryMovementOut,
+    InventoryOut,
+    InventoryUpdate,
     PaginatedInventoryResponse,
+    StockAdjustmentRequest,
 )
 from app.schemas.order import OrderOut, OrderStatusUpdate
-from app.services.retailer_service import RetailerService
+from app.schemas.retailer import (
+    RetailerApplicationCreate,
+    RetailerDashboardOut,
+    RetailerOut,
+)
 from app.services.order_service import OrderService
+from app.services.retailer_service import RetailerService
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
+from fastapi.responses import Response
+from sqlalchemy.orm import Session, joinedload
 
 router = APIRouter(tags=["Retailer Portal & Operations"])
 
 # Public endpoints
-@router.get("/retailers", response_model=List[RetailerOut])
+@router.get("/retailers", response_model=list[RetailerOut])
 def list_approved_retailers(
-    postal_code: Optional[str] = Query(None, description="Filter retailers by locality PIN code (e.g. 500081)"),
-    search: Optional[str] = Query(None, description="Search retailers by shop name or trade name"),
+    postal_code: str | None = Query(None, description="Filter retailers by locality PIN code (e.g. 500081)"),
+    search: str | None = Query(None, description="Search retailers by shop name or trade name"),
     db: Session = Depends(get_db)
 ):
     query = (
@@ -63,8 +72,8 @@ def get_retailer_public(retailer_id: str, db: Session = Depends(get_db)):
 @router.get("/retailers/{retailer_id}/catalogue")
 def get_retailer_catalogue_public(
     retailer_id: str,
-    search: Optional[str] = Query(None),
-    category: Optional[str] = Query(None),
+    search: str | None = Query(None),
+    category: str | None = Query(None),
     page: int = Query(1, ge=1),
     limit: int = Query(50, ge=1, le=100),
     db: Session = Depends(get_db)
@@ -108,13 +117,13 @@ def get_retailer_dashboard(auth_context=Depends(get_current_retailer_user), db: 
 
 @router.get("/retailer/inventory", response_model=PaginatedInventoryResponse)
 def get_my_inventory(
-    search: Optional[str] = None,
-    category_id: Optional[str] = None,
-    brand: Optional[str] = None,
-    stock_status: Optional[str] = None,
-    listing_status: Optional[str] = None,
-    sort_by: Optional[str] = "updated_at",
-    sort_order: Optional[str] = "desc",
+    search: str | None = None,
+    category_id: str | None = None,
+    brand: str | None = None,
+    stock_status: str | None = None,
+    listing_status: str | None = None,
+    sort_by: str | None = "updated_at",
+    sort_order: str | None = "desc",
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
     auth_context=Depends(get_current_retailer_user),
@@ -170,7 +179,7 @@ def adjust_inventory_stock(
     ip = request.client.host if request.client else None
     return RetailerService.adjust_inventory_stock(db, inventory_id, retailer, adj_in, actor_user=user, ip_address=ip)
 
-@router.get("/retailer/inventory/{inventory_id}/movements", response_model=List[InventoryMovementOut])
+@router.get("/retailer/inventory/{inventory_id}/movements", response_model=list[InventoryMovementOut])
 def get_inventory_movements(
     inventory_id: str,
     auth_context=Depends(get_current_retailer_user),
@@ -191,16 +200,13 @@ def delete_or_deactivate_inventory_listing(
     return RetailerService.delete_or_deactivate_inventory_item(db, inventory_id, retailer, actor_user=user, ip_address=ip)
 
 # --- Bulk Inventory Import / Export Endpoints (Feature D) ---
-from fastapi import UploadFile, File, Body
-from fastapi.responses import Response
-from app.schemas.catalog import InventoryImportPreviewRequest, InventoryImportPreviewResponse, InventoryImportApplyRequest, InventoryImportApplyResponse
 
 @router.get("/retailer/inventory/export")
 def export_retailer_inventory(
     auth_context=Depends(get_current_retailer_user),
     db: Session = Depends(get_db)
 ):
-    user, retailer = auth_context
+    _, retailer = auth_context
     csv_data = RetailerService.export_inventory_csv(db, retailer)
     filename = f"inventory_{retailer.postal_code}_{retailer.shop_name[:12].replace(' ', '_')}.csv"
     return Response(
@@ -215,7 +221,7 @@ def preview_inventory_import(
     auth_context=Depends(get_current_retailer_user),
     db: Session = Depends(get_db)
 ):
-    user, retailer = auth_context
+    _, retailer = auth_context
     if not payload.raw_csv or not payload.raw_csv.strip():
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="No CSV content provided")
     return RetailerService.preview_inventory_csv(db, retailer, payload.raw_csv)
@@ -237,9 +243,9 @@ def apply_inventory_import(
         ip_address=ip
     )
 
-@router.get("/retailer/orders", response_model=List[OrderOut])
+@router.get("/retailer/orders", response_model=list[OrderOut])
 def get_retailer_orders(auth_context=Depends(get_current_retailer_user), db: Session = Depends(get_db)):
-    user, retailer = auth_context
+    _, retailer = auth_context
     return OrderService.get_retailer_orders(db, retailer.id)
 
 @router.patch("/retailer/orders/{order_id}/status", response_model=OrderOut)
@@ -250,6 +256,6 @@ def update_order_status(
     auth_context=Depends(get_current_retailer_user),
     db: Session = Depends(get_db)
 ):
-    user, retailer = auth_context
+    user, _ = auth_context
     ip = request.client.host if request.client else None
     return OrderService.update_order_status(db, order_id, status_in, actor_user=user, ip_address=ip)

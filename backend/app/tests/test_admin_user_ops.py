@@ -1,5 +1,5 @@
-import pytest
 import uuid
+
 
 def test_admin_user_operations(client):
     # 1. Log in as Excise Admin

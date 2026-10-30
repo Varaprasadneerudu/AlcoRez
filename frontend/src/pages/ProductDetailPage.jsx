@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, Link, useNavigate } from 'react-router-dom';
+import { useParams, Link } from 'react-router-dom';
 import {
   ArrowLeft,
   ShieldCheck,
@@ -19,7 +19,6 @@ import { useLanguage } from '../context/LanguageContext';
 
 export default function ProductDetailPage() {
   const { id } = useParams();
-  const navigate = useNavigate();
   const { addToCart, loading: cartLoading } = useCart();
   const { isAuthenticated } = useAuth();
   const { t, tp, tb, tc, ts, tr, to, language } = useLanguage();

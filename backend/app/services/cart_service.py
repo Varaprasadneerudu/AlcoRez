@@ -1,12 +1,13 @@
 from decimal import Decimal
-from typing import Optional
-from fastapi import HTTPException, status
-from sqlalchemy.orm import Session, joinedload
+
 from app.models.order import Cart, CartItem
-from app.models.product import Inventory, Product, ProductImage
+from app.models.product import Inventory, Product
 from app.models.retailer import Retailer, RetailerStatus
 from app.models.user import User
-from app.schemas.cart import CartOut, CartItemOut, CartItemAdd
+from app.schemas.cart import CartItemAdd, CartItemOut, CartOut
+from fastapi import HTTPException, status
+from sqlalchemy.orm import Session, joinedload
+
 
 class CartService:
     @staticmethod

@@ -1,5 +1,5 @@
-import pytest
 import uuid
+
 
 def test_retailer_onboarding_and_admin_approval_workflow(client):
     # 1. Register a new user with retailer role

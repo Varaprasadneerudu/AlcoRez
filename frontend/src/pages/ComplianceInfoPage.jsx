@@ -1,5 +1,5 @@
 import React from 'react';
-import { ShieldCheck, Scale, AlertTriangle, PhoneCall, ArrowLeft, CheckCircle2 } from 'lucide-react';
+import { ShieldCheck, Scale, AlertTriangle, PhoneCall, ArrowLeft } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useLanguage } from '../context/LanguageContext';
 

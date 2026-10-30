@@ -1,8 +1,8 @@
-import pytest
-import io
 import uuid
-from decimal import Decimal
+
+import pytest
 from app.core.config import Settings
+
 
 # --- Test Authentication Helpers ---
 def get_customer_token(client):
@@ -170,7 +170,6 @@ def test_notifications_lifecycle_and_unread_counts(client):
     initial_unread = client.get("/api/v1/notifications/unread-count", headers=headers).json()["unread_count"]
 
     # Trigger a real application event: Stock adjustment that drops below threshold
-    dash = client.get("/api/v1/retailer/dashboard", headers=headers).json()
     inv_list = client.get("/api/v1/retailer/inventory", headers=headers).json()["items"]
     assert len(inv_list) > 0
     target_inv = inv_list[0]

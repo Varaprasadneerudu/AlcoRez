@@ -1,16 +1,26 @@
 from decimal import Decimal
-from typing import Optional, List
-from sqlalchemy import String, Text, Boolean, Numeric, Integer, ForeignKey, UniqueConstraint, CheckConstraint
-from sqlalchemy.orm import relationship, Mapped, mapped_column
+
 from app.models.base import TimeStampedUUIDModel
+from sqlalchemy import (
+    Boolean,
+    CheckConstraint,
+    ForeignKey,
+    Integer,
+    Numeric,
+    String,
+    Text,
+    UniqueConstraint,
+)
+from sqlalchemy.orm import Mapped, mapped_column, relationship
+
 
 class Category(TimeStampedUUIDModel):
     __tablename__ = "categories"
 
     name: Mapped[str] = mapped_column(String(100), unique=True, nullable=False, index=True)
     slug: Mapped[str] = mapped_column(String(100), unique=True, nullable=False, index=True)
-    description: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
-    image_url: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
+    description: Mapped[str | None] = mapped_column(Text, nullable=True)
+    image_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
 
     products = relationship("Product", back_populates="category")
@@ -21,8 +31,8 @@ class Product(TimeStampedUUIDModel):
     name: Mapped[str] = mapped_column(String(255), nullable=False, index=True)
     brand: Mapped[str] = mapped_column(String(150), nullable=False, index=True)
     category_id: Mapped[str] = mapped_column(String(36), ForeignKey("categories.id", ondelete="RESTRICT"), nullable=False, index=True)
-    description: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
-    alcohol_by_volume: Mapped[Optional[str]] = mapped_column(String(20), nullable=True)
+    description: Mapped[str | None] = mapped_column(Text, nullable=True)
+    alcohol_by_volume: Mapped[str | None] = mapped_column(String(20), nullable=True)
     country_of_origin: Mapped[str] = mapped_column(String(100), default="India", nullable=False)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False, index=True)
     is_demo_data: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
@@ -70,10 +80,10 @@ class InventoryMovement(TimeStampedUUIDModel):
     new_quantity: Mapped[int] = mapped_column(Integer, nullable=False)
     change_quantity: Mapped[int] = mapped_column(Integer, nullable=False)
     reason: Mapped[str] = mapped_column(String(100), nullable=False)
-    notes: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
-    actor_user_id: Mapped[Optional[str]] = mapped_column(String(36), ForeignKey("users.id", ondelete="SET NULL"), nullable=True, index=True)
-    actor_name: Mapped[Optional[str]] = mapped_column(String(150), nullable=True)
-    actor_role: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
+    notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+    actor_user_id: Mapped[str | None] = mapped_column(String(36), ForeignKey("users.id", ondelete="SET NULL"), nullable=True, index=True)
+    actor_name: Mapped[str | None] = mapped_column(String(150), nullable=True)
+    actor_role: Mapped[str | None] = mapped_column(String(50), nullable=True)
 
     inventory = relationship("Inventory", back_populates="movements")
     retailer = relationship("Retailer")

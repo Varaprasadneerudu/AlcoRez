@@ -1,5 +1,6 @@
 import pytest
 
+
 def test_catalog_search_and_filters(client):
     # Test search for "Amrut"
     res = client.get("/api/v1/products?search=Amrut")
@@ -77,14 +78,6 @@ def test_cart_and_simulated_checkout_flow(client):
     assert cart_after["item_count"] == 0
 
 def test_order_status_state_transitions(client):
-    # Login as admin to manage order
-    admin_login = client.post("/api/v1/auth/login", json={
-        "email": "admin@telanganaliquor.gov.mock",
-        "password": "Admin@123456"
-    })
-    admin_token = admin_login.json()["access_token"]
-    admin_headers = {"Authorization": f"Bearer {admin_token}"}
-
     # Login as retailer 1
     ret_login = client.post("/api/v1/auth/login", json={
         "email": "retailer@madhapurwines.mock",

@@ -1,5 +1,5 @@
 import uuid
-import pytest
+
 
 def test_retailer_cannot_modify_other_retailer_inventory(client):
     # Log in as Retailer 2 (Jubilee Hills)
@@ -14,7 +14,7 @@ def test_retailer_cannot_modify_other_retailer_inventory(client):
     cat_res = client.get("/api/v1/products")
     p_id = cat_res.json()["items"][0]["id"]
     p_detail = client.get(f"/api/v1/products/{p_id}").json()
-    
+
     # Find an inventory item owned by Retailer 1
     r1_inv = None
     for inv in p_detail["inventories"]:

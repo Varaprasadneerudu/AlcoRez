@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { ShieldCheck, ArrowLeft, CheckCircle2, XCircle, AlertTriangle, Scale, Lock } from 'lucide-react';
+import { ArrowLeft, CheckCircle2, XCircle, Scale, Lock } from 'lucide-react';
 import { api } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 

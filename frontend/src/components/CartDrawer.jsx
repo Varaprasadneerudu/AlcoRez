@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { X, ShoppingBag, Plus, Minus, Trash2, ShieldCheck, ArrowRight, Store, AlertTriangle, CheckCircle2 } from 'lucide-react';
+import { X, ShoppingBag, Plus, Minus, Trash2, ShieldCheck, ArrowRight, Store } from 'lucide-react';
 import { useCart } from '../context/CartContext';
 import { useLanguage } from '../context/LanguageContext';
 import { useAuth } from '../context/AuthContext';
@@ -18,7 +18,7 @@ import { useAuth } from '../context/AuthContext';
  */
 export default function CartDrawer() {
   const { cart, itemCount, subtotal, isDrawerOpen, closeDrawer, updateQuantity, removeItem, loading } = useCart();
-  const { t, tp, tb, ts, tr, language } = useLanguage();
+  const { tp, tb, ts, tr, language } = useLanguage();
   const { isAuthenticated } = useAuth();
   const navigate = useNavigate();
 

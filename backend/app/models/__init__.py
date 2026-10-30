@@ -1,38 +1,61 @@
 from app.core.database import Base
 from app.models.base import TimeStampedUUIDModel
-from app.models.user import User, UserRole, CustomerProfile, Address
-from app.models.retailer import Retailer, RetailerStatus, RetailerLicense, RetailerMembership
-from app.models.product import Category, Product, ProductImage, Inventory, InventoryMovement
-from app.models.order import Cart, CartItem, Order, OrderItem, OrderStatus, PaymentAttempt
-from app.models.compliance import ComplianceApproval, ServiceArea, Notification, AuditLog
+from app.models.compliance import (
+    AuditLog,
+    ComplianceApproval,
+    Notification,
+    ServiceArea,
+)
 from app.models.favorite import FavoriteProduct, FavoriteRetailer
+from app.models.order import (
+    Cart,
+    CartItem,
+    Order,
+    OrderItem,
+    OrderStatus,
+    PaymentAttempt,
+)
+from app.models.product import (
+    Category,
+    Inventory,
+    InventoryMovement,
+    Product,
+    ProductImage,
+)
+from app.models.retailer import (
+    Retailer,
+    RetailerLicense,
+    RetailerMembership,
+    RetailerStatus,
+)
+from app.models.user import Address, CustomerProfile, User, UserRole
 
 __all__ = [
-    "Base",
-    "TimeStampedUUIDModel",
-    "User",
-    "UserRole",
-    "CustomerProfile",
     "Address",
-    "Retailer",
-    "RetailerStatus",
-    "RetailerLicense",
-    "RetailerMembership",
-    "Category",
-    "Product",
-    "ProductImage",
-    "Inventory",
-    "InventoryMovement",
+    "AuditLog",
+    "Base",
     "Cart",
     "CartItem",
+    "Category",
+    "ComplianceApproval",
+    "CustomerProfile",
+    "FavoriteProduct",
+    "FavoriteRetailer",
+    "Inventory",
+    "InventoryMovement",
+    "Notification",
     "Order",
     "OrderItem",
     "OrderStatus",
     "PaymentAttempt",
-    "ComplianceApproval",
+    "Product",
+    "ProductImage",
+    "Retailer",
+    "RetailerLicense",
+    "RetailerMembership",
+    "RetailerStatus",
     "ServiceArea",
-    "Notification",
-    "AuditLog",
-    "FavoriteProduct",
-    "FavoriteRetailer"
+    "TimeStampedUUIDModel",
+    "User",
+    "UserRole"
 ]

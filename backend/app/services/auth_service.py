@@ -1,17 +1,24 @@
-from datetime import datetime, timezone
-from typing import Optional
+from datetime import datetime
+
+from app.core.compliance import ComplianceEngine
+from app.core.security import (
+    create_access_token,
+    create_refresh_token,
+    decode_token,
+    hash_password,
+    verify_password,
+)
+from app.models.retailer import Retailer, RetailerMembership
+from app.models.user import CustomerProfile, User, UserRole
+from app.schemas.auth import Token, UserLogin, UserRegister
+from app.services.audit_service import AuditService
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
-from app.core.security import hash_password, verify_password, create_access_token, create_refresh_token, decode_token
-from app.models.user import User, UserRole, CustomerProfile
-from app.models.retailer import Retailer, RetailerMembership
-from app.schemas.auth import UserRegister, UserLogin, Token
-from app.core.compliance import ComplianceEngine
-from app.services.audit_service import AuditService
+
 
 class AuthService:
     @staticmethod
-    def register_user(db: Session, reg_in: UserRegister, ip_address: Optional[str] = None) -> User:
+    def register_user(db: Session, reg_in: UserRegister, ip_address: str | None = None) -> User:
         existing = db.query(User).filter(User.email == reg_in.email).first()
         if existing:
             raise HTTPException(
@@ -80,7 +87,7 @@ class AuthService:
         return new_user
 
     @staticmethod
-    def authenticate_user(db: Session, login_in: UserLogin, ip_address: Optional[str] = None) -> Token:
+    def authenticate_user(db: Session, login_in: UserLogin, ip_address: str | None = None) -> Token:
         user = db.query(User).filter(User.email == login_in.email).first()
         if not user or not verify_password(login_in.password, user.hashed_password):
             raise HTTPException(

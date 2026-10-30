@@ -10,8 +10,6 @@ import {
   ArrowLeft,
   Heart,
   Search,
-  Filter,
-  CheckCircle2,
   AlertCircle
 } from 'lucide-react';
 import { api } from '../services/api';
@@ -40,7 +38,6 @@ export default function RetailerDetailPage() {
 
   const [retailer, setRetailer] = useState(null);
   const [catalogue, setCatalogue] = useState([]);
-  const [total, setTotal] = useState(0);
   const [categories, setCategories] = useState([]);
   const [selectedCategory, setSelectedCategory] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
@@ -64,7 +61,6 @@ export default function RetailerDetailPage() {
 
         setRetailer(catData.retailer);
         setCatalogue(catData.items || []);
-        setTotal(catData.total || 0);
         setCategories(categoriesList || []);
       } catch (err) {
         console.error('Failed to load store catalogue:', err);

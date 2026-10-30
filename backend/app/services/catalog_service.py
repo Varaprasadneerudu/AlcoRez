@@ -1,14 +1,22 @@
 from decimal import Decimal
-from typing import Dict, List, Optional, Tuple
-from sqlalchemy import or_, and_, asc, desc
-from sqlalchemy.orm import Session, joinedload
-from app.models.product import Category, Product, ProductImage, Inventory
+
+from app.models.product import Category, Inventory, Product, ProductImage
 from app.models.retailer import Retailer, RetailerStatus
-from app.schemas.catalog import ProductOut, ProductDetailOut, ProductImageOut, InventoryOut, CategoryOut, ProductInventorySummary
+from app.schemas.catalog import (
+    CategoryOut,
+    InventoryOut,
+    ProductDetailOut,
+    ProductImageOut,
+    ProductInventorySummary,
+    ProductOut,
+)
+from sqlalchemy import or_
+from sqlalchemy.orm import Session, joinedload
+
 
 class CatalogService:
     @staticmethod
-    def get_categories(db: Session, active_only: bool = True) -> List[CategoryOut]:
+    def get_categories(db: Session, active_only: bool = True) -> list[CategoryOut]:
         query = db.query(Category)
         if active_only:
             query = query.filter(Category.is_active == True)
@@ -16,10 +24,10 @@ class CatalogService:
         return [CategoryOut.model_validate(c) for c in categories]
 
     @staticmethod
-    def get_brands(db: Session) -> List[str]:
+    def get_brands(db: Session) -> list[str]:
         rows = (
             db.query(Product.brand)
-            .filter(Product.is_active == True, Product.brand != None, Product.brand != "")
+            .filter(Product.is_active == True, Product.brand.is_not(None), Product.brand != "")
             .distinct()
             .order_by(Product.brand.asc())
             .all()
@@ -29,19 +37,19 @@ class CatalogService:
     @staticmethod
     def get_products(
         db: Session,
-        search: Optional[str] = None,
-        category_slug: Optional[str] = None,
-        brand: Optional[str] = None,
-        retailer_id: Optional[str] = None,
-        bottle_size: Optional[str] = None,
-        min_price: Optional[Decimal] = None,
-        max_price: Optional[Decimal] = None,
+        search: str | None = None,
+        category_slug: str | None = None,
+        brand: str | None = None,
+        retailer_id: str | None = None,
+        bottle_size: str | None = None,
+        min_price: Decimal | None = None,
+        max_price: Decimal | None = None,
         sort_by: str = "name_asc", # name_asc, name_desc, price_asc, price_desc
         skip: int = 0,
         limit: int = 24,
-        product_ids: Optional[List[str]] = None,
-        postal_code: Optional[str] = None
-    ) -> Tuple[List[ProductOut], int]:
+        product_ids: list[str] | None = None,
+        postal_code: str | None = None
+    ) -> tuple[list[ProductOut], int]:
         """
         Query catalogue showing only active products from approved retailers.
         Supports filtering by specific product_ids and retailer postal_code locality.
@@ -67,7 +75,7 @@ class CatalogService:
             )
         elif postal_code:
             query = query.filter(
-                Inventory.retailer_id != None,
+                Inventory.retailer_id.is_not(None),
                 Retailer.postal_code == postal_code,
                 Retailer.status == RetailerStatus.APPROVED
             )
@@ -75,7 +83,7 @@ class CatalogService:
             # If no retailer filter, filter out inventory from non-approved retailers
             query = query.filter(
                 or_(
-                    Inventory.id == None,
+                    Inventory.id.is_(None),
                     Retailer.status == RetailerStatus.APPROVED
                 )
             )
@@ -125,7 +133,7 @@ class CatalogService:
         if not products:
             return [], total
 
-        product_ids: List[str] = [str(p.id) for p in products]
+        product_ids: list[str] = [str(p.id) for p in products]
 
         # 1. Batch fetch primary & secondary images for all products in 1 query
         images = (
@@ -134,7 +142,7 @@ class CatalogService:
             .order_by(ProductImage.is_primary.desc())
             .all()
         )
-        images_by_product: Dict[str, str] = {}
+        images_by_product: dict[str, str] = {}
         for img in images:
             img_pid = str(img.product_id)
             if img_pid not in images_by_product:
@@ -156,7 +164,7 @@ class CatalogService:
             inv_query = inv_query.filter(Retailer.postal_code == postal_code)
 
         all_invs = inv_query.all()
-        inv_by_product: Dict[str, List[Inventory]] = {pid: [] for pid in product_ids}
+        inv_by_product: dict[str, list[Inventory]] = {pid: [] for pid in product_ids}
         for inv in all_invs:
             inv_pid = str(inv.product_id)
             if inv_pid in inv_by_product:
@@ -167,9 +175,9 @@ class CatalogService:
         for p in products:
             p_id = str(p.id)
             inv_list = inv_by_product.get(p_id, [])
-            min_price_val = min([inv.price for inv in inv_list]) if inv_list else None
-            sizes = sorted(list(set([str(inv.bottle_size) for inv in inv_list])))
-            has_stock = any([inv.stock_quantity > 0 for inv in inv_list])
+            min_price_val = min(inv.price for inv in inv_list) if inv_list else None
+            sizes = sorted({str(inv.bottle_size) for inv in inv_list})
+            has_stock = any(inv.stock_quantity > 0 for inv in inv_list)
 
             # In-stock inventories sorted by price asc
             in_stock_invs = [inv for inv in inv_list if inv.stock_quantity > 0 and inv.is_available]
@@ -219,7 +227,7 @@ class CatalogService:
         return results, total
 
     @staticmethod
-    def get_product_details(db: Session, product_id: str) -> Optional[ProductDetailOut]:
+    def get_product_details(db: Session, product_id: str) -> ProductDetailOut | None:
         product = (
             db.query(Product)
             .options(joinedload(Product.category))

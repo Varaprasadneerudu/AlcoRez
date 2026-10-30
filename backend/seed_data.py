@@ -1,17 +1,22 @@
-import sys
 import os
+import sys
+from datetime import date, datetime, timezone
 from decimal import Decimal
-from datetime import datetime, date, timezone
 
 # Add backend directory to sys.path
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-from app.core.database import SessionLocal, Base, engine
+from app.core.database import Base, SessionLocal, engine
 from app.core.security import hash_password
-from app.models.user import User, UserRole, CustomerProfile, Address
-from app.models.retailer import Retailer, RetailerStatus, RetailerLicense, RetailerMembership
-from app.models.product import Category, Product, ProductImage, Inventory
 from app.models.compliance import ComplianceApproval, ServiceArea
+from app.models.product import Category, Inventory, Product, ProductImage
+from app.models.retailer import (
+    Retailer,
+    RetailerLicense,
+    RetailerStatus,
+)
+from app.models.user import Address, CustomerProfile, User, UserRole
+
 
 def seed_database(target_engine=None, target_session=None):
     print("Initializing tables...")

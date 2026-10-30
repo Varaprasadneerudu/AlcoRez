@@ -1,13 +1,13 @@
-from fastapi import APIRouter
-from app.api.v1.auth import router as auth_router
-from app.api.v1.customer import router as customer_router
-from app.api.v1.products import router as products_router
-from app.api.v1.cart import router as cart_router
-from app.api.v1.orders import router as orders_router
-from app.api.v1.retailer_portal import router as retailer_router
 from app.api.v1.admin import router as admin_router
+from app.api.v1.auth import router as auth_router
+from app.api.v1.cart import router as cart_router
+from app.api.v1.customer import router as customer_router
 from app.api.v1.health import router as health_router
 from app.api.v1.notifications import router as notifications_router
+from app.api.v1.orders import router as orders_router
+from app.api.v1.products import router as products_router
+from app.api.v1.retailer_portal import router as retailer_router
+from fastapi import APIRouter
 
 api_router = APIRouter()
 

@@ -1,5 +1,5 @@
-import pytest
 import uuid
+
 
 def test_login_success(client):
     response = client.post("/api/v1/auth/login", json={

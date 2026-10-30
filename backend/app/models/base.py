@@ -1,8 +1,10 @@
 import uuid
 from datetime import datetime, timezone
-from sqlalchemy import String, DateTime
-from sqlalchemy.orm import Mapped, mapped_column
+
 from app.core.database import Base
+from sqlalchemy import DateTime, String
+from sqlalchemy.orm import Mapped, mapped_column
+
 
 def generate_uuid() -> str:
     return str(uuid.uuid4())

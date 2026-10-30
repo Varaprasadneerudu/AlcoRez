@@ -1,14 +1,15 @@
 from datetime import datetime
 from decimal import Decimal
-from typing import List, Optional
-from pydantic import BaseModel, Field, ConfigDict
+
+from pydantic import BaseModel, ConfigDict, Field
+
 
 class CategoryOut(BaseModel):
     id: str
     name: str
     slug: str
-    description: Optional[str] = None
-    image_url: Optional[str] = None
+    description: str | None = None
+    image_url: str | None = None
     is_active: bool
 
     model_config = ConfigDict(from_attributes=True)
@@ -16,8 +17,8 @@ class CategoryOut(BaseModel):
 class CategoryCreate(BaseModel):
     name: str
     slug: str
-    description: Optional[str] = None
-    image_url: Optional[str] = None
+    description: str | None = None
+    image_url: str | None = None
 
 class ProductImageOut(BaseModel):
     id: str
@@ -36,19 +37,19 @@ class InventoryOut(BaseModel):
     is_available: bool
     low_stock_threshold: int = 5
     version: int = 1
-    created_at: Optional[datetime] = None
-    updated_at: Optional[datetime] = None
-    retailer_shop_name: Optional[str] = None
-    retailer_status: Optional[str] = None
-    retailer_address: Optional[str] = None
-    product_name: Optional[str] = None
-    product_brand: Optional[str] = None
-    category_id: Optional[str] = None
-    category_name: Optional[str] = None
-    category_slug: Optional[str] = None
-    primary_image_url: Optional[str] = None
-    alcohol_by_volume: Optional[str] = None
-    country_of_origin: Optional[str] = None
+    created_at: datetime | None = None
+    updated_at: datetime | None = None
+    retailer_shop_name: str | None = None
+    retailer_status: str | None = None
+    retailer_address: str | None = None
+    product_name: str | None = None
+    product_brand: str | None = None
+    category_id: str | None = None
+    category_name: str | None = None
+    category_slug: str | None = None
+    primary_image_url: str | None = None
+    alcohol_by_volume: str | None = None
+    country_of_origin: str | None = None
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -61,18 +62,18 @@ class InventoryCreate(BaseModel):
     low_stock_threshold: int = Field(default=5, ge=0)
 
 class InventoryUpdate(BaseModel):
-    bottle_size: Optional[str] = None
-    price: Optional[Decimal] = Field(None, gt=0)
-    stock_quantity: Optional[int] = Field(None, ge=0)
-    is_available: Optional[bool] = None
-    low_stock_threshold: Optional[int] = Field(None, ge=0)
-    expected_version: Optional[int] = None
+    bottle_size: str | None = None
+    price: Decimal | None = Field(None, gt=0)
+    stock_quantity: int | None = Field(None, ge=0)
+    is_available: bool | None = None
+    low_stock_threshold: int | None = Field(None, ge=0)
+    expected_version: int | None = None
 
 class StockAdjustmentRequest(BaseModel):
     new_quantity: int = Field(..., ge=0, description="New absolute quantity")
     reason: str = Field(..., min_length=2, max_length=100, description="Reason: Restock, Damaged, Count Audit, etc.")
-    notes: Optional[str] = Field(None, max_length=500)
-    expected_version: Optional[int] = None
+    notes: str | None = Field(None, max_length=500)
+    expected_version: int | None = None
 
 class InventoryMovementOut(BaseModel):
     id: str
@@ -82,9 +83,9 @@ class InventoryMovementOut(BaseModel):
     new_quantity: int
     change_quantity: int
     reason: str
-    notes: Optional[str] = None
-    actor_name: Optional[str] = None
-    actor_role: Optional[str] = None
+    notes: str | None = None
+    actor_name: str | None = None
+    actor_role: str | None = None
     created_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
@@ -98,14 +99,14 @@ class InventorySummaryOut(BaseModel):
     total_units: int
 
 class PaginatedInventoryResponse(BaseModel):
-    items: List[InventoryOut]
+    items: list[InventoryOut]
     total: int
     page: int
     page_size: int
     total_pages: int
     summary: InventorySummaryOut
-    categories: List[CategoryOut] = []
-    brands: List[str] = []
+    categories: list[CategoryOut] = []
+    brands: list[str] = []
 
 class ProductInventorySummary(BaseModel):
     id: str
@@ -121,19 +122,19 @@ class ProductOut(BaseModel):
     name: str
     brand: str
     category_id: str
-    category_name: Optional[str] = None
-    category_slug: Optional[str] = None
-    description: Optional[str] = None
-    alcohol_by_volume: Optional[str] = None
+    category_name: str | None = None
+    category_slug: str | None = None
+    description: str | None = None
+    alcohol_by_volume: str | None = None
     country_of_origin: str
     is_active: bool
     is_demo_data: bool
-    primary_image_url: Optional[str] = None
-    starting_price: Optional[Decimal] = None
-    available_sizes: List[str] = []
+    primary_image_url: str | None = None
+    starting_price: Decimal | None = None
+    available_sizes: list[str] = []
     in_stock: bool = False
-    default_inventory_id: Optional[str] = None
-    inventories: List[ProductInventorySummary] = []
+    default_inventory_id: str | None = None
+    inventories: list[ProductInventorySummary] = []
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -142,14 +143,14 @@ class ProductDetailOut(BaseModel):
     name: str
     brand: str
     category_id: str
-    category_name: Optional[str] = None
-    description: Optional[str] = None
-    alcohol_by_volume: Optional[str] = None
+    category_name: str | None = None
+    description: str | None = None
+    alcohol_by_volume: str | None = None
     country_of_origin: str
     is_active: bool
     is_demo_data: bool
-    images: List[ProductImageOut] = []
-    inventories: List[InventoryOut] = []
+    images: list[ProductImageOut] = []
+    inventories: list[InventoryOut] = []
     compliance_notice: str = (
         "Demonstration product listing. Regulated alcoholic beverage under Telangana Excise Laws. "
         "Online home delivery and commercial order fulfillment are disabled."
@@ -161,10 +162,10 @@ class ProductCreate(BaseModel):
     name: str
     brand: str
     category_id: str
-    description: Optional[str] = None
-    alcohol_by_volume: Optional[str] = None
+    description: str | None = None
+    alcohol_by_volume: str | None = None
     country_of_origin: str = "India"
-    image_url: Optional[str] = None
+    image_url: str | None = None
     bottle_size: str = "750ml"
     price: Decimal = Field(..., gt=0)
     stock_quantity: int = Field(default=10, ge=0)
@@ -172,18 +173,18 @@ class ProductCreate(BaseModel):
 # --- Bulk CSV Import/Export Schemas ---
 class InventoryCsvRowPreview(BaseModel):
     row_number: int
-    product_id: Optional[str] = None
-    product_name: Optional[str] = None
-    brand: Optional[str] = None
+    product_id: str | None = None
+    product_name: str | None = None
+    brand: str | None = None
     bottle_size: str
-    price: Optional[Decimal] = None
-    stock_quantity: Optional[int] = None
+    price: Decimal | None = None
+    stock_quantity: int | None = None
     is_available: bool = True
     low_stock_threshold: int = 5
     action: str = "NEW"  # NEW, UPDATE, INVALID
     status: str = "VALID"  # VALID, ERROR
-    errors: List[str] = []
-    changes_summary: Optional[str] = None
+    errors: list[str] = []
+    changes_summary: str | None = None
 
 class InventoryImportPreviewRequest(BaseModel):
     raw_csv: str
@@ -192,7 +193,7 @@ class InventoryImportPreviewResponse(BaseModel):
     total_rows: int
     valid_rows: int
     error_rows: int
-    rows: List[InventoryCsvRowPreview]
+    rows: list[InventoryCsvRowPreview]
 
 class InventoryImportApplyItem(BaseModel):
     product_id: str
@@ -203,7 +204,7 @@ class InventoryImportApplyItem(BaseModel):
     low_stock_threshold: int = Field(default=5, ge=0)
 
 class InventoryImportApplyRequest(BaseModel):
-    items: List[InventoryImportApplyItem]
+    items: list[InventoryImportApplyItem]
 
 class InventoryImportApplyResponse(BaseModel):
     imported_count: int
