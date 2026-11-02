@@ -58,13 +58,17 @@ export default function ProductCard({ product }) {
     if (!product.in_stock) return;
 
     if (!isAuthenticated) {
-      alert(t('product.loginRequired') || 'Please log in to add items to your cart.');
       navigate('/login');
       return;
     }
 
-    if (role !== 'customer') {
-      alert('Cart is available for customer accounts. Please switch to a customer profile.');
+    if (role !== 'customer' && role !== 'admin') {
+      setErrorMessage(
+        language === 'te'
+          ? 'కార్ట్ కస్టమర్ ఖాతాలకు మాత్రమే అందుబాటులో ఉంది.'
+          : 'Cart is available for customer accounts. Please switch to a customer profile.'
+      );
+      setTimeout(() => setErrorMessage(null), 3500);
       return;
     }
 

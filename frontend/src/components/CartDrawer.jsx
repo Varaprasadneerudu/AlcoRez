@@ -40,9 +40,7 @@ export default function CartDrawer() {
 
   const items = cart?.items || [];
   const numSubtotal = Number(subtotal || 0);
-  const exciseTax = numSubtotal * 0.08; // 8% simulated excise
-  const localVat = numSubtotal * 0.18; // 18% statutory tax
-  const totalAmount = numSubtotal + exciseTax + localVat;
+  const totalAmount = numSubtotal;
 
   const handleProceedToCheckout = () => {
     closeDrawer();
@@ -222,18 +220,14 @@ export default function CartDrawer() {
               <div className="space-y-1.5 text-xs">
                 <div className="flex justify-between text-stone-600 dark:text-stone-400">
                   <span>{language === 'te' ? 'సబ్ టోటల్' : 'Subtotal'} ({itemCount} {language === 'te' ? 'వస్తువులు' : 'items'})</span>
-                  <span>₹{numSubtotal.toLocaleString('en-IN')}</span>
+                  <span className="font-semibold text-stone-900 dark:text-stone-100">₹{numSubtotal.toLocaleString('en-IN')}</span>
                 </div>
                 <div className="flex justify-between text-stone-600 dark:text-stone-400">
                   <span className="flex items-center gap-1">
-                    <span>{language === 'te' ? 'తెలంగాణ ఎక్సైజ్ డ్యూటీ' : 'Telangana State Excise MRP'}</span>
-                    <ShieldCheck className="w-3 h-3 text-emerald-600" />
+                    <span>{language === 'te' ? 'తెలంగాణ ఎక్సైజ్ & వ్యాట్' : 'Telangana Excise & VAT'}</span>
+                    <ShieldCheck className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
                   </span>
-                  <span>₹{Math.round(exciseTax).toLocaleString('en-IN')}</span>
-                </div>
-                <div className="flex justify-between text-stone-600 dark:text-stone-400">
-                  <span>{language === 'te' ? 'స్థానిక పన్నులు (VAT/TCS)' : 'Statutory Local Taxes (18%)'}</span>
-                  <span>₹{Math.round(localVat).toLocaleString('en-IN')}</span>
+                  <span className="font-semibold text-emerald-700 dark:text-emerald-400">{language === 'te' ? 'ధరలోనే చేర్చబడింది' : 'Included in MRP'}</span>
                 </div>
                 <div className="flex justify-between text-emerald-700 dark:text-emerald-400 font-semibold">
                   <span>{language === 'te' ? 'డెలివరీ / కౌంటర్ పికప్ రుసుము' : 'Licensed Counter Pickup Fee'}</span>
@@ -241,7 +235,7 @@ export default function CartDrawer() {
                 </div>
                 <div className="pt-2 border-t border-stone-200 dark:border-stone-800 flex justify-between font-extrabold text-sm text-stone-900 dark:text-stone-100">
                   <span>{language === 'te' ? 'మొత్తం చెల్లించవలసినది' : 'Total Amount Payable'}</span>
-                  <span className="text-amber-800 dark:text-amber-400">₹{Math.round(totalAmount).toLocaleString('en-IN')}</span>
+                  <span className="text-amber-800 dark:text-amber-400">₹{numSubtotal.toLocaleString('en-IN')}</span>
                 </div>
               </div>
 

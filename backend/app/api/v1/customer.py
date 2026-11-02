@@ -100,7 +100,8 @@ def get_customer_favorites(
             .filter(Retailer.id.in_(retailer_ids))
             .all()
         )
-        retailers_map = {r.id: RetailerService.to_retailer_out(db, r) for r in rets}
+        retailers_out = RetailerService.to_retailer_out_batch(db, rets)
+        retailers_map = {r.id: r for r in retailers_out}
 
     out_products = []
     for fp in fav_products:

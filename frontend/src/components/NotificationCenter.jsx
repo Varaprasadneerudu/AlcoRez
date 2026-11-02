@@ -78,7 +78,7 @@ export default function NotificationCenter() {
   const containerRef = useRef(null);
 
   const fetchUnreadCount = useCallback(async () => {
-    if (!isAuthenticated) return;
+    if (!isAuthenticated || (typeof document !== 'undefined' && document.hidden)) return;
     try {
       const res = await api.getUnreadNotificationCount();
       setUnreadCount(res?.unread_count || 0);

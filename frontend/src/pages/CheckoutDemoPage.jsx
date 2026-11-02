@@ -79,13 +79,12 @@ export default function CheckoutDemoPage() {
         is_default: false,
       });
     } catch (err) {
-      alert(`Address creation failed: ${err.message}`);
+      setError(`Address creation failed: ${err.message}`);
     }
   };
 
   const handlePlaceOrder = async () => {
     if (!cart || cart.items.length === 0) {
-      alert(language === 'te' ? 'కార్ట్ ఖాళీగా ఉంది.' : 'Cart is empty.');
       navigate('/cart');
       return;
     }

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import {
   ArrowLeft,
   ShieldCheck,
@@ -20,6 +20,7 @@ import { optimizeImageUrl } from '../utils/imageUtils';
 
 export default function ProductDetailPage() {
   const { id } = useParams();
+  const navigate = useNavigate();
   const { addToCart, loading: cartLoading } = useCart();
   const { isAuthenticated } = useAuth();
   const { t, tp, tb, tc, ts, tr, to, language } = useLanguage();
@@ -56,7 +57,7 @@ export default function ProductDetailPage() {
 
   const handleAddToCart = async () => {
     if (!isAuthenticated) {
-      alert(t('productDetail.loginRequired'));
+      navigate('/login');
       return;
     }
     if (!selectedInventory) return;

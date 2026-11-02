@@ -15,7 +15,7 @@ from app.schemas.retailer import RetailerOut, RetailerReviewRequest
 from app.services.admin_service import AdminService
 from app.services.order_service import OrderService
 from fastapi import APIRouter, Depends, Query, Request
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 
 router = APIRouter(prefix="/admin", tags=["Administrator Portal"])
 
@@ -98,5 +98,12 @@ def get_all_platform_orders(
     db: Session = Depends(get_db)
 ):
     skip = (page - 1) * limit
-    orders = db.query(Order).order_by(Order.created_at.desc()).offset(skip).limit(limit).all()
-    return [OrderService.to_order_out(db, o) for o in orders]
+    orders = (
+        db.query(Order)
+        .options(joinedload(Order.items))
+        .order_by(Order.created_at.desc())
+        .offset(skip)
+        .limit(limit)
+        .all()
+    )
+    return OrderService.to_order_out_batch(db, orders)

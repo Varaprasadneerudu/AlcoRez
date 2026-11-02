@@ -72,7 +72,7 @@ export default function OrdersHistoryPage() {
   const [reviewSubmitted, setReviewSubmitted] = useState(false);
 
   const fetchOrders = useCallback(() => {
-    if (isAuthenticated && role === 'customer') {
+    if (isAuthenticated && (role === 'customer' || role === 'admin')) {
       setLoading(true);
       api.getOrders()
         .then((data) => setOrders(data || []))

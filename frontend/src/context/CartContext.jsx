@@ -11,7 +11,7 @@ export function CartProvider({ children }) {
   const [error, setError] = useState(null);
 
   const fetchCart = useCallback(async () => {
-    if (!isAuthenticated || role !== 'customer') {
+    if (!isAuthenticated || (role !== 'customer' && role !== 'admin')) {
       setCart(null);
       return;
     }

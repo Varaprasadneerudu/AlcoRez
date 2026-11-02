@@ -19,7 +19,7 @@ export function FavoritesProvider({ children }) {
   };
 
   const loadFavoriteIds = useCallback(async () => {
-    if (!isAuthenticated || role !== 'customer') {
+    if (!isAuthenticated || (role !== 'customer' && role !== 'admin')) {
       setFavoriteProductIds(new Set());
       setFavoriteRetailerIds(new Set());
       return;
@@ -53,7 +53,7 @@ export function FavoritesProvider({ children }) {
       showToast('Please sign in to save your favorite spirits.');
       return false;
     }
-    if (role !== 'customer') {
+    if (role !== 'customer' && role !== 'admin') {
       showToast('Favorites are available for customer accounts.');
       return false;
     }
@@ -92,7 +92,7 @@ export function FavoritesProvider({ children }) {
       showToast('Please sign in to save licensed wine stores.');
       return false;
     }
-    if (role !== 'customer') {
+    if (role !== 'customer' && role !== 'admin') {
       showToast('Favorites are available for customer accounts.');
       return false;
     }

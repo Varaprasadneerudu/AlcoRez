@@ -21,8 +21,8 @@ export default function AdminAuditPage() {
   if (role !== 'admin') {
     return (
       <div className="max-w-md mx-auto px-4 py-16 text-center space-y-4">
-        <h2 className="text-xl font-bold text-stone-900">Admin Authorization Required</h2>
-        <Link to="/admin" className="text-xs font-bold text-amber-800 underline">Return to Admin Portal</Link>
+        <h2 className="text-xl font-bold text-stone-900 dark:text-stone-100">Admin Authorization Required</h2>
+        <Link to="/admin" className="text-xs font-bold text-amber-800 dark:text-amber-400 underline">Return to Admin Portal</Link>
       </div>
     );
   }

@@ -33,7 +33,7 @@ export default function FavoritesPage() {
   };
 
   useEffect(() => {
-    if (isAuthenticated && role === 'customer') {
+    if (isAuthenticated && (role === 'customer' || role === 'admin')) {
       loadFavorites();
     }
   }, [isAuthenticated, role, favoriteProductIds.size, favoriteRetailerIds.size]);

@@ -23,7 +23,7 @@ from app.schemas.order import (
 from app.services.audit_service import AuditService
 from app.services.notification_service import NotificationService
 from fastapi import HTTPException, status
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 
 VALID_ORDER_TRANSITIONS = {
     OrderStatus.CREATED: [OrderStatus.CONFIRMED, OrderStatus.REJECTED, OrderStatus.CANCELLED],
@@ -154,18 +154,16 @@ class OrderService:
             db.commit()
 
             # Send order confirmation notifications to customer and retailer
+            ret_ids = list({ord_obj.retailer_id for ord_obj in created_orders if ord_obj.retailer_id})
+            ret_map = {r.id: r for r in db.query(Retailer).filter(Retailer.id.in_(ret_ids)).all()} if ret_ids else {}
             for ord_obj in created_orders:
                 try:
-                    ret_obj = db.query(Retailer).filter(Retailer.id == ord_obj.retailer_id).first()
+                    ret_obj = ret_map.get(ord_obj.retailer_id)
                     NotificationService.notify_order_created(db, ord_obj, ret_obj, user)
                 except Exception as notif_err:
                     print(f"Failed to create order notification: {notif_err}")
 
-            # Prepare responses
-            results = []
-            for ord_obj in created_orders:
-                results.append(OrderService.to_order_out(db, ord_obj))
-            return results
+            return OrderService.to_order_out_batch(db, created_orders)
 
         except Exception as e:
             db.rollback()
@@ -173,7 +171,7 @@ class OrderService:
 
     @staticmethod
     def get_order_by_id(db: Session, order_id: str, requesting_user: User) -> OrderOut:
-        order = db.query(Order).filter(Order.id == order_id).first()
+        order = db.query(Order).options(joinedload(Order.items)).filter(Order.id == order_id).first()
         if not order:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Order not found")
 
@@ -196,13 +194,25 @@ class OrderService:
 
     @staticmethod
     def get_customer_orders(db: Session, user: User) -> list[OrderOut]:
-        orders = db.query(Order).filter(Order.user_id == user.id).order_by(Order.created_at.desc()).all()
-        return [OrderService.to_order_out(db, o) for o in orders]
+        orders = (
+            db.query(Order)
+            .options(joinedload(Order.items))
+            .filter(Order.user_id == user.id)
+            .order_by(Order.created_at.desc())
+            .all()
+        )
+        return OrderService.to_order_out_batch(db, orders)
 
     @staticmethod
     def get_retailer_orders(db: Session, retailer_id: str) -> list[OrderOut]:
-        orders = db.query(Order).filter(Order.retailer_id == retailer_id).order_by(Order.created_at.desc()).all()
-        return [OrderService.to_order_out(db, o) for o in orders]
+        orders = (
+            db.query(Order)
+            .options(joinedload(Order.items))
+            .filter(Order.retailer_id == retailer_id)
+            .order_by(Order.created_at.desc())
+            .all()
+        )
+        return OrderService.to_order_out_batch(db, orders)
 
     @staticmethod
     def update_order_status(
@@ -333,39 +343,67 @@ class OrderService:
         return OrderService.to_order_out(db, order)
 
     @staticmethod
-    def to_order_out(db: Session, order: Order) -> OrderOut:
-        retailer = db.query(Retailer).filter(Retailer.id == order.retailer_id).first()
-        payment = db.query(PaymentAttempt).filter(PaymentAttempt.order_id == order.id).first()
+    def to_order_out_batch(db: Session, orders: list[Order]) -> list[OrderOut]:
+        if not orders:
+            return []
 
-        item_outs = [
-            OrderItemOut(
-                id=item.id,
-                product_name=item.product_name,
-                brand=item.brand,
-                bottle_size=item.bottle_size,
-                unit_price=item.unit_price,
-                quantity=item.quantity,
-                total_price=item.total_price
+        order_ids = [str(o.id) for o in orders]
+        retailer_ids = list({str(o.retailer_id) for o in orders if o.retailer_id})
+
+        retailer_map: dict[str, str] = {}
+        if retailer_ids:
+            retailers = db.query(Retailer.id, Retailer.shop_name).filter(Retailer.id.in_(retailer_ids)).all()
+            retailer_map = {str(r.id): str(r.shop_name) for r in retailers}
+
+        payment_map: dict[str, str] = {}
+        if order_ids:
+            payments = db.query(PaymentAttempt).filter(PaymentAttempt.order_id.in_(order_ids)).all()
+            for p in payments:
+                pid = str(p.order_id)
+                if pid not in payment_map:
+                    payment_map[pid] = str(p.status)
+
+        results = []
+        for order in orders:
+            item_outs = [
+                OrderItemOut(
+                    id=item.id,
+                    product_name=item.product_name,
+                    brand=item.brand,
+                    bottle_size=item.bottle_size,
+                    unit_price=item.unit_price,
+                    quantity=item.quantity,
+                    total_price=item.total_price
+                )
+                for item in (order.items or [])
+            ]
+            r_name = retailer_map.get(str(order.retailer_id), "Unknown Shop")
+            p_status = payment_map.get(str(order.id), "SIMULATED")
+
+            results.append(
+                OrderOut(
+                    id=order.id,
+                    order_number=order.order_number,
+                    user_id=order.user_id,
+                    retailer_id=order.retailer_id,
+                    retailer_name=r_name,
+                    status=order.status,
+                    subtotal=order.subtotal,
+                    delivery_fee=order.delivery_fee,
+                    taxes=order.taxes,
+                    total_amount=order.total_amount,
+                    address_snapshot=order.address_snapshot,
+                    is_simulated=order.is_simulated,
+                    notes=order.notes,
+                    created_at=order.created_at,
+                    updated_at=order.updated_at,
+                    items=item_outs,
+                    payment_status=p_status
+                )
             )
-            for item in order.items
-        ]
+        return results
 
-        return OrderOut(
-            id=order.id,
-            order_number=order.order_number,
-            user_id=order.user_id,
-            retailer_id=order.retailer_id,
-            retailer_name=retailer.shop_name if retailer else "Unknown Shop",
-            status=order.status,
-            subtotal=order.subtotal,
-            delivery_fee=order.delivery_fee,
-            taxes=order.taxes,
-            total_amount=order.total_amount,
-            address_snapshot=order.address_snapshot,
-            is_simulated=order.is_simulated,
-            notes=order.notes,
-            created_at=order.created_at,
-            updated_at=order.updated_at,
-            items=item_outs,
-            payment_status=payment.status if payment else "SIMULATED"
-        )
+    @staticmethod
+    def to_order_out(db: Session, order: Order) -> OrderOut:
+        batch = OrderService.to_order_out_batch(db, [order])
+        return batch[0]
