@@ -276,15 +276,9 @@ export default function OrderConfirmationPage() {
             <span>{t('checkout.subtotal', 'Subtotal')}</span>
             <span className="font-semibold text-stone-900 dark:text-stone-100">₹{Number(order.subtotal).toLocaleString('en-IN')}</span>
           </div>
-          <div className="flex justify-between text-stone-600 dark:text-stone-400">
-            <span>{t('orderConfirmation.doorstepLogistics', 'Doorstep Logistics')}</span>
-            <span className="font-semibold text-emerald-700 dark:text-emerald-400">
-              {t('orderConfirmation.logisticsDisabled', '₹0.00 (Delivery Disabled by Law)')}
-            </span>
-          </div>
           <div className="pt-2 border-t border-stone-200 dark:border-stone-800 flex justify-between text-sm">
             <span className="font-bold text-stone-900 dark:text-stone-100">
-              {t('orderConfirmation.simulatedTotal', 'Simulated Total')}
+              {t('orderConfirmation.simulatedTotal', 'Total Amount')}
             </span>
             <span className="font-extrabold text-amber-900 dark:text-amber-400 text-base">
               ₹{Number(order.total_amount).toLocaleString('en-IN')}

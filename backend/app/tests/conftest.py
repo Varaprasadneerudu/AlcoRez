@@ -1,3 +1,5 @@
+import os
+os.environ["TESTING"] = "1"
 import contextlib
 import os
 import sys

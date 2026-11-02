@@ -216,25 +216,14 @@ export default function CartDrawer() {
                 </span>
               </div>
 
-              {/* Price Calculation breakdown */}
-              <div className="space-y-1.5 text-xs">
+              {/* Order Summary */}
+              <div className="space-y-2 text-xs">
                 <div className="flex justify-between text-stone-600 dark:text-stone-400">
                   <span>{language === 'te' ? 'సబ్ టోటల్' : 'Subtotal'} ({itemCount} {language === 'te' ? 'వస్తువులు' : 'items'})</span>
                   <span className="font-semibold text-stone-900 dark:text-stone-100">₹{numSubtotal.toLocaleString('en-IN')}</span>
                 </div>
-                <div className="flex justify-between text-stone-600 dark:text-stone-400">
-                  <span className="flex items-center gap-1">
-                    <span>{language === 'te' ? 'తెలంగాణ ఎక్సైజ్ & వ్యాట్' : 'Telangana Excise & VAT'}</span>
-                    <ShieldCheck className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
-                  </span>
-                  <span className="font-semibold text-emerald-700 dark:text-emerald-400">{language === 'te' ? 'ధరలోనే చేర్చబడింది' : 'Included in MRP'}</span>
-                </div>
-                <div className="flex justify-between text-emerald-700 dark:text-emerald-400 font-semibold">
-                  <span>{language === 'te' ? 'డెలివరీ / కౌంటర్ పికప్ రుసుము' : 'Licensed Counter Pickup Fee'}</span>
-                  <span>{language === 'te' ? 'ఉచితం' : 'FREE'}</span>
-                </div>
                 <div className="pt-2 border-t border-stone-200 dark:border-stone-800 flex justify-between font-extrabold text-sm text-stone-900 dark:text-stone-100">
-                  <span>{language === 'te' ? 'మొత్తం చెల్లించవలసినది' : 'Total Amount Payable'}</span>
+                  <span>{language === 'te' ? 'మొత్తం' : 'Total Amount'}</span>
                   <span className="text-amber-800 dark:text-amber-400">₹{numSubtotal.toLocaleString('en-IN')}</span>
                 </div>
               </div>

@@ -434,21 +434,9 @@ export default function CheckoutDemoPage() {
               <span>{t('checkout.subtotal', 'Subtotal')}</span>
               <span className="font-bold text-stone-900 dark:text-stone-100">₹{Number(subtotal).toLocaleString('en-IN')}</span>
             </div>
-            <div className="flex justify-between text-stone-600 dark:text-stone-400">
-              <span>{t('checkout.homeDelivery', 'Home Delivery')}</span>
-              <span className="font-bold text-emerald-700 dark:text-emerald-400">
-                {t('checkout.deliveryDisabled', '₹0.00 (Disabled)')}
-              </span>
-            </div>
-            <div className="flex justify-between text-stone-600 dark:text-stone-400">
-              <span>{t('checkout.taxes', 'Taxes')}</span>
-              <span className="font-bold text-stone-900 dark:text-stone-100">
-                {t('checkout.taxesDemo', '₹0.00 (Demo)')}
-              </span>
-            </div>
             <div className="pt-2 border-t border-stone-100 dark:border-stone-800 flex justify-between text-sm">
               <span className="font-bold text-stone-900 dark:text-stone-100">
-                {t('checkout.demonstrationValue', 'Demonstration Value')}
+                {t('checkout.demonstrationValue', 'Total Amount')}
               </span>
               <span className="font-extrabold text-amber-900 dark:text-amber-400 text-lg">
                 ₹{Number(subtotal).toLocaleString('en-IN')}

@@ -23,20 +23,20 @@ logger = logging.getLogger("alcodelivery")
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Create tables on startup for immediate local portability
-    logger.info("Initializing database schemas...")
-    Base.metadata.create_all(bind=engine)
-    logger.info(
-        f"Alco Telangana Marketplace initialized. "
-        f"Alcohol Transactions Enabled: {settings.ALCOHOL_TRANSACTIONS_ENABLED} (FAIL-CLOSED)."
-    )
-    # Auto-seed initial demo dataset (users, products, licensed retailers)
-    try:
-        from seed_data import seed_database
-        seed_database()
-        logger.info("Demo database verified/seeded successfully.")
-    except Exception as e:
-        logger.warning(f"Auto-seed notification: {e}")
+    # Skip heavy startup and seeding during automated tests
+    if os.getenv("TESTING") != "1":
+        logger.info("Initializing database schemas...")
+        Base.metadata.create_all(bind=engine)
+        logger.info(
+            f"Alco Telangana Marketplace initialized. "
+            f"Alcohol Transactions Enabled: {settings.ALCOHOL_TRANSACTIONS_ENABLED} (FAIL-CLOSED)."
+        )
+        try:
+            from seed_data import seed_database
+            seed_database()
+            logger.info("Demo database verified/seeded successfully.")
+        except Exception as e:
+            logger.warning(f"Auto-seed notification: {e}")
 
     yield
     logger.info("Application shutting down...")

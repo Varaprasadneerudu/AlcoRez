@@ -216,19 +216,6 @@ export default function CartPage() {
               <span className="font-bold text-stone-900 dark:text-stone-100">₹{Number(subtotal).toLocaleString('en-IN')}</span>
             </div>
 
-            <div className="flex items-center justify-between text-stone-600 dark:text-stone-300">
-              <span className="flex items-center gap-1">
-                {t('cart.deliveryFee')}
-                <span className="text-[10px] bg-stone-100 dark:bg-stone-800 text-stone-600 dark:text-stone-400 px-1 rounded">{t('cart.disabledBadge')}</span>
-              </span>
-              <span className="font-bold text-emerald-700 dark:text-emerald-400">₹0.00</span>
-            </div>
-
-            <div className="flex items-center justify-between text-stone-600 dark:text-stone-300">
-              <span>{t('cart.exciseCess')}</span>
-              <span className="font-bold text-stone-900 dark:text-stone-100">₹0.00 (Demo)</span>
-            </div>
-
             <div className="pt-3 border-t border-stone-200 dark:border-stone-800 flex items-center justify-between text-sm">
               <span className="font-bold text-stone-900 dark:text-stone-100">{t('cart.totalEstimated')}</span>
               <span className="font-extrabold text-lg text-amber-900 dark:text-amber-400">

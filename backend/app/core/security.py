@@ -1,3 +1,4 @@
+import os
 from datetime import datetime, timedelta, timezone
 from typing import Any
 
@@ -7,8 +8,9 @@ from app.core.config import settings
 
 
 def hash_password(password: str) -> str:
-    """Hash a password using bcrypt (work factor 10 for responsive authentication)."""
-    salt = bcrypt.gensalt(rounds=10)
+    """Hash a password using bcrypt (work factor 10 for responsive authentication, 4 during testing)."""
+    rounds = 4 if os.getenv("TESTING") == "1" else 10
+    salt = bcrypt.gensalt(rounds=rounds)
     hashed = bcrypt.hashpw(password.encode("utf-8"), salt)
     return hashed.decode("utf-8")
 
