@@ -27,6 +27,18 @@ async def lifespan(app: FastAPI):
     if os.getenv("TESTING") != "1":
         logger.info("Initializing database schemas...")
         Base.metadata.create_all(bind=engine)
+        try:
+            from sqlalchemy import text
+            with engine.connect() as conn:
+                res = conn.execute(text("PRAGMA table_info(orders)")).fetchall()
+                cols = [r[1] for r in res]
+                if "delivery_partner_id" not in cols:
+                    conn.execute(text("ALTER TABLE orders ADD COLUMN delivery_partner_id VARCHAR(36)"))
+                if "delivery_otp" not in cols:
+                    conn.execute(text("ALTER TABLE orders ADD COLUMN delivery_otp VARCHAR(6) DEFAULT '4821'"))
+                conn.commit()
+        except Exception as mig_err:
+            logger.warning(f"Auto-column check: {mig_err}")
         logger.info(
             f"Alco Telangana Marketplace initialized. "
             f"Alcohol Transactions Enabled: {settings.ALCOHOL_TRANSACTIONS_ENABLED} (FAIL-CLOSED)."

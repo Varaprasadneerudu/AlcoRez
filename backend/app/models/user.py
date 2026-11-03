@@ -1,8 +1,9 @@
 import enum
 from datetime import date
+from decimal import Decimal
 
 from app.models.base import TimeStampedUUIDModel
-from sqlalchemy import Boolean, Date, Enum, ForeignKey, String
+from sqlalchemy import Boolean, Date, Enum, ForeignKey, Integer, Numeric, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 
@@ -10,6 +11,7 @@ class UserRole(str, enum.Enum):
     CUSTOMER = "customer"
     RETAILER = "retailer"
     ADMIN = "admin"
+    DELIVERY_PARTNER = "delivery_partner"
 
 class User(TimeStampedUUIDModel):
     __tablename__ = "users"
@@ -27,10 +29,12 @@ class User(TimeStampedUUIDModel):
     addresses = relationship("Address", back_populates="user", cascade="all, delete-orphan")
     retailer = relationship("Retailer", back_populates="user", uselist=False)
     cart = relationship("Cart", back_populates="user", uselist=False, cascade="all, delete-orphan")
-    orders = relationship("Order", back_populates="user")
+    orders = relationship("Order", foreign_keys="[Order.user_id]", back_populates="user")
+    delivery_orders = relationship("Order", foreign_keys="[Order.delivery_partner_id]", back_populates="delivery_partner")
     notifications = relationship("Notification", back_populates="user", cascade="all, delete-orphan")
     favorite_products = relationship("FavoriteProduct", back_populates="user", cascade="all, delete-orphan")
     favorite_retailers = relationship("FavoriteRetailer", back_populates="user", cascade="all, delete-orphan")
+    delivery_profile = relationship("DeliveryPartnerProfile", back_populates="user", uselist=False, cascade="all, delete-orphan")
 
 
 class CustomerProfile(TimeStampedUUIDModel):
@@ -60,3 +64,24 @@ class Address(TimeStampedUUIDModel):
     is_default: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
 
     user = relationship("User", back_populates="addresses")
+
+
+class DeliveryPartnerProfile(TimeStampedUUIDModel):
+    __tablename__ = "delivery_partner_profiles"
+
+    user_id: Mapped[str] = mapped_column(String(36), ForeignKey("users.id", ondelete="CASCADE"), unique=True, nullable=False)
+    vehicle_type: Mapped[str] = mapped_column(String(50), default="Motorcycle", nullable=False)
+    vehicle_number: Mapped[str] = mapped_column(String(50), default="TS 09 EB 4821", nullable=False)
+    driving_license_number: Mapped[str] = mapped_column(String(100), default="DL-TS-2022-987654", nullable=False)
+    is_online: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    current_zone: Mapped[str] = mapped_column(String(100), default="Madhapur & HITEC City", nullable=False)
+    rating: Mapped[Decimal] = mapped_column(Numeric(3, 2), default=Decimal("4.92"), nullable=False)
+    total_trips: Mapped[int] = mapped_column(Integer, default=42, nullable=False)
+    today_trips: Mapped[int] = mapped_column(Integer, default=6, nullable=False)
+    today_earnings: Mapped[Decimal] = mapped_column(Numeric(10, 2), default=Decimal("620.00"), nullable=False)
+    total_earnings: Mapped[Decimal] = mapped_column(Numeric(10, 2), default=Decimal("18450.00"), nullable=False)
+    is_verified: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    compliance_permit_no: Mapped[str] = mapped_column(String(100), default="TS-EXCISE-DP-2024-0982", nullable=False)
+
+    user = relationship("User", back_populates="delivery_profile")
+

@@ -29,7 +29,8 @@ VALID_ORDER_TRANSITIONS = {
     OrderStatus.CREATED: [OrderStatus.CONFIRMED, OrderStatus.REJECTED, OrderStatus.CANCELLED],
     OrderStatus.CONFIRMED: [OrderStatus.PREPARING, OrderStatus.CANCELLED],
     OrderStatus.PREPARING: [OrderStatus.READY, OrderStatus.CANCELLED],
-    OrderStatus.READY: [OrderStatus.COMPLETED, OrderStatus.FAILED],
+    OrderStatus.READY: [OrderStatus.OUT_FOR_DELIVERY, OrderStatus.COMPLETED, OrderStatus.FAILED],
+    OrderStatus.OUT_FOR_DELIVERY: [OrderStatus.COMPLETED, OrderStatus.FAILED, OrderStatus.CANCELLED],
     OrderStatus.COMPLETED: [],
     OrderStatus.REJECTED: [],
     OrderStatus.CANCELLED: [],
@@ -360,6 +361,12 @@ class OrderService:
                 if pid not in payment_map:
                     payment_map[pid] = str(p.status)
 
+        delivery_partner_ids = [str(o.delivery_partner_id) for o in orders if getattr(o, "delivery_partner_id", None)]
+        partner_map: dict[str, str] = {}
+        if delivery_partner_ids:
+            partners = db.query(User.id, User.full_name).filter(User.id.in_(delivery_partner_ids)).all()
+            partner_map = {str(p.id): str(p.full_name) for p in partners}
+
         results = []
         for order in orders:
             item_outs = [
@@ -376,6 +383,9 @@ class OrderService:
             ]
             r_name = retailer_map.get(str(order.retailer_id), "Unknown Shop")
             p_status = payment_map.get(str(order.id), "SIMULATED")
+            dp_id = getattr(order, "delivery_partner_id", None)
+            dp_name = partner_map.get(str(dp_id)) if dp_id else None
+            dp_otp = getattr(order, "delivery_otp", None)
 
             results.append(
                 OrderOut(
@@ -395,7 +405,10 @@ class OrderService:
                     created_at=order.created_at,
                     updated_at=order.updated_at,
                     items=item_outs,
-                    payment_status=p_status
+                    payment_status=p_status,
+                    delivery_partner_id=dp_id,
+                    delivery_partner_name=dp_name,
+                    delivery_otp=dp_otp
                 )
             )
         return results

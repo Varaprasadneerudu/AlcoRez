@@ -41,6 +41,9 @@ class OrderOut(BaseModel):
     updated_at: datetime
     items: list[OrderItemOut] = []
     payment_status: str | None = None
+    delivery_partner_id: str | None = None
+    delivery_partner_name: str | None = None
+    delivery_otp: str | None = None
 
 class OrderStatusUpdate(BaseModel):
     status: OrderStatus

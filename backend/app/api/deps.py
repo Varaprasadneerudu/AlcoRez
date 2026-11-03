@@ -84,3 +84,11 @@ def get_current_admin(current_user: User = Depends(get_current_user)) -> User:
             detail="Access forbidden: Administrator privileges required"
         )
     return current_user
+
+def get_current_delivery_partner(current_user: User = Depends(get_current_user)) -> User:
+    if current_user.role != UserRole.DELIVERY_PARTNER and current_user.role != UserRole.ADMIN:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Access forbidden: Verified Delivery Partner privileges required"
+        )
+    return current_user

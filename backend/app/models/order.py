@@ -11,6 +11,7 @@ class OrderStatus(str, enum.Enum):
     CONFIRMED = "confirmed"
     PREPARING = "preparing"
     READY = "ready"
+    OUT_FOR_DELIVERY = "out_for_delivery"
     COMPLETED = "completed"
     REJECTED = "rejected"
     CANCELLED = "cancelled"
@@ -41,6 +42,8 @@ class Order(TimeStampedUUIDModel):
     order_number: Mapped[str] = mapped_column(String(50), unique=True, nullable=False, index=True)
     user_id: Mapped[str] = mapped_column(String(36), ForeignKey("users.id", ondelete="RESTRICT"), nullable=False, index=True)
     retailer_id: Mapped[str] = mapped_column(String(36), ForeignKey("retailers.id", ondelete="RESTRICT"), nullable=False, index=True)
+    delivery_partner_id: Mapped[str | None] = mapped_column(String(36), ForeignKey("users.id", ondelete="SET NULL"), nullable=True, index=True)
+    delivery_otp: Mapped[str | None] = mapped_column(String(6), nullable=True, default="4821")
     status: Mapped[OrderStatus] = mapped_column(Enum(OrderStatus), default=OrderStatus.CREATED, nullable=False, index=True)
     subtotal: Mapped[Decimal] = mapped_column(Numeric(10, 2), nullable=False)
     delivery_fee: Mapped[Decimal] = mapped_column(Numeric(10, 2), default=Decimal("0.00"), nullable=False)
@@ -50,8 +53,9 @@ class Order(TimeStampedUUIDModel):
     is_simulated: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
     notes: Mapped[str | None] = mapped_column(Text, nullable=True)
 
-    user = relationship("User", back_populates="orders")
+    user = relationship("User", foreign_keys=[user_id], back_populates="orders")
     retailer = relationship("Retailer", back_populates="orders")
+    delivery_partner = relationship("User", foreign_keys=[delivery_partner_id], back_populates="delivery_orders")
     items = relationship("OrderItem", back_populates="order", cascade="all, delete-orphan")
     payments = relationship("PaymentAttempt", back_populates="order", cascade="all, delete-orphan")
 

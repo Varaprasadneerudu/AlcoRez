@@ -14,7 +14,8 @@ import {
   Sun,
   Moon,
   Globe,
-  Heart
+  Heart,
+  Bike
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
@@ -78,6 +79,7 @@ export default function Navbar() {
     if (r === 'retailer') return language === 'te' ? 'రిటైలర్' : 'Retailer';
     if (r === 'admin') return language === 'te' ? 'సూపర్ అడ్మిన్' : 'Super Admin';
     if (r === 'customer') return language === 'te' ? 'కస్టమర్' : 'Customer';
+    if (r === 'delivery_partner') return language === 'te' ? 'డెలివరీ పార్ట్నర్' : 'Delivery Partner';
     return r;
   };
 
@@ -179,8 +181,8 @@ export default function Navbar() {
             {/* Notification Center */}
             <NotificationCenter />
 
-            {/* Cart Button with Quick-Drawer Trigger (Hidden for Admin, Retailer, and Auth Pages) */}
-            {role !== 'admin' && role !== 'retailer' && !isAuthPage && (
+            {/* Cart Button with Quick-Drawer Trigger (Hidden for Admin, Retailer, Delivery Partner, and Auth Pages) */}
+            {role !== 'admin' && role !== 'retailer' && role !== 'delivery_partner' && !isAuthPage && (
               <button
                 type="button"
                 onClick={toggleDrawer}
@@ -324,6 +326,21 @@ export default function Navbar() {
                           <span>{t('nav.adminPortal')}</span>
                           <span className="text-[10px] text-stone-400">→</span>
                         </Link>
+                      </div>
+                    )}
+
+                    {role === 'delivery_partner' && (
+                      <div className="py-1.5 border-b border-stone-100 dark:border-stone-800">
+                        <a
+                          href="http://localhost:5174"
+                          className="flex items-center justify-between px-3.5 py-2 text-xs font-bold text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-950/40 rounded-xl mx-1.5 transition"
+                        >
+                          <div className="flex items-center gap-2">
+                            <Bike className="w-4 h-4 text-amber-500" />
+                            <span>{language === 'te' ? 'డెలివరీ యాప్ తెరవండి' : 'Open Partner App (Port 5174)'}</span>
+                          </div>
+                          <span className="text-[10px]">↗</span>
+                        </a>
                       </div>
                     )}
 
@@ -517,6 +534,16 @@ export default function Navbar() {
                 <Link to="/admin" onClick={() => setMobileMenuOpen(false)} className="p-2 bg-amber-100 dark:bg-amber-950 text-amber-900 dark:text-amber-300 border border-amber-300 dark:border-amber-700 rounded-lg text-center font-bold">
                   {t('nav.adminPortal')}
                 </Link>
+              )}
+              {role === 'delivery_partner' && (
+                <a
+                  href="http://localhost:5174"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="p-2 bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/30 rounded-lg text-center font-bold flex items-center justify-center gap-2"
+                >
+                  <Bike className="w-4 h-4" />
+                  <span>{language === 'te' ? 'డెలివరీ యాప్ తెరవండి (Port 5174)' : 'Open Partner App (Port 5174)'}</span>
+                </a>
               )}
             </div>
           </div>

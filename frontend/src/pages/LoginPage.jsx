@@ -21,6 +21,10 @@ export default function LoginPage() {
       const data = await login(email, password);
       if (data.role === 'retailer') navigate('/retailer');
       else if (data.role === 'admin') navigate('/admin');
+      else if (data.role === 'delivery_partner') {
+        const partnerUrl = import.meta.env.VITE_PARTNER_APP_URL || `http://${window.location.hostname}:5174`;
+        window.location.href = partnerUrl;
+      }
       else navigate('/');
     } catch (err) {
       setError(
@@ -116,13 +120,22 @@ export default function LoginPage() {
           <span>{loading ? t('auth.authenticating', 'Authenticating...') : t('auth.signIn', 'Sign In')}</span>
         </button>
 
-        <div className="text-center pt-2">
+        <div className="text-center pt-2 space-y-2">
           <p className="text-xs text-stone-500 dark:text-stone-400">
             {t('auth.noAccount', "Don't have an account?")}{' '}
             <Link to="/register" className="font-bold text-amber-800 dark:text-amber-400 hover:text-amber-900 dark:hover:text-amber-300 underline">
               {t('auth.registerCustomer', 'Register (21+ Customer)')}
             </Link>
           </p>
+          <div className="pt-2 border-t border-stone-100 dark:border-stone-800">
+            <a
+              href="http://localhost:5174"
+              className="inline-flex items-center gap-1.5 text-xs font-bold text-amber-700 dark:text-amber-400 hover:underline"
+            >
+              <span>🚚 Delivery Partner Portal (Port 5174)</span>
+              <span>→</span>
+            </a>
+          </div>
         </div>
       </form>
 

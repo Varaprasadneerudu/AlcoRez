@@ -9,13 +9,14 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from app.core.database import Base, SessionLocal, engine
 from app.core.security import hash_password
 from app.models.compliance import ComplianceApproval, ServiceArea
+from app.models.order import Order, OrderItem, OrderStatus
 from app.models.product import Category, Inventory, Product, ProductImage
 from app.models.retailer import (
     Retailer,
     RetailerLicense,
     RetailerStatus,
 )
-from app.models.user import Address, CustomerProfile, User, UserRole
+from app.models.user import Address, CustomerProfile, DeliveryPartnerProfile, User, UserRole
 
 
 def seed_database(target_engine=None, target_session=None):
@@ -28,6 +29,40 @@ def seed_database(target_engine=None, target_session=None):
         # Check if already seeded
         existing_admin = db.query(User).filter(User.email == "admin@telanganaliquor.gov.mock").first()
         if existing_admin:
+            # Ensure delivery partner is seeded even if initial seed was done previously
+            existing_partner = db.query(User).filter(User.email == "partner@demo.com").first()
+            if not existing_partner:
+                print("Seeding missing Delivery Partner user & profile...")
+                partner_user = User(
+                    email="partner@demo.com",
+                    hashed_password=hash_password("Partner@123456"),
+                    full_name="Suresh Kumar Goud",
+                    phone="+91-9876501234",
+                    role=UserRole.DELIVERY_PARTNER,
+                    is_active=True,
+                    is_verified=True
+                )
+                db.add(partner_user)
+                db.flush()
+
+                partner_profile = DeliveryPartnerProfile(
+                    user_id=partner_user.id,
+                    vehicle_type="Honda Activa 6G (Petrol/EV)",
+                    vehicle_number="TS 09 EB 4821",
+                    driving_license_number="DL-TS-2022-987654",
+                    is_online=True,
+                    current_zone="Madhapur & HITEC City",
+                    rating=Decimal("4.92"),
+                    total_trips=42,
+                    today_trips=6,
+                    today_earnings=Decimal("620.00"),
+                    total_earnings=Decimal("18450.00"),
+                    is_verified=True,
+                    compliance_permit_no="TS-EXCISE-DP-2024-0982"
+                )
+                db.add(partner_profile)
+                db.commit()
+                print("Delivery partner seeded successfully into existing database.")
             print("Database already contains seed data. Skipping duplicate seed.")
             return
 
@@ -222,6 +257,36 @@ def seed_database(target_engine=None, target_session=None):
         )
         db.add(lic3)
 
+        # 5. Delivery Partner: Suresh Kumar Goud (Verified)
+        partner_user = User(
+            email="partner@demo.com",
+            hashed_password=hash_password("Partner@123456"),
+            full_name="Suresh Kumar Goud",
+            phone="+91-9876501234",
+            role=UserRole.DELIVERY_PARTNER,
+            is_active=True,
+            is_verified=True
+        )
+        db.add(partner_user)
+        db.flush()
+
+        partner_profile = DeliveryPartnerProfile(
+            user_id=partner_user.id,
+            vehicle_type="Honda Activa 6G (Petrol/EV)",
+            vehicle_number="TS 09 EB 4821",
+            driving_license_number="DL-TS-2022-987654",
+            is_online=True,
+            current_zone="Madhapur & HITEC City",
+            rating=Decimal("4.92"),
+            total_trips=42,
+            today_trips=6,
+            today_earnings=Decimal("620.00"),
+            total_earnings=Decimal("18450.00"),
+            is_verified=True,
+            compliance_permit_no="TS-EXCISE-DP-2024-0982"
+        )
+        db.add(partner_profile)
+
         print("Seeding Categories...")
         categories_data = [
             ("Whisky & Single Malts", "whisky", "Finest Indian single malts, scotch, and blended whiskies", "https://images.unsplash.com/photo-1527061011665-3652c757a4d4?auto=format&fit=crop&w=600&q=80"),
@@ -359,6 +424,63 @@ def seed_database(target_engine=None, target_session=None):
         for name, city, state, postal in service_zones:
             sa = ServiceArea(name=name, city=city, state=state, postal_codes=postal, is_active=True)
             db.add(sa)
+
+        print("Seeding Initial Demonstration Orders for Delivery Partner...")
+        sample_order1 = Order(
+            order_number="TS-ORD-2026-9041",
+            user_id=customer_user.id,
+            retailer_id=retailer1.id,
+            status=OrderStatus.READY,
+            subtotal=Decimal("2550.00"),
+            delivery_fee=Decimal("0.00"),
+            taxes=Decimal("0.00"),
+            total_amount=Decimal("2550.00"),
+            address_snapshot="Flat 402, Royal Palms Apartments, Near Durgam Cheruvu, Madhapur, Hyderabad, Telangana - 500081",
+            is_simulated=True,
+            notes="Please call upon arrival at building gate.",
+            delivery_otp="4821"
+        )
+        db.add(sample_order1)
+        db.flush()
+
+        sample_item1 = OrderItem(
+            order_id=sample_order1.id,
+            product_name="Amrut Fusion Indian Single Malt",
+            brand="Amrut",
+            bottle_size="750ml",
+            unit_price=Decimal("2550.00"),
+            quantity=1,
+            total_price=Decimal("2550.00")
+        )
+        db.add(sample_item1)
+
+        sample_order2 = Order(
+            order_number="TS-ORD-2026-9042",
+            user_id=customer_user.id,
+            retailer_id=retailer2.id,
+            status=OrderStatus.READY,
+            subtotal=Decimal("780.00"),
+            delivery_fee=Decimal("0.00"),
+            taxes=Decimal("0.00"),
+            total_amount=Decimal("780.00"),
+            address_snapshot="Level 8, Cyber Towers, HITEC City Main Road, Hyderabad, Telangana - 500081",
+            is_simulated=True,
+            notes="Handover at reception tower A.",
+            delivery_otp="6912"
+        )
+        db.add(sample_order2)
+        db.flush()
+
+        sample_item2 = OrderItem(
+            order_id=sample_order2.id,
+            product_name="Bira 91 White Craft Beer (Pack of 6)",
+            brand="Bira 91",
+            bottle_size="330ml x 6",
+            unit_price=Decimal("780.00"),
+            quantity=1,
+            total_price=Decimal("780.00")
+        )
+        db.add(sample_item2)
 
         db.commit()
         print("Database seeded successfully with users, categories, products, licensed retailers, and compliance checks!")
