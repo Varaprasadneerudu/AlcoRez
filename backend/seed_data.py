@@ -296,6 +296,8 @@ def seed_database(target_engine=None, target_session=None):
             ("Gin & Botanicals", "gin", "Craft craft gins infused with Indian botanicals and juniper", "https://images.unsplash.com/photo-1551024709-8f23befc6f87?auto=format&fit=crop&w=600&q=80"),
             ("Beer & Cider", "beer", "Lagers, ales, wheat beers, and stouts", "https://images.unsplash.com/photo-1608270119278-65636055d7b5?auto=format&fit=crop&w=600&q=80"),
             ("Brandy & Cognac", "brandy", "Aged French cognacs and popular Indian brandies", "https://images.unsplash.com/photo-1569529465841-dfecdab7503b?auto=format&fit=crop&w=600&q=80"),
+            ("Tequila & Agave", "tequila", "Blanco, Reposado, and Anejo tequilas crafted from blue agave", "https://images.unsplash.com/photo-1514362545857-3bc16c4c7d1b?auto=format&fit=crop&w=600&q=80"),
+            ("Liqueurs & Digestifs", "liqueur", "Herb-infused spirits, dairy cream liqueurs, and bitters", "https://images.unsplash.com/photo-1544145945-f90425340c7e?auto=format&fit=crop&w=600&q=80"),
         ]
 
         cat_map = {}
@@ -307,44 +309,67 @@ def seed_database(target_engine=None, target_session=None):
 
         print("Seeding Products and Retailer Inventories...")
         products_data = [
-            # Whisky
-            ("Amrut Fusion Single Malt", "Amrut", "whisky", "Award-winning Indian single malt whisky crafted from barley grown at the foothills of the Himalayas.", "50.0% ABV", "India", "https://images.unsplash.com/photo-1527061011665-3652c757a4d4?auto=format&fit=crop&w=800&q=80", [("750ml", Decimal("4850.00"), 18), ("375ml", Decimal("2550.00"), 12)]),
-            ("Paul John Nirvana Single Malt", "Paul John", "whisky", "Goan unpeated single malt offering delicate honeyed honeycomb and subtle vanilla aromas.", "40.0% ABV", "India", "https://images.unsplash.com/photo-1569529465841-dfecdab7503b?auto=format&fit=crop&w=800&q=80", [("750ml", Decimal("3200.00"), 24)]),
-            ("Rampur Double Cask Indian Single Malt", "Rampur", "whisky", "Non-chill filtered malt matured in American bourbon barrels and finished in European sherry butts.", "45.0% ABV", "India", "https://images.unsplash.com/photo-1527061011665-3652c757a4d4?auto=format&fit=crop&w=800&q=80", [("750ml", Decimal("6900.00"), 8)]),
-            ("Johnnie Walker Black Label 12 Yrs", "Johnnie Walker", "whisky", "Iconic blended scotch whisky with rich notes of dark fruit, sweet vanilla, and signature smokiness.", "40.0% ABV", "Scotland", "https://images.unsplash.com/photo-1569529465841-dfecdab7503b?auto=format&fit=crop&w=800&q=80", [("750ml", Decimal("3950.00"), 35), ("375ml", Decimal("2100.00"), 20)]),
-            ("Glenfiddich 12 Year Old Single Malt", "Glenfiddich", "whisky", "Signature single malt scotch matured in the finest Oloroso sherry and bourbon casks.", "40.0% ABV", "Scotland", "https://images.unsplash.com/photo-1527061011665-3652c757a4d4?auto=format&fit=crop&w=800&q=80", [("750ml", Decimal("6400.00"), 15)]),
-            ("Chivas Regal 12 Year Old", "Chivas Regal", "whisky", "Rich and fruity blend of malt and grain whiskies matured for at least 12 years.", "40.0% ABV", "Scotland", "https://images.unsplash.com/photo-1569529465841-dfecdab7503b?auto=format&fit=crop&w=800&q=80", [("750ml", Decimal("3800.00"), 22)]),
-            ("Royal Challenge Premium Gold", "Royal Challenge", "whisky", "Deeply blended grain whisky infused with scotch malts, a household name in Telangana.", "42.8% ABV", "India", "https://images.unsplash.com/photo-1527061011665-3652c757a4d4?auto=format&fit=crop&w=800&q=80", [("750ml", Decimal("1150.00"), 50), ("375ml", Decimal("600.00"), 40), ("180ml", Decimal("310.00"), 75)]),
-
-            # Wine
-            ("Sula Dindori Reserve Shiraz", "Sula Vineyards", "wine", "Full-bodied red wine matured in American oak barrels with notes of berries and spices.", "13.5% ABV", "India", "https://images.unsplash.com/photo-1510812431401-41d2bd2722f3?auto=format&fit=crop&w=800&q=80", [("750ml", Decimal("1550.00"), 30)]),
-            ("Fratelli Sette Red Reserve", "Fratelli Vineyards", "wine", "Ultra-premium flagship red blend from Akluj vineyards featuring Cabernet Sauvignon & Sangiovese.", "14.0% ABV", "India", "https://images.unsplash.com/photo-1506377247377-2a5b3b417ebb?auto=format&fit=crop&w=800&q=80", [("750ml", Decimal("2200.00"), 14)]),
-            ("Jacob's Creek Classic Cabernet Sauvignon", "Jacob's Creek", "wine", "Vibrant Australian red with blackcurrant and plum flavors complemented by subtle cedar oak.", "13.9% ABV", "Australia", "https://images.unsplash.com/photo-1510812431401-41d2bd2722f3?auto=format&fit=crop&w=800&q=80", [("750ml", Decimal("1450.00"), 25)]),
-            ("Chandon Brut Sparkling Wine", "Chandon", "wine", "Fresh and elegant traditional method sparkling wine from the Nashik valley.", "12.0% ABV", "India", "https://images.unsplash.com/photo-1558001373-7b93ee48ffa0?auto=format&fit=crop&w=800&q=80", [("750ml", Decimal("2400.00"), 12)]),
-
-            # Vodka
-            ("Absolut Original Vodka", "Absolut", "vodka", "Pure Swedish winter wheat vodka distilled an infinite number of times.", "40.0% ABV", "Sweden", "https://images.unsplash.com/photo-1560512823-829485b8bf24?auto=format&fit=crop&w=800&q=80", [("750ml", Decimal("2450.00"), 28)]),
-            ("Smirnoff Red Triple Distilled Vodka", "Smirnoff", "vodka", "Clean, crisp classic vodka filtered ten times through seven columns of charcoal.", "37.5% ABV", "India", "https://images.unsplash.com/photo-1560512823-829485b8bf24?auto=format&fit=crop&w=800&q=80", [("750ml", Decimal("1350.00"), 45), ("375ml", Decimal("720.00"), 30)]),
-            ("Grey Goose Premium French Vodka", "Grey Goose", "vodka", "Crafted from single-origin Picardie wheat and natural Gensac spring water.", "40.0% ABV", "France", "https://images.unsplash.com/photo-1560512823-829485b8bf24?auto=format&fit=crop&w=800&q=80", [("750ml", Decimal("5200.00"), 10)]),
-
-            # Rum
-            ("Old Monk The Legend 7 Yrs Dark Rum", "Old Monk", "rum", "Legendary Indian dark rum with distinct vanilla, dark cocoa, and caramelized molasses character.", "42.8% ABV", "India", "https://images.unsplash.com/photo-1614313511387-1436a4480ebb?auto=format&fit=crop&w=800&q=80", [("750ml", Decimal("1300.00"), 40), ("375ml", Decimal("680.00"), 30)]),
-            ("Bacardi Carta Blanca Superior White Rum", "Bacardi", "rum", "Smooth white rum aged in white oak barrels and shaped through charcoal filtration.", "37.5% ABV", "India", "https://images.unsplash.com/photo-1614313511387-1436a4480ebb?auto=format&fit=crop&w=800&q=80", [("750ml", Decimal("1450.00"), 32)]),
-            ("Captain Morgan Original Spiced Gold", "Captain Morgan", "rum", "Secret recipe of Caribbean rums and exotic spices with natural amber gold tones.", "35.0% ABV", "Jamaica", "https://images.unsplash.com/photo-1614313511387-1436a4480ebb?auto=format&fit=crop&w=800&q=80", [("750ml", Decimal("1650.00"), 20)]),
-
-            # Gin
-            ("Greater Than London Dry Gin", "Greater Than", "gin", "First craft gin distilled in India featuring juniper, coriander seeds, and ginger root.", "42.8% ABV", "India", "https://images.unsplash.com/photo-1551024709-8f23befc6f87?auto=format&fit=crop&w=800&q=80", [("750ml", Decimal("1850.00"), 25)]),
-            ("Bombay Sapphire Distilled Gin", "Bombay Sapphire", "gin", "Vapour-infused with 10 hand-selected exotic botanicals for a bright, fresh palate.", "47.0% ABV", "United Kingdom", "https://images.unsplash.com/photo-1551024709-8f23befc6f87?auto=format&fit=crop&w=800&q=80", [("750ml", Decimal("3250.00"), 20)]),
-            ("Hapusa Himalayan Dry Gin", "Hapusa", "gin", "Artisanal gin distilled with wild Himalayan juniper, turmeric, mango, and Gondhoraj limes.", "43.0% ABV", "India", "https://images.unsplash.com/photo-1551024709-8f23befc6f87?auto=format&fit=crop&w=800&q=80", [("750ml", Decimal("3400.00"), 12)]),
-
-            # Beer
-            ("Kingfisher Ultra Max Premium Beer", "Kingfisher", "beer", "Smooth super premium strong lager brewed with the finest imported pilsen malt.", "7.0% ABV", "India", "https://images.unsplash.com/photo-1535958636474-b021ee887b13?auto=format&fit=crop&w=800&q=80", [("650ml", Decimal("240.00"), 80), ("330ml", Decimal("160.00"), 60)]),
-            ("Bira 91 White Wheat Ale", "Bira 91", "beer", "Naturally cloudy wheat beer with refreshing aromas of coriander seeds and orange peel.", "4.7% ABV", "India", "https://images.unsplash.com/photo-1535958636474-b021ee887b13?auto=format&fit=crop&w=800&q=80", [("330ml", Decimal("190.00"), 50), ("650ml", Decimal("290.00"), 40)]),
-            ("Corona Extra Imported Beer", "Corona", "beer", "Light, crisp Mexican pale lager best enjoyed with a wedge of fresh lime.", "4.5% ABV", "Mexico", "https://images.unsplash.com/photo-1535958636474-b021ee887b13?auto=format&fit=crop&w=800&q=80", [("330ml", Decimal("290.00"), 48)]),
-
-            # Brandy
-            ("Morpheus Blue XO Premium Brandy", "Morpheus", "brandy", "Artfully blended grape brandy aged in French oak casks for rich texture and warmth.", "42.8% ABV", "India", "https://images.unsplash.com/photo-1569529465841-dfecdab7503b?auto=format&fit=crop&w=800&q=80", [("750ml", Decimal("1750.00"), 20), ("375ml", Decimal("920.00"), 15)]),
-            ("Hennessy VS Cognac", "Hennessy", "brandy", "World-renowned French cognac displaying bold, fragrant aromas of toasted almonds and fruit.", "40.0% ABV", "France", "https://images.unsplash.com/photo-1569529465841-dfecdab7503b?auto=format&fit=crop&w=800&q=80", [("750ml", Decimal("7800.00"), 6)]),
+            ("Bira 91 Blonde Lager", "Bira 91", "beer", "Bira 91 Blonde Lager (Lager). Genuine Telangana excise-compliant beverage.", "4.9% ABV", "India", "https://commons.wikimedia.org/wiki/Special:FilePath/Bira_91_White_beer_bottle.jpg?width=600", [("330ml", Decimal("80.00"), 20), ("500ml", Decimal("120.00"), 27), ("650ml", Decimal("150.00"), 34)]),
+            ("Bira 91 White Beer", "Bira 91", "beer", "Bira 91 White Beer (Wheat Beer). Genuine Telangana excise-compliant beverage.", "4.9% ABV", "India", "https://commons.wikimedia.org/wiki/Special:FilePath/Bira_91_White_beer_bottle.jpg?width=600", [("330ml", Decimal("80.00"), 79), ("500ml", Decimal("120.00"), 6), ("650ml", Decimal("150.00"), 13)]),
+            ("Budweiser Magnum Strong Beer", "Budweiser", "beer", "Budweiser Magnum Strong Beer (Strong Lager). Genuine Telangana excise-compliant beverage.", "5.0% ABV", "India", "https://commons.wikimedia.org/wiki/Special:FilePath/Budweiser_Bottle.jpg?width=600", [("330ml", Decimal("80.00"), 37), ("500ml", Decimal("120.00"), 44), ("650ml", Decimal("150.00"), 51)]),
+            ("Budweiser Premium Lager Beer", "Budweiser", "beer", "Budweiser Premium Lager Beer (Lager). Genuine Telangana excise-compliant beverage.", "5.0% ABV", "India", "https://commons.wikimedia.org/wiki/Special:FilePath/Budweiser_Bottle.jpg?width=600", [("330ml", Decimal("80.00"), 16), ("500ml", Decimal("120.00"), 23), ("650ml", Decimal("150.00"), 30)]),
+            ("Carlsberg Elephant Strong Beer", "Carlsberg", "beer", "Carlsberg Elephant Strong Beer (Strong Lager). Genuine Telangana excise-compliant beverage.", "5.0% ABV", "India", "https://commons.wikimedia.org/wiki/Special:FilePath/Cervexa_Carlsberb_botella_e_vaso.JPG?width=600", [("330ml", Decimal("80.00"), 75), ("500ml", Decimal("120.00"), 82), ("650ml", Decimal("150.00"), 9)]),
+            ("Godfather Super Strong Beer", "Godfather", "beer", "Godfather Super Strong Beer (Strong Lager). Genuine Telangana excise-compliant beverage.", "7.5% ABV", "India", "https://commons.wikimedia.org/wiki/Special:FilePath/Kingfisher_beer_bottle.jpg?width=600", [("330ml", Decimal("80.00"), 62), ("500ml", Decimal("120.00"), 69), ("650ml", Decimal("150.00"), 76)]),
+            ("Haywards 5000 Strong Beer", "Haywards 5000", "beer", "Haywards 5000 Strong Beer (Strong Lager). Genuine Telangana excise-compliant beverage.", "7.2% ABV", "India", "https://commons.wikimedia.org/wiki/Special:FilePath/Kingfisher_beer_bottle.jpg?width=600", [("330ml", Decimal("80.00"), 41), ("500ml", Decimal("120.00"), 48), ("650ml", Decimal("150.00"), 55)]),
+            ("Heineken Lager Beer", "Heineken", "beer", "Heineken Lager Beer (Lager). Genuine Telangana excise-compliant beverage.", "5.0% ABV", "Netherlands", "https://commons.wikimedia.org/wiki/Special:FilePath/Heineken_Bottle.jpg?width=600", [("330ml", Decimal("80.00"), 58), ("500ml", Decimal("120.00"), 65), ("650ml", Decimal("150.00"), 72)]),
+            ("Kingfisher Premium Lager Beer", "Kingfisher", "beer", "Kingfisher Premium Lager Beer (Lager). Genuine Telangana excise-compliant beverage.", "5.0% ABV", "India", "https://commons.wikimedia.org/wiki/Special:FilePath/Kingfisher_beer_bottle.jpg?width=600", [("330ml", Decimal("80.00"), 71), ("500ml", Decimal("120.00"), 78), ("650ml", Decimal("150.00"), 5)]),
+            ("Kingfisher Strong Beer", "Kingfisher", "beer", "Kingfisher Strong Beer (Strong Lager). Genuine Telangana excise-compliant beverage.", "5.0% ABV", "India", "https://commons.wikimedia.org/wiki/Special:FilePath/Kingfisher_beer_bottle.jpg?width=600", [("330ml", Decimal("80.00"), 12), ("500ml", Decimal("120.00"), 19), ("650ml", Decimal("150.00"), 26)]),
+            ("Tuborg Green Lager Beer", "Tuborg", "beer", "Tuborg Green Lager Beer (Lager). Genuine Telangana excise-compliant beverage.", "4.8% ABV", "India", "https://commons.wikimedia.org/wiki/Special:FilePath/Tuborg_bottle.jpg?width=600", [("330ml", Decimal("80.00"), 33), ("500ml", Decimal("120.00"), 40), ("650ml", Decimal("150.00"), 47)]),
+            ("Tuborg Strong Beer", "Tuborg", "beer", "Tuborg Strong Beer (Strong Lager). Genuine Telangana excise-compliant beverage.", "4.8% ABV", "India", "https://commons.wikimedia.org/wiki/Special:FilePath/Tuborg_bottle.jpg?width=600", [("330ml", Decimal("80.00"), 54), ("500ml", Decimal("120.00"), 61), ("650ml", Decimal("150.00"), 68)]),
+            ("Courrier Napoleon Brandy", "Courrier Napoleon", "brandy", "Courrier Napoleon Brandy (Brandy). Genuine Telangana excise-compliant beverage.", "42.8% ABV", "India", "/images/products/mansion_house.jpg", [("180ml", Decimal("170.00"), 84), ("375ml", Decimal("350.00"), 11), ("750ml", Decimal("700.00"), 18)]),
+            ("Honey Bee Brandy", "Honey Bee", "brandy", "Honey Bee Brandy (Brandy). Genuine Telangana excise-compliant beverage.", "42.8% ABV", "India", "/images/products/mansion_house.jpg", [("180ml", Decimal("170.00"), 42), ("375ml", Decimal("350.00"), 49), ("750ml", Decimal("700.00"), 56)]),
+            ("Mansion House French Brandy", "Mansion House", "brandy", "Mansion House French Brandy (Brandy). Genuine Telangana excise-compliant beverage.", "42.8% ABV", "India", "/images/products/mansion_house.jpg", [("180ml", Decimal("170.00"), 21), ("375ml", Decimal("350.00"), 28), ("750ml", Decimal("700.00"), 35)]),
+            ("Morpheus XO Blended Brandy", "Morpheus", "brandy", "Morpheus XO Blended Brandy (Brandy). Genuine Telangana excise-compliant beverage.", "42.8% ABV", "India", "/images/products/morpheus_xo.jpg", [("180ml", Decimal("170.00"), 63), ("375ml", Decimal("350.00"), 70), ("750ml", Decimal("700.00"), 77)]),
+            ("Old Admiral Brandy", "Old Admiral", "brandy", "Old Admiral Brandy (Brandy). Genuine Telangana excise-compliant beverage.", "42.8% ABV", "India", "/images/products/mansion_house.jpg", [("180ml", Decimal("170.00"), 25), ("375ml", Decimal("350.00"), 32), ("750ml", Decimal("700.00"), 39)]),
+            ("Blue Riband Gin", "Blue Riband", "gin", "Blue Riband Gin (Dry Gin). Genuine Telangana excise-compliant beverage.", "42.8% ABV", "India", "/images/products/greater_than.jpg", [("180ml", Decimal("260.00"), 46), ("375ml", Decimal("550.00"), 53), ("750ml", Decimal("1100.00"), 60)]),
+            ("Bombay Sapphire London Dry Gin", "Bombay Sapphire", "gin", "Bombay Sapphire London Dry Gin (London Dry Gin). Genuine Telangana excise-compliant beverage.", "47.0% ABV", "United Kingdom", "https://commons.wikimedia.org/wiki/Special:FilePath/Bombay_sapphire_bottle.jpg?width=600", [("180ml", Decimal("260.00"), 8), ("375ml", Decimal("550.00"), 15), ("750ml", Decimal("1100.00"), 22)]),
+            ("Greater Than London Dry Gin", "Greater Than", "gin", "Greater Than London Dry Gin (London Dry Gin). Genuine Telangana excise-compliant beverage.", "42.8% ABV", "India", "/images/products/greater_than.jpg", [("180ml", Decimal("260.00"), 67), ("375ml", Decimal("550.00"), 74), ("750ml", Decimal("1100.00"), 81)]),
+            ("Pumori Small Batch Gin", "Pumori", "gin", "Pumori Small Batch Gin (Craft Gin). Genuine Telangana excise-compliant beverage.", "42.8% ABV", "India", "/images/products/greater_than.jpg", [("180ml", Decimal("260.00"), 50), ("375ml", Decimal("550.00"), 57), ("750ml", Decimal("1100.00"), 64)]),
+            ("Tanqueray London Dry Gin", "Tanqueray", "gin", "Tanqueray London Dry Gin (London Dry Gin). Genuine Telangana excise-compliant beverage.", "43.1% ABV", "United Kingdom", "https://commons.wikimedia.org/wiki/Special:FilePath/Tanqueray_bottle.JPG?width=600", [("180ml", Decimal("260.00"), 29), ("375ml", Decimal("550.00"), 36), ("750ml", Decimal("1100.00"), 43)]),
+            ("Baileys Original Irish Cream", "Baileys", "liqueur", "Baileys Original Irish Cream (Cream Liqueur). Genuine Telangana excise-compliant beverage.", "17.0% ABV", "Ireland", "https://commons.wikimedia.org/wiki/Special:FilePath/Baileys.JPG?width=600", [("750ml", Decimal("2400.00"), 21)]),
+            ("Jägermeister Herbal Liqueur", "Jägermeister", "liqueur", "Jägermeister Herbal Liqueur (Herbal Liqueur). Genuine Telangana excise-compliant beverage.", "35.0% ABV", "Germany", "https://commons.wikimedia.org/wiki/Special:FilePath/Jagermeister_bottle.jpg?width=600", [("750ml", Decimal("2400.00"), 28)]),
+            ("Bacardi Carta Blanca White Rum", "Bacardi", "rum", "Bacardi Carta Blanca White Rum (White Rum). Genuine Telangana excise-compliant beverage.", "37.5% ABV", "India", "https://commons.wikimedia.org/wiki/Special:FilePath/Bacardi_Superior.jpg?width=600", [("180ml", Decimal("160.00"), 13), ("375ml", Decimal("320.00"), 20), ("750ml", Decimal("650.00"), 27)]),
+            ("Captain Morgan Original Spiced Rum", "Captain Morgan", "rum", "Captain Morgan Original Spiced Rum (Spiced Rum). Genuine Telangana excise-compliant beverage.", "35.0% ABV", "Jamaica", "https://commons.wikimedia.org/wiki/Special:FilePath/Captain_Morgan_Bottle.jpg?width=600", [("180ml", Decimal("160.00"), 34), ("375ml", Decimal("320.00"), 41), ("750ml", Decimal("650.00"), 48)]),
+            ("Contessa XXX Rum", "Contessa", "rum", "Contessa XXX Rum (Dark Rum). Genuine Telangana excise-compliant beverage.", "42.8% ABV", "India", "https://commons.wikimedia.org/wiki/Special:FilePath/Old_Monk_Rum.jpg?width=600", [("180ml", Decimal("160.00"), 55), ("375ml", Decimal("320.00"), 62), ("750ml", Decimal("650.00"), 69)]),
+            ("McDowell's Celebration XXX Rum", "McDowell's Celebration", "rum", "McDowell's Celebration XXX Rum (Dark Rum). Genuine Telangana excise-compliant beverage.", "42.8% ABV", "India", "https://commons.wikimedia.org/wiki/Special:FilePath/McDowoll's_no1_celebration_Rum.JPG?width=600", [("180ml", Decimal("160.00"), 72), ("375ml", Decimal("320.00"), 79), ("750ml", Decimal("650.00"), 6)]),
+            ("Old Monk XXX Rum", "Old Monk", "rum", "Old Monk XXX Rum (Dark Rum). Genuine Telangana excise-compliant beverage.", "42.8% ABV", "India", "https://commons.wikimedia.org/wiki/Special:FilePath/Old_Monk_Rum.jpg?width=600", [("180ml", Decimal("160.00"), 51), ("375ml", Decimal("320.00"), 58), ("750ml", Decimal("650.00"), 65)]),
+            ("Jose Cuervo Especial Gold Tequila", "Jose Cuervo", "tequila", "Jose Cuervo Especial Gold Tequila (Gold Tequila). Genuine Telangana excise-compliant beverage.", "38.0% ABV", "Mexico", "https://commons.wikimedia.org/wiki/Special:FilePath/Jose_cuervo.jpg?width=600", [("750ml", Decimal("2200.00"), 7)]),
+            ("Jose Cuervo Especial Silver Tequila", "Jose Cuervo", "tequila", "Jose Cuervo Especial Silver Tequila (Silver Tequila). Genuine Telangana excise-compliant beverage.", "38.0% ABV", "Mexico", "https://commons.wikimedia.org/wiki/Special:FilePath/Jose_cuervo.jpg?width=600", [("750ml", Decimal("2200.00"), 14)]),
+            ("Absolut Original Vodka", "Absolut", "vodka", "Absolut Original Vodka (Swedish Vodka). Genuine Telangana excise-compliant beverage.", "40.0% ABV", "Sweden", "https://commons.wikimedia.org/wiki/Special:FilePath/A_bottle_of_Absolut_Vodka.jpg?width=600", [("180ml", Decimal("180.00"), 59), ("375ml", Decimal("380.00"), 66), ("750ml", Decimal("750.00"), 73)]),
+            ("Belvedere Pure Vodka", "Belvedere", "vodka", "Belvedere Pure Vodka (Polish Vodka). Genuine Telangana excise-compliant beverage.", "40.0% ABV", "Poland", "https://commons.wikimedia.org/wiki/Special:FilePath/Belvedere_Vodka_01.jpg?width=600", [("180ml", Decimal("180.00"), 80), ("375ml", Decimal("380.00"), 7), ("750ml", Decimal("750.00"), 14)]),
+            ("Magic Moments Pure Grain Vodka", "Magic Moments", "vodka", "Magic Moments Pure Grain Vodka (Vodka). Genuine Telangana excise-compliant beverage.", "37.5% ABV", "India", "/images/products/magic_moments.jpg", [("180ml", Decimal("180.00"), 76), ("375ml", Decimal("380.00"), 83), ("750ml", Decimal("750.00"), 10)]),
+            ("Romanov Premium Vodka", "Romanov", "vodka", "Romanov Premium Vodka (Vodka). Genuine Telangana excise-compliant beverage.", "37.5% ABV", "India", "/images/products/magic_moments.jpg", [("180ml", Decimal("180.00"), 38), ("375ml", Decimal("380.00"), 45), ("750ml", Decimal("750.00"), 52)]),
+            ("Smirnoff Triple Distilled Vodka", "Smirnoff", "vodka", "Smirnoff Triple Distilled Vodka (Vodka). Genuine Telangana excise-compliant beverage.", "37.5% ABV", "India", "https://commons.wikimedia.org/wiki/Special:FilePath/Smirnoff_Vodka_bottle_front.jpg?width=600", [("180ml", Decimal("180.00"), 17), ("375ml", Decimal("380.00"), 24), ("750ml", Decimal("750.00"), 31)]),
+            ("100 Pipers Deluxe Blended Scotch Whisky", "100 Pipers", "whisky", "100 Pipers Deluxe Blended Scotch Whisky (Blended Scotch Whisky). Genuine Telangana excise-compliant beverage.", "40.0% ABV", "Scotland", "https://commons.wikimedia.org/wiki/Special:FilePath/100_Pipers_bottle.jpg?width=600", [("180ml", Decimal("200.00"), 81), ("375ml", Decimal("420.00"), 8), ("750ml", Decimal("850.00"), 15)]),
+            ("8 PM Premium Black Whisky", "8 PM", "whisky", "8 PM Premium Black Whisky (Blended Indian Whisky). Genuine Telangana excise-compliant beverage.", "42.8% ABV", "India", "/images/products/8pm.jpg", [("180ml", Decimal("200.00"), 56), ("375ml", Decimal("420.00"), 63), ("750ml", Decimal("850.00"), 70)]),
+            ("Amrut Indian Single Malt Whisky", "Amrut", "whisky", "Amrut Indian Single Malt Whisky (Indian Single Malt). Genuine Telangana excise-compliant beverage.", "46.0% ABV", "India", "https://commons.wikimedia.org/wiki/Special:FilePath/Amrut_singlemalt_whisky_2013-06-11_18-39.jpg?width=600", [("180ml", Decimal("200.00"), 47), ("375ml", Decimal("420.00"), 54), ("750ml", Decimal("850.00"), 61)]),
+            ("Antiquity Blue Ultra Premium Whisky", "Antiquity", "whisky", "Antiquity Blue Ultra Premium Whisky (Blended Indian Whisky). Genuine Telangana excise-compliant beverage.", "42.8% ABV", "India", "/images/products/antiquity_blue.jpg", [("180ml", Decimal("200.00"), 39), ("375ml", Decimal("420.00"), 46), ("750ml", Decimal("850.00"), 53)]),
+            ("Black Dog Triple Gold Reserve Whisky", "Black Dog", "whisky", "Black Dog Triple Gold Reserve Whisky (Blended Scotch Whisky). Genuine Telangana excise-compliant beverage.", "42.8% ABV", "Scotland", "https://commons.wikimedia.org/wiki/Special:FilePath/Liquor_-_Black_Dog_Whiskey.jpg?width=600", [("180ml", Decimal("200.00"), 22), ("375ml", Decimal("420.00"), 29), ("750ml", Decimal("850.00"), 36)]),
+            ("Blenders Pride Rare Premium Whisky", "Blenders Pride", "whisky", "Blenders Pride Rare Premium Whisky (Premium Blended Whisky). Genuine Telangana excise-compliant beverage.", "42.8% ABV", "India", "/images/products/blenders_pride.jpg", [("180ml", Decimal("200.00"), 73), ("375ml", Decimal("420.00"), 80), ("750ml", Decimal("850.00"), 7)]),
+            ("Chivas Regal 12 Year Old Whisky", "Chivas Regal", "whisky", "Chivas Regal 12 Year Old Whisky (Blended Scotch Whisky). Genuine Telangana excise-compliant beverage.", "40.0% ABV", "Scotland", "https://commons.wikimedia.org/wiki/Special:FilePath/Chivas_Regal_The_Icon_Blended_Scotch_Whisky_(700mL).jpg?width=600", [("180ml", Decimal("200.00"), 64), ("375ml", Decimal("420.00"), 71), ("750ml", Decimal("850.00"), 78)]),
+            ("Glenfiddich 12 Year Old Single Malt", "Glenfiddich", "whisky", "Glenfiddich 12 Year Old Single Malt (Single Malt Scotch Whisky). Genuine Telangana excise-compliant beverage.", "40.0% ABV", "Scotland", "https://commons.wikimedia.org/wiki/Special:FilePath/Glenfiddich_19_years_whiskey_in_a_duty_free_at_Amsterdam_Schiphol_Airport_.jpg?width=600", [("180ml", Decimal("200.00"), 26), ("375ml", Decimal("420.00"), 33), ("750ml", Decimal("850.00"), 40)]),
+            ("ICONiQ White Whisky", "ICONiQ White", "whisky", "ICONiQ White Whisky (Blended Indian Whisky). Genuine Telangana excise-compliant beverage.", "42.8% ABV", "India", "/images/products/royal_stag.jpg", [("180ml", Decimal("200.00"), 9), ("375ml", Decimal("420.00"), 16), ("750ml", Decimal("850.00"), 23)]),
+            ("Imperial Blue Superior Grain Whisky", "Imperial Blue", "whisky", "Imperial Blue Superior Grain Whisky (Blended Indian Whisky). Genuine Telangana excise-compliant beverage.", "42.8% ABV", "India", "/images/products/imperial_blue.jpg", [("180ml", Decimal("200.00"), 14), ("375ml", Decimal("420.00"), 21), ("750ml", Decimal("850.00"), 28)]),
+            ("Indri-Trini Indian Single Malt Whisky", "Indri", "whisky", "Indri-Trini Indian Single Malt Whisky (Indian Single Malt). Genuine Telangana excise-compliant beverage.", "46.0% ABV", "India", "/images/products/indri.jpg", [("180ml", Decimal("200.00"), 68), ("375ml", Decimal("420.00"), 75), ("750ml", Decimal("850.00"), 82)]),
+            ("Jameson Irish Whiskey", "Jameson", "whisky", "Jameson Irish Whiskey (Irish Whiskey). Genuine Telangana excise-compliant beverage.", "40.0% ABV", "Ireland", "https://commons.wikimedia.org/wiki/Special:FilePath/Jameson_Irish_Whiskey_(11898467796).jpg?width=600", [("180ml", Decimal("200.00"), 5), ("375ml", Decimal("420.00"), 12), ("750ml", Decimal("850.00"), 19)]),
+            ("Johnnie Walker Red Label Whisky", "Johnnie Walker", "whisky", "Johnnie Walker Red Label Whisky (Blended Scotch Whisky). Genuine Telangana excise-compliant beverage.", "40.0% ABV", "Scotland", "https://commons.wikimedia.org/wiki/Special:FilePath/Johnnie_Walker_Red_Label.jpg?width=600", [("180ml", Decimal("200.00"), 43), ("375ml", Decimal("420.00"), 50), ("750ml", Decimal("850.00"), 57)]),
+            ("McDowell's No.1 Luxury Whisky", "McDowell's No.1", "whisky", "McDowell's No.1 Luxury Whisky (Blended Indian Whisky). Genuine Telangana excise-compliant beverage.", "42.8% ABV", "India", "https://commons.wikimedia.org/wiki/Special:FilePath/McDowell's_No.1,_Indian_whisky.jpg?width=600", [("180ml", Decimal("200.00"), 35), ("375ml", Decimal("420.00"), 42), ("750ml", Decimal("850.00"), 49)]),
+            ("Officer's Choice Blue Whisky", "Officer's Choice", "whisky", "Officer's Choice Blue Whisky (Blended Indian Whisky). Genuine Telangana excise-compliant beverage.", "42.8% ABV", "India", "/images/products/officers_choice_blue.jpg", [("180ml", Decimal("200.00"), 77), ("375ml", Decimal("420.00"), 84), ("750ml", Decimal("850.00"), 11)]),
+            ("Royal Challenge American Pride Whisky", "Royal Challenge", "whisky", "Royal Challenge American Pride Whisky (Blended Indian Whisky). Genuine Telangana excise-compliant beverage.", "42.8% ABV", "India", "/images/products/royal_challenge.jpg", [("180ml", Decimal("200.00"), 60), ("375ml", Decimal("420.00"), 67), ("750ml", Decimal("850.00"), 74)]),
+            ("Royal Stag Deluxe Whisky", "Royal Stag", "whisky", "Royal Stag Deluxe Whisky (Blended Indian Whisky). Genuine Telangana excise-compliant beverage.", "42.8% ABV", "India", "/images/products/royal_stag.jpg", [("180ml", Decimal("200.00"), 52), ("375ml", Decimal("420.00"), 59), ("750ml", Decimal("850.00"), 66)]),
+            ("Signature Premier Grain Whisky", "Signature", "whisky", "Signature Premier Grain Whisky (Blended Indian Whisky). Genuine Telangana excise-compliant beverage.", "42.8% ABV", "India", "/images/products/signature.jpg", [("180ml", Decimal("200.00"), 18), ("375ml", Decimal("420.00"), 25), ("750ml", Decimal("850.00"), 32)]),
+            ("Woodburns Contemporary Indian Whisky", "Woodburns", "whisky", "Woodburns Contemporary Indian Whisky (Indian Whisky). Genuine Telangana excise-compliant beverage.", "42.8% ABV", "India", "/images/products/signature.jpg", [("180ml", Decimal("200.00"), 30), ("375ml", Decimal("420.00"), 37), ("750ml", Decimal("850.00"), 44)]),
+            ("Fratelli Sette Red Wine", "Fratelli", "wine", "Fratelli Sette Red Wine (Red Wine). Genuine Telangana excise-compliant beverage.", "14.0% ABV", "India", "https://commons.wikimedia.org/wiki/Special:FilePath/Fratelli_Wines.jpg?width=600", [("375ml", Decimal("480.00"), 31), ("750ml", Decimal("950.00"), 38)]),
+            ("Grover Zampa La Reserve Red Wine", "Grover Zampa", "wine", "Grover Zampa La Reserve Red Wine (Red Wine). Genuine Telangana excise-compliant beverage.", "13.5% ABV", "India", "https://commons.wikimedia.org/wiki/Special:FilePath/Fratelli_Wines.jpg?width=600", [("375ml", Decimal("480.00"), 45), ("750ml", Decimal("950.00"), 52)]),
+            ("Jacob's Creek Shiraz Cabernet Red Wine", "Jacob's Creek", "wine", "Jacob's Creek Shiraz Cabernet Red Wine (Red Wine). Genuine Telangana excise-compliant beverage.", "13.5% ABV", "Australia", "https://commons.wikimedia.org/wiki/Special:FilePath/Chardonnay_Pinot_Noir.jpg?width=600", [("375ml", Decimal("480.00"), 73), ("750ml", Decimal("950.00"), 80)]),
+            ("Sula Rasa Shiraz Red Wine", "Sula", "wine", "Sula Rasa Shiraz Red Wine (Red Wine). Genuine Telangana excise-compliant beverage.", "13.5% ABV", "India", "https://commons.wikimedia.org/wiki/Special:FilePath/RASA_Cabernet_Sauvignon.jpg?width=600", [("375ml", Decimal("480.00"), 83), ("750ml", Decimal("950.00"), 10)]),
+            ("Sula Sauvignon Blanc White Wine", "Sula", "wine", "Sula Sauvignon Blanc White Wine (White Wine). Genuine Telangana excise-compliant beverage.", "13.5% ABV", "India", "https://commons.wikimedia.org/wiki/Special:FilePath/RASA_Cabernet_Sauvignon.jpg?width=600", [("375ml", Decimal("480.00"), 17), ("750ml", Decimal("950.00"), 24)]),
+            ("York Arros Red Wine", "York", "wine", "York Arros Red Wine (Red Wine). Genuine Telangana excise-compliant beverage.", "13.5% ABV", "India", "https://commons.wikimedia.org/wiki/Special:FilePath/Fratelli_Wines.jpg?width=600", [("375ml", Decimal("480.00"), 59), ("750ml", Decimal("950.00"), 66)]),
         ]
 
         for p_name, brand, cat_slug, desc, abv, origin, img_url, inventories in products_data:
@@ -380,7 +405,13 @@ def seed_database(target_engine=None, target_session=None):
                 db.add(inv1)
 
                 # Retailer 2 also carries select popular brands with slight variety
-                if brand in ["Amrut", "Johnnie Walker", "Sula Vineyards", "Absolut", "Greater Than", "Kingfisher", "Corona"]:
+                r2_popular = {
+                    "Royal Stag", "Blenders Pride", "Amrut", "Indri", "Johnnie Walker", "Chivas Regal",
+                    "Sula", "Fratelli", "Absolut", "Smirnoff", "Old Monk", "Bacardi", "Greater Than",
+                    "Bombay Sapphire", "Kingfisher", "Bira 91", "Budweiser", "Morpheus", "Jose Cuervo",
+                    "Baileys", "Jägermeister"
+                }
+                if brand in r2_popular:
                     inv2 = Inventory(
                         retailer_id=retailer2.id,
                         product_id=product.id,
@@ -431,10 +462,10 @@ def seed_database(target_engine=None, target_session=None):
             user_id=customer_user.id,
             retailer_id=retailer1.id,
             status=OrderStatus.READY,
-            subtotal=Decimal("2550.00"),
+            subtotal=Decimal("850.00"),
             delivery_fee=Decimal("0.00"),
             taxes=Decimal("0.00"),
-            total_amount=Decimal("2550.00"),
+            total_amount=Decimal("850.00"),
             address_snapshot="Flat 402, Royal Palms Apartments, Near Durgam Cheruvu, Madhapur, Hyderabad, Telangana - 500081",
             is_simulated=True,
             notes="Please call upon arrival at building gate.",
@@ -445,12 +476,12 @@ def seed_database(target_engine=None, target_session=None):
 
         sample_item1 = OrderItem(
             order_id=sample_order1.id,
-            product_name="Amrut Fusion Indian Single Malt",
-            brand="Amrut",
+            product_name="Royal Stag Deluxe Whisky",
+            brand="Royal Stag",
             bottle_size="750ml",
-            unit_price=Decimal("2550.00"),
+            unit_price=Decimal("850.00"),
             quantity=1,
-            total_price=Decimal("2550.00")
+            total_price=Decimal("850.00")
         )
         db.add(sample_item1)
 
@@ -459,10 +490,10 @@ def seed_database(target_engine=None, target_session=None):
             user_id=customer_user.id,
             retailer_id=retailer2.id,
             status=OrderStatus.READY,
-            subtotal=Decimal("780.00"),
+            subtotal=Decimal("150.00"),
             delivery_fee=Decimal("0.00"),
             taxes=Decimal("0.00"),
-            total_amount=Decimal("780.00"),
+            total_amount=Decimal("150.00"),
             address_snapshot="Level 8, Cyber Towers, HITEC City Main Road, Hyderabad, Telangana - 500081",
             is_simulated=True,
             notes="Handover at reception tower A.",
@@ -473,12 +504,12 @@ def seed_database(target_engine=None, target_session=None):
 
         sample_item2 = OrderItem(
             order_id=sample_order2.id,
-            product_name="Bira 91 White Craft Beer (Pack of 6)",
+            product_name="Bira 91 White Beer",
             brand="Bira 91",
-            bottle_size="330ml x 6",
-            unit_price=Decimal("780.00"),
+            bottle_size="650ml",
+            unit_price=Decimal("150.00"),
             quantity=1,
-            total_price=Decimal("780.00")
+            total_price=Decimal("150.00")
         )
         db.add(sample_item2)
 

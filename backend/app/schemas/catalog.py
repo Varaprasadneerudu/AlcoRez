@@ -170,12 +170,13 @@ class ProductCreate(BaseModel):
     price: Decimal = Field(..., gt=0)
     stock_quantity: int = Field(default=10, ge=0)
 
-# --- Bulk CSV Import/Export Schemas ---
+# --- Bulk CSV/Excel Import/Export Schemas ---
 class InventoryCsvRowPreview(BaseModel):
     row_number: int
     product_id: str | None = None
     product_name: str | None = None
     brand: str | None = None
+    category: str | None = None
     bottle_size: str
     price: Decimal | None = None
     stock_quantity: int | None = None
@@ -183,7 +184,9 @@ class InventoryCsvRowPreview(BaseModel):
     low_stock_threshold: int = 5
     action: str = "NEW"  # NEW, UPDATE, INVALID
     status: str = "VALID"  # VALID, ERROR
+    is_valid: bool = True
     errors: list[str] = []
+    error_message: str | None = None
     changes_summary: str | None = None
 
 class InventoryImportPreviewRequest(BaseModel):
@@ -193,10 +196,14 @@ class InventoryImportPreviewResponse(BaseModel):
     total_rows: int
     valid_rows: int
     error_rows: int
-    rows: list[InventoryCsvRowPreview]
+    rows: list[InventoryCsvRowPreview] = []
+    items: list[InventoryCsvRowPreview] = []
 
 class InventoryImportApplyItem(BaseModel):
-    product_id: str
+    product_id: str | None = None
+    product_name: str | None = None
+    brand: str | None = None
+    category: str | None = None
     bottle_size: str
     price: Decimal = Field(..., gt=0)
     stock_quantity: int = Field(..., ge=0)
@@ -208,6 +215,7 @@ class InventoryImportApplyRequest(BaseModel):
 
 class InventoryImportApplyResponse(BaseModel):
     imported_count: int
+    created_count: int = 0
     updated_count: int
     total_processed: int
     message: str

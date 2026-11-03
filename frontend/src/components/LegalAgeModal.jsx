@@ -8,11 +8,21 @@ export default function LegalAgeModal() {
   const { ageVerified, confirmAge } = useAuth();
   const { t } = useLanguage();
 
+  React.useEffect(() => {
+    if (!ageVerified) {
+      const prevOverflow = document.body.style.overflow;
+      document.body.style.overflow = 'hidden';
+      return () => {
+        document.body.style.overflow = prevOverflow;
+      };
+    }
+  }, [ageVerified]);
+
   if (ageVerified) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 backdrop-blur-md p-4 animate-in fade-in duration-200">
-      <div className="max-w-md w-full bg-white dark:bg-stone-900 rounded-2xl shadow-2xl overflow-hidden border border-amber-200 dark:border-stone-800 animate-in fade-in zoom-in-95 duration-200 transition-colors">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 backdrop-blur-md p-4 overflow-y-auto overscroll-contain animate-in fade-in duration-200">
+      <div className="max-w-md w-full bg-white dark:bg-stone-900 rounded-2xl shadow-2xl overflow-hidden border border-amber-200 dark:border-stone-800 animate-in fade-in zoom-in-95 duration-200 transition-colors my-auto overscroll-contain">
         <div className="bg-gradient-to-r from-amber-700 via-amber-800 to-stone-900 dark:from-amber-900 dark:via-stone-900 dark:to-stone-950 p-6 text-white text-center">
           <div className="flex justify-center mb-3">
             <AlcoRezIcon className="h-14 w-auto rounded-xl shadow-lg" />

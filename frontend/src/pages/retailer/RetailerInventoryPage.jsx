@@ -30,6 +30,7 @@ import {
 } from 'lucide-react';
 import { api } from '../../services/api';
 import { useLanguage } from '../../context/LanguageContext';
+import * as XLSX from 'xlsx';
 
 export default function RetailerInventoryPage() {
   const { t, tc, language } = useLanguage();
@@ -490,6 +491,48 @@ export default function RetailerInventoryPage() {
   const [importPreview, setImportPreview] = useState(null);
   const [applyingImport, setApplyingImport] = useState(false);
 
+  // Lock body scroll and prevent background scroll chaining when any modal is open
+  const isAnyModalOpen = Boolean(
+    showAddModal ||
+    showBulkModal ||
+    adjustItem ||
+    historyItem ||
+    itemToDelete
+  );
+
+  useEffect(() => {
+    if (isAnyModalOpen) {
+      const originalOverflow = document.body.style.overflow;
+      const originalPaddingRight = document.body.style.paddingRight;
+      const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth;
+
+      if (scrollbarWidth > 0) {
+        document.body.style.paddingRight = `${scrollbarWidth}px`;
+      }
+      document.body.style.overflow = 'hidden';
+
+      const handleKeyDown = (e) => {
+        if (e.key === 'Escape') {
+          if (showAddModal) setShowAddModal(false);
+          else if (showBulkModal) {
+            setShowBulkModal(false);
+            setImportPreview(null);
+          } else if (adjustItem) setAdjustItem(null);
+          else if (historyItem) setHistoryItem(null);
+          else if (itemToDelete) setItemToDelete(null);
+        }
+      };
+
+      window.addEventListener('keydown', handleKeyDown);
+
+      return () => {
+        document.body.style.overflow = originalOverflow;
+        document.body.style.paddingRight = originalPaddingRight;
+        window.removeEventListener('keydown', handleKeyDown);
+      };
+    }
+  }, [isAnyModalOpen, showAddModal, showBulkModal, adjustItem, historyItem, itemToDelete]);
+
   const handleExportCsv = async () => {
     try {
       const csvData = await api.exportInventoryCsv();
@@ -513,65 +556,126 @@ export default function RetailerInventoryPage() {
     }
   };
 
-  const handleCsvFileUpload = (e) => {
+  const handleExportExcel = async () => {
+    try {
+      const csvData = await api.exportInventoryCsv();
+      const workbook = XLSX.read(csvData, { type: 'string' });
+      XLSX.writeFile(workbook, `inventory_export_${new Date().toISOString().slice(0, 10)}.xlsx`);
+      addToast(
+        language === 'te'
+          ? 'ఇన్వెంటరీ ఎక్సెల్ ఫైల్ విజయవంతంగా డౌన్‌లోడ్ చేయబడింది!'
+          : 'Inventory Excel (.xlsx) exported successfully!',
+        'success'
+      );
+    } catch (err) {
+      addToast(err.message || 'Failed to export inventory Excel', 'error');
+    }
+  };
+
+  const handleFileUpload = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
     setCsvFile(file);
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      const text = event.target?.result || '';
-      setCsvText(text);
-    };
-    reader.readAsText(file);
+    const fileName = file.name.toLowerCase();
+    const isExcel = fileName.endsWith('.xlsx') || fileName.endsWith('.xls') || file.type.includes('spreadsheet') || file.type.includes('excel');
+
+    try {
+      if (isExcel) {
+        const buffer = await file.arrayBuffer();
+        const workbook = XLSX.read(buffer, { type: 'array' });
+        if (!workbook.SheetNames || workbook.SheetNames.length === 0) {
+          throw new Error('Excel workbook contains no sheets.');
+        }
+
+        // Intelligently find the Products sheet or the sheet with product rows
+        let targetSheetName = workbook.SheetNames.find((s) => /product/i.test(s));
+        if (!targetSheetName) {
+          for (const name of workbook.SheetNames) {
+            const ws = workbook.Sheets[name];
+            const sample = XLSX.utils.sheet_to_csv(ws);
+            if (/product_name|sku|bottle_size/i.test(sample)) {
+              targetSheetName = name;
+              break;
+            }
+          }
+        }
+        targetSheetName = targetSheetName || workbook.SheetNames[0];
+        const worksheet = workbook.Sheets[targetSheetName];
+        const generatedCsv = XLSX.utils.sheet_to_csv(worksheet);
+        if (!generatedCsv.trim()) throw new Error(`Excel sheet "${targetSheetName}" is empty.`);
+        setCsvText(generatedCsv);
+        addToast(
+          language === 'te'
+            ? `ఎక్సెల్ షీట్ "${targetSheetName}" లోడ్ చేయబడింది!`
+            : `Excel sheet "${targetSheetName}" loaded successfully! Click "Preview Validation" to inspect rows.`,
+          'success'
+        );
+      } else {
+        const reader = new FileReader();
+        reader.onload = (event) => {
+          const text = event.target?.result || '';
+          setCsvText(text);
+        };
+        reader.readAsText(file);
+      }
+    } catch (err) {
+      addToast(err.message || 'Failed to read spreadsheet file', 'error');
+    }
   };
 
-  const handlePreviewCsv = async () => {
-    if (!csvText.trim()) {
+  const handlePreviewCsv = async (overrideText = null) => {
+    const targetText = typeof overrideText === 'string' ? overrideText : csvText;
+    if (!targetText.trim()) {
       addToast(
         language === 'te'
-          ? 'దయచేసి ప్రివ్యూ చేయడానికి CSV ఫైల్‌ను అప్‌లోడ్ చేయండి లేదా టెక్స్ట్‌ను అతికించండి.'
-          : 'Please upload or paste CSV text to preview.',
+          ? 'దయచేసి ప్రివ్యూ చేయడానికి ఫైల్‌ను అప్‌లోడ్ చేయండి లేదా డేటాను అతికించండి.'
+          : 'Please upload an Excel/CSV file or paste tabular data to preview.',
         'info'
       );
       return;
     }
     try {
       setPreviewLoading(true);
-      const res = await api.previewInventoryImport(csvText);
+      const res = await api.previewInventoryImport(targetText);
       setImportPreview(res);
     } catch (err) {
-      addToast(err.message || 'Failed to preview CSV import', 'error');
+      addToast(err.message || 'Failed to preview spreadsheet import', 'error');
     } finally {
       setPreviewLoading(false);
     }
   };
 
   const handleApplyImport = async () => {
-    if (!importPreview || !importPreview.items) return;
-    const validItems = importPreview.items
-      .filter((item) => item.is_valid && item.action !== 'error')
+    if (!importPreview) return;
+    const rows = importPreview.items || importPreview.rows || [];
+    const validItems = rows
+      .filter((item) => (item.is_valid !== false && item.status !== 'ERROR') && item.action !== 'INVALID' && item.action !== 'error')
       .map((item) => ({
-        product_id: item.product_id,
-        product_name: item.product_name,
+        product_id: item.product_id || null,
+        product_name: item.product_name || null,
+        brand: item.brand || null,
+        category: item.category || null,
         bottle_size: item.bottle_size,
-        price: item.price,
-        stock_quantity: item.stock_quantity,
-        low_stock_threshold: item.low_stock_threshold,
-        is_available: item.is_available,
+        price: Number(item.price),
+        stock_quantity: Number(item.stock_quantity),
+        low_stock_threshold: Number(item.low_stock_threshold ?? 5),
+        is_available: Boolean(item.is_available),
       }));
 
     if (validItems.length === 0) {
-      addToast('No valid rows available to apply.', 'error');
+      addToast('No valid rows available to apply. Please review validation errors.', 'error');
       return;
     }
 
     try {
       setApplyingImport(true);
       const res = await api.applyInventoryImport(validItems);
+      const created = res.created_count ?? res.imported_count ?? 0;
+      const updated = res.updated_count ?? 0;
       addToast(
         language === 'te'
-          ? `బల్క్ దిగుమతి పూర్తయింది: ${res.created_count} కొత్తవి, ${res.updated_count} నవీకరించబడ్డాయి!`
-          : `Bulk import applied: ${res.created_count} created, ${res.updated_count} updated!`,
+          ? `దిగుమతి పూర్తయింది: ${created} కొత్తవి, ${updated} నవీకరించబడ్డాయి!`
+          : `Bulk import applied: ${created} created, ${updated} updated!`,
         'success'
       );
       setShowBulkModal(false);
@@ -670,8 +774,17 @@ export default function RetailerInventoryPage() {
 
         <div className="flex flex-wrap items-center gap-2.5">
           <button
+            onClick={handleExportExcel}
+            className="py-2 px-3.5 rounded-xl text-xs font-bold bg-white dark:bg-stone-800 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/60 shadow-xs transition flex items-center gap-1.5 cursor-pointer"
+            title="Download complete shop inventory in Excel (.xlsx) spreadsheet format"
+          >
+            <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+            <span>Export Excel</span>
+          </button>
+
+          <button
             onClick={handleExportCsv}
-            className="py-2 px-3.5 rounded-xl text-xs font-bold bg-white dark:bg-stone-800 text-stone-700 dark:text-stone-300 hover:bg-stone-50 dark:hover:bg-stone-700/80 border border-stone-200 dark:border-stone-700 shadow-xs transition flex items-center gap-1.5 cursor-pointer"
+            className="py-2 px-3 rounded-xl text-xs font-bold bg-white dark:bg-stone-800 text-stone-700 dark:text-stone-300 hover:bg-stone-50 dark:hover:bg-stone-700/80 border border-stone-200 dark:border-stone-700 shadow-xs transition flex items-center gap-1.5 cursor-pointer"
             title="Download complete shop inventory in CSV format"
           >
             <Download className="w-3.5 h-3.5 text-stone-500 dark:text-stone-400" />
@@ -684,10 +797,10 @@ export default function RetailerInventoryPage() {
               setImportPreview(null);
             }}
             className="py-2 px-3.5 rounded-xl text-xs font-bold bg-amber-50 dark:bg-amber-950/40 text-amber-900 dark:text-amber-300 hover:bg-amber-100 dark:hover:bg-amber-900/60 border border-amber-200 dark:border-amber-800 shadow-xs transition flex items-center gap-1.5 cursor-pointer"
-            title="Upload CSV to update prices and stock quantities"
+            title="Upload Excel or CSV file to update prices and stock quantities in bulk"
           >
             <Upload className="w-3.5 h-3.5 text-amber-700 dark:text-amber-400" />
-            <span>Import Bulk CSV</span>
+            <span>Import Excel / CSV</span>
           </button>
 
           <button
@@ -1330,8 +1443,16 @@ export default function RetailerInventoryPage() {
           Stock Adjustment Dialog Modal
       ========================================== */}
       {adjustItem && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-          <div className="max-w-md w-full bg-white dark:bg-stone-900 rounded-3xl p-6 shadow-2xl border border-stone-200 dark:border-stone-800 space-y-4">
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-sm p-4 overflow-y-auto overscroll-contain animate-in fade-in duration-200"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setAdjustItem(null);
+          }}
+        >
+          <div
+            className="max-w-md w-full bg-white dark:bg-stone-900 rounded-3xl p-6 shadow-2xl border border-stone-200 dark:border-stone-800 space-y-4 my-auto overscroll-contain"
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="flex items-center justify-between pb-3 border-b border-stone-100 dark:border-stone-800">
               <div>
                 <h3 className="font-extrabold text-base text-stone-900 dark:text-stone-100">
@@ -1460,8 +1581,16 @@ export default function RetailerInventoryPage() {
           Movement History Modal
       ========================================== */}
       {historyItem && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-          <div className="max-w-2xl w-full bg-white dark:bg-stone-900 rounded-3xl p-6 shadow-2xl border border-stone-200 dark:border-stone-800 space-y-4 max-h-[85vh] flex flex-col">
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-sm p-4 overflow-y-auto overscroll-contain animate-in fade-in duration-200"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setHistoryItem(null);
+          }}
+        >
+          <div
+            className="max-w-2xl w-full bg-white dark:bg-stone-900 rounded-3xl p-6 shadow-2xl border border-stone-200 dark:border-stone-800 space-y-4 my-auto max-h-[85vh] flex flex-col overscroll-contain"
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="flex items-center justify-between pb-3 border-b border-stone-100 dark:border-stone-800 shrink-0">
               <div className="flex items-center gap-2.5">
                 <div className="w-8 h-8 rounded-lg bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 flex items-center justify-center">
@@ -1484,7 +1613,7 @@ export default function RetailerInventoryPage() {
               </button>
             </div>
 
-            <div className="flex-1 overflow-y-auto space-y-3 pr-1 text-xs">
+            <div className="flex-1 overflow-y-auto space-y-3 pr-1 text-xs overscroll-contain">
               {loadingHistory ? (
                 <div className="py-12 text-center text-stone-400">
                   <div className="w-6 h-6 border-2 border-amber-600 border-t-transparent rounded-full animate-spin mx-auto mb-2" />
@@ -1563,8 +1692,16 @@ export default function RetailerInventoryPage() {
           4. Add Product SKU Modal (With master catalogue selection & validation)
       ========================================== */}
       {showAddModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-          <div className="max-w-lg w-full bg-white dark:bg-stone-900 rounded-3xl p-6 shadow-2xl border border-stone-200 dark:border-stone-800 space-y-4 max-h-[90vh] flex flex-col">
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-sm p-4 overflow-y-auto overscroll-contain animate-in fade-in duration-200"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setShowAddModal(false);
+          }}
+        >
+          <div
+            className="max-w-lg w-full bg-white dark:bg-stone-900 rounded-3xl p-6 shadow-2xl border border-stone-200 dark:border-stone-800 space-y-4 my-auto max-h-[90vh] flex flex-col overscroll-contain"
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="flex items-center justify-between pb-3 border-b border-stone-100 dark:border-stone-800 shrink-0">
               <div>
                 <h3 className="font-extrabold text-base text-stone-900 dark:text-stone-100">
@@ -1584,7 +1721,7 @@ export default function RetailerInventoryPage() {
               </button>
             </div>
 
-            <form onSubmit={handleCreateListing} className="flex-1 overflow-y-auto pr-1 space-y-4 text-xs">
+            <form onSubmit={handleCreateListing} className="flex-1 overflow-y-auto pr-1 space-y-4 text-xs overscroll-contain">
               
               {/* Filter catalogue products */}
               <div>
@@ -1768,8 +1905,16 @@ export default function RetailerInventoryPage() {
           Deactivate / Delete Confirmation Dialog
       ========================================== */}
       {itemToDelete && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-          <div className="max-w-md w-full bg-white dark:bg-stone-900 rounded-3xl p-6 shadow-2xl border border-stone-200 dark:border-stone-800 space-y-4">
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-sm p-4 overflow-y-auto overscroll-contain animate-in fade-in duration-200"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setItemToDelete(null);
+          }}
+        >
+          <div
+            className="max-w-md w-full bg-white dark:bg-stone-900 rounded-3xl p-6 shadow-2xl border border-stone-200 dark:border-stone-800 space-y-4 my-auto overscroll-contain"
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="flex items-center gap-3 text-rose-600 dark:text-rose-400">
               <div className="w-10 h-10 rounded-2xl bg-rose-50 dark:bg-rose-950/60 flex items-center justify-center shrink-0 border border-rose-200 dark:border-rose-900">
                 <AlertTriangle className="w-5 h-5" />
@@ -1815,8 +1960,19 @@ export default function RetailerInventoryPage() {
           Bulk Inventory CSV Import Modal
       ========================================== */}
       {showBulkModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-sm p-4 overflow-y-auto animate-in fade-in duration-200">
-          <div className="max-w-3xl w-full bg-white dark:bg-stone-900 rounded-3xl p-6 shadow-2xl border border-stone-200 dark:border-stone-800 space-y-5 my-8">
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-sm p-4 overflow-y-auto overscroll-contain animate-in fade-in duration-200"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) {
+              setShowBulkModal(false);
+              setImportPreview(null);
+            }
+          }}
+        >
+          <div
+            className="max-w-3xl w-full bg-white dark:bg-stone-900 rounded-3xl p-6 shadow-2xl border border-stone-200 dark:border-stone-800 space-y-5 my-8 overscroll-contain"
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="flex items-center justify-between border-b border-stone-100 dark:border-stone-800 pb-4">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-2xl bg-amber-50 dark:bg-amber-950/60 flex items-center justify-center text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-800">
@@ -1824,10 +1980,10 @@ export default function RetailerInventoryPage() {
                 </div>
                 <div>
                   <h3 className="font-extrabold text-lg text-stone-900 dark:text-stone-100">
-                    Bulk Inventory Import (CSV)
+                    Bulk Inventory Import (Excel & CSV)
                   </h3>
                   <p className="text-xs text-stone-500 dark:text-stone-400">
-                    Upload or paste inventory CSV to create or update product SKUs in bulk
+                    Upload Excel (.xlsx, .xls) or CSV files, or paste tabular data to update product SKUs in bulk
                   </p>
                 </div>
               </div>
@@ -1845,20 +2001,21 @@ export default function RetailerInventoryPage() {
             {/* Template format hint */}
             <div className="p-3.5 bg-stone-50 dark:bg-stone-800/60 rounded-2xl border border-stone-200 dark:border-stone-700/80 text-xs space-y-2">
               <div className="flex items-center justify-between">
-                <span className="font-bold text-stone-700 dark:text-stone-300">Expected CSV Columns:</span>
+                <span className="font-bold text-stone-700 dark:text-stone-300">Expected Columns (Excel or CSV):</span>
                 <button
                   type="button"
                   onClick={() => {
                     const sample = "product_name,bottle_size,price,stock_quantity,low_stock_threshold,is_available\nRoyal Challenge Whisky,750ml,920.00,45,10,true\nAmrut Fusion Single Malt,750ml,4800.00,12,3,true\nOld Monk Rum,750ml,680.00,30,8,true";
                     setCsvText(sample);
+                    setCsvFile(null);
                   }}
                   className="text-amber-700 dark:text-amber-400 font-bold hover:underline cursor-pointer"
                 >
-                  Load Sample CSV
+                  Load Sample Data
                 </button>
               </div>
               <code className="block bg-stone-200/70 dark:bg-stone-950/70 p-2 rounded-xl text-[11px] font-mono text-stone-800 dark:text-stone-200 overflow-x-auto">
-                product_name,bottle_size,price,stock_quantity,low_stock_threshold,is_available
+                product_name, bottle_size, price, stock_quantity, low_stock_threshold, is_available
               </code>
             </div>
 
@@ -1866,14 +2023,18 @@ export default function RetailerInventoryPage() {
             <div className="space-y-3">
               <div className="flex items-center gap-3">
                 <label className="flex-1 flex flex-col items-center justify-center p-4 border-2 border-dashed border-stone-300 dark:border-stone-700 hover:border-amber-500 rounded-2xl cursor-pointer bg-stone-50/50 dark:bg-stone-800/50 transition">
-                  <Upload className="w-6 h-6 text-stone-400 mb-1" />
-                  <span className="text-xs font-semibold text-stone-700 dark:text-stone-300">
-                    {csvFile ? csvFile.name : 'Choose CSV file or drag & drop'}
+                  <div className="flex items-center gap-2 mb-1">
+                    <FileSpreadsheet className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+                    <Upload className="w-5 h-5 text-stone-400" />
+                  </div>
+                  <span className="text-xs font-semibold text-stone-700 dark:text-stone-300 text-center">
+                    {csvFile ? csvFile.name : 'Choose Excel (.xlsx, .xls) or CSV file or drag & drop'}
                   </span>
+                  <span className="text-[10px] text-stone-400 mt-0.5">Supports Microsoft Excel spreadsheets (.xlsx, .xls) and CSV</span>
                   <input
                     type="file"
-                    accept=".csv,text/csv"
-                    onChange={handleCsvFileUpload}
+                    accept=".xlsx,.xls,.csv,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel"
+                    onChange={handleFileUpload}
                     className="hidden"
                   />
                 </label>
@@ -1881,7 +2042,7 @@ export default function RetailerInventoryPage() {
 
               <div>
                 <label className="block text-xs font-bold text-stone-700 dark:text-stone-300 mb-1">
-                  Or Paste Raw CSV Data:
+                  Or Paste Raw Tabular Data (CSV):
                 </label>
                 <textarea
                   rows={4}
@@ -1895,115 +2056,137 @@ export default function RetailerInventoryPage() {
               <div className="flex items-center justify-end">
                 <button
                   type="button"
-                  onClick={handlePreviewCsv}
+                  onClick={() => handlePreviewCsv()}
                   disabled={previewLoading || !csvText.trim()}
                   className="py-2 px-4 rounded-xl text-xs font-bold bg-stone-900 dark:bg-stone-100 text-white dark:text-stone-900 hover:bg-stone-800 dark:hover:bg-white disabled:opacity-50 transition flex items-center gap-2 cursor-pointer"
                 >
                   {previewLoading && <RefreshCw className="w-3.5 h-3.5 animate-spin" />}
-                  <span>{previewLoading ? 'Parsing CSV...' : 'Preview Validation'}</span>
+                  <span>{previewLoading ? 'Parsing spreadsheet...' : 'Preview Validation'}</span>
                 </button>
               </div>
             </div>
 
             {/* Validation Preview Results */}
-            {importPreview && (
-              <div className="space-y-3 pt-3 border-t border-stone-100 dark:border-stone-800">
-                <div className="flex items-center justify-between">
-                  <h4 className="text-xs font-extrabold uppercase tracking-wider text-stone-600 dark:text-stone-400">
-                    Import Preview & Validation
-                  </h4>
-                  <div className="flex items-center gap-2 text-[11px] font-bold">
-                    <span className="px-2 py-0.5 rounded-full bg-stone-100 dark:bg-stone-800 text-stone-700 dark:text-stone-300">
-                      Total: {importPreview.total_rows}
-                    </span>
-                    <span className="px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950/80 text-emerald-800 dark:text-emerald-300">
-                      Valid: {importPreview.valid_rows}
-                    </span>
-                    {importPreview.error_rows > 0 && (
-                      <span className="px-2 py-0.5 rounded-full bg-rose-100 dark:bg-rose-950/80 text-rose-800 dark:text-rose-300">
-                        Errors: {importPreview.error_rows}
+            {importPreview && (() => {
+              const previewRows = importPreview.items || importPreview.rows || [];
+              return (
+                <div className="space-y-3 pt-3 border-t border-stone-100 dark:border-stone-800">
+                  <div className="flex items-center justify-between">
+                    <h4 className="text-xs font-extrabold uppercase tracking-wider text-stone-600 dark:text-stone-400">
+                      Import Preview & Validation
+                    </h4>
+                    <div className="flex items-center gap-2 text-[11px] font-bold">
+                      <span className="px-2 py-0.5 rounded-full bg-stone-100 dark:bg-stone-800 text-stone-700 dark:text-stone-300">
+                        Total: {importPreview.total_rows}
                       </span>
-                    )}
+                      <span className="px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950/80 text-emerald-800 dark:text-emerald-300">
+                        Valid: {importPreview.valid_rows}
+                      </span>
+                      {importPreview.error_rows > 0 && (
+                        <span className="px-2 py-0.5 rounded-full bg-rose-100 dark:bg-rose-950/80 text-rose-800 dark:text-rose-300">
+                          Errors: {importPreview.error_rows}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="max-h-56 overflow-y-auto rounded-2xl border border-stone-200 dark:border-stone-800">
+                    <table className="w-full text-left text-xs">
+                      <thead className="bg-stone-100 dark:bg-stone-800/80 text-stone-500 dark:text-stone-400 font-bold sticky top-0">
+                        <tr>
+                          <th className="py-2 px-3">Row</th>
+                          <th className="py-2 px-3">Product SKU</th>
+                          <th className="py-2 px-3">Size</th>
+                          <th className="py-2 px-3">Price</th>
+                          <th className="py-2 px-3">Qty</th>
+                          <th className="py-2 px-3">Action</th>
+                          <th className="py-2 px-3">Status</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-stone-100 dark:divide-stone-800">
+                        {previewRows.map((row, idx) => {
+                          const isValid = row.is_valid !== false && row.status !== 'ERROR';
+                          const isUpdate = row.action === 'UPDATE' || row.action === 'update';
+                          const isNew = row.action === 'NEW' || row.action === 'create';
+                          return (
+                            <tr
+                              key={idx}
+                              className={isValid ? 'hover:bg-stone-50 dark:hover:bg-stone-800/40' : 'bg-rose-50/50 dark:bg-rose-950/30'}
+                            >
+                              <td className="py-2 px-3 font-mono text-[11px] text-stone-400">{row.row_number}</td>
+                              <td className="py-2 px-3 font-semibold text-stone-900 dark:text-stone-100">
+                                <div>{row.product_name || '—'}</div>
+                                {row.brand && <div className="text-[10px] text-stone-400">{row.brand}</div>}
+                              </td>
+                              <td className="py-2 px-3 text-stone-600 dark:text-stone-400">{row.bottle_size}</td>
+                              <td className="py-2 px-3 font-bold text-stone-800 dark:text-stone-200">
+                                {row.price ? `₹${row.price}` : '—'}
+                              </td>
+                              <td className="py-2 px-3 font-bold">{row.stock_quantity ?? '—'}</td>
+                              <td className="py-2 px-3">
+                                {row.action === 'NEW PRODUCT' ? (
+                                  <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded-md bg-purple-100 dark:bg-purple-950 text-purple-800 dark:text-purple-300 border border-purple-200 dark:border-purple-800">
+                                    + Catalog & Stock
+                                  </span>
+                                ) : (
+                                  <span
+                                    className={`text-[10px] font-extrabold uppercase px-1.5 py-0.5 rounded ${
+                                      isNew
+                                        ? 'bg-blue-100 dark:bg-blue-950/80 text-blue-800 dark:text-blue-300'
+                                        : isUpdate
+                                        ? 'bg-amber-100 dark:bg-amber-950/80 text-amber-800 dark:text-amber-300'
+                                        : 'bg-stone-200 dark:bg-stone-800 text-stone-600 dark:text-stone-400'
+                                    }`}
+                                  >
+                                    {row.action}
+                                  </span>
+                                )}
+                              </td>
+                              <td className="py-2 px-3">
+                                {isValid ? (
+                                  <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-600 dark:text-emerald-400">
+                                    <Check className="w-3.5 h-3.5" /> Valid
+                                  </span>
+                                ) : (
+                                  <span
+                                    className="text-[11px] font-medium text-rose-600 dark:text-rose-400 flex items-center gap-1"
+                                    title={row.error_message || (Array.isArray(row.errors) ? row.errors.join('; ') : '')}
+                                  >
+                                    <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
+                                    <span className="truncate max-w-[150px]">
+                                      {row.error_message || (Array.isArray(row.errors) ? row.errors.join('; ') : 'Validation error')}
+                                    </span>
+                                  </span>
+                                )}
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+
+                  <div className="flex items-center justify-end gap-2 pt-2">
+                    <button
+                      type="button"
+                      onClick={() => setImportPreview(null)}
+                      className="py-2 px-4 rounded-xl text-stone-600 dark:text-stone-400 hover:bg-stone-100 dark:hover:bg-stone-800 text-xs font-semibold cursor-pointer"
+                    >
+                      Reset Preview
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleApplyImport}
+                      disabled={applyingImport || !importPreview.valid_rows}
+                      className="py-2 px-5 rounded-xl bg-amber-600 hover:bg-amber-700 disabled:opacity-50 text-white text-xs font-bold shadow transition flex items-center gap-2 cursor-pointer"
+                    >
+                      {applyingImport && <RefreshCw className="w-3.5 h-3.5 animate-spin" />}
+                      <span>{applyingImport ? 'Applying...' : `Apply ${importPreview.valid_rows} Valid SKUs`}</span>
+                    </button>
                   </div>
                 </div>
-
-                <div className="max-h-56 overflow-y-auto rounded-2xl border border-stone-200 dark:border-stone-800">
-                  <table className="w-full text-left text-xs">
-                    <thead className="bg-stone-100 dark:bg-stone-800/80 text-stone-500 dark:text-stone-400 font-bold sticky top-0">
-                      <tr>
-                        <th className="py-2 px-3">Row</th>
-                        <th className="py-2 px-3">Product SKU</th>
-                        <th className="py-2 px-3">Size</th>
-                        <th className="py-2 px-3">Price</th>
-                        <th className="py-2 px-3">Qty</th>
-                        <th className="py-2 px-3">Action</th>
-                        <th className="py-2 px-3">Status</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-stone-100 dark:divide-stone-800">
-                      {importPreview.items?.map((row, idx) => (
-                        <tr
-                          key={idx}
-                          className={row.is_valid ? 'hover:bg-stone-50 dark:hover:bg-stone-800/40' : 'bg-rose-50/50 dark:bg-rose-950/30'}
-                        >
-                          <td className="py-2 px-3 font-mono text-[11px] text-stone-400">{row.row_number}</td>
-                          <td className="py-2 px-3 font-semibold text-stone-900 dark:text-stone-100">{row.product_name}</td>
-                          <td className="py-2 px-3 text-stone-600 dark:text-stone-400">{row.bottle_size}</td>
-                          <td className="py-2 px-3 font-bold text-stone-800 dark:text-stone-200">
-                            {row.price ? `₹${row.price}` : '—'}
-                          </td>
-                          <td className="py-2 px-3 font-bold">{row.stock_quantity ?? '—'}</td>
-                          <td className="py-2 px-3">
-                            <span
-                              className={`text-[10px] font-extrabold uppercase px-1.5 py-0.5 rounded ${
-                                row.action === 'create'
-                                  ? 'bg-blue-100 dark:bg-blue-950/80 text-blue-800 dark:text-blue-300'
-                                  : row.action === 'update'
-                                  ? 'bg-amber-100 dark:bg-amber-950/80 text-amber-800 dark:text-amber-300'
-                                  : 'bg-stone-200 dark:bg-stone-800 text-stone-600 dark:text-stone-400'
-                              }`}
-                            >
-                              {row.action}
-                            </span>
-                          </td>
-                          <td className="py-2 px-3">
-                            {row.is_valid ? (
-                              <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-600 dark:text-emerald-400">
-                                <Check className="w-3.5 h-3.5" /> Valid
-                              </span>
-                            ) : (
-                              <span className="text-[11px] font-medium text-rose-600 dark:text-rose-400 flex items-center gap-1" title={row.error_message}>
-                                <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
-                                <span className="truncate max-w-[150px]">{row.error_message}</span>
-                              </span>
-                            )}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-
-                <div className="flex items-center justify-end gap-2 pt-2">
-                  <button
-                    type="button"
-                    onClick={() => setImportPreview(null)}
-                    className="py-2 px-4 rounded-xl text-stone-600 dark:text-stone-400 hover:bg-stone-100 dark:hover:bg-stone-800 text-xs font-semibold cursor-pointer"
-                  >
-                    Reset Preview
-                  </button>
-                  <button
-                    type="button"
-                    onClick={handleApplyImport}
-                    disabled={applyingImport || !importPreview.valid_rows}
-                    className="py-2 px-5 rounded-xl bg-amber-600 hover:bg-amber-700 disabled:opacity-50 text-white text-xs font-bold shadow transition flex items-center gap-2 cursor-pointer"
-                  >
-                    {applyingImport && <RefreshCw className="w-3.5 h-3.5 animate-spin" />}
-                    <span>{applyingImport ? 'Applying...' : `Apply ${importPreview.valid_rows} Valid SKUs`}</span>
-                  </button>
-                </div>
-              </div>
-            )}
+              );
+            })()}
           </div>
         </div>
       )}

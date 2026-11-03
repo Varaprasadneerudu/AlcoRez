@@ -72,7 +72,11 @@ const CATEGORY_TRANSLATIONS = {
   'Wine': 'వైన్',
   'Beer': 'బీర్',
   'Gin': 'జిన్',
-  'Brandy': 'బ్రాందీ'
+  'Brandy': 'బ్రాందీ',
+  'Tequila & Agave': 'టెకీలా & అగవే',
+  'Liqueurs & Digestifs': 'లిక్కర్స్ & డైజెస్టిఫ్స్',
+  'Tequila': 'టెకీలా',
+  'Liqueur': 'లిక్కర్'
 };
 
 // Shop and retailer name mappings
@@ -95,7 +99,11 @@ const COUNTRY_TRANSLATIONS = {
   'Mexico': 'మెక్సికో',
   'Australia': 'ఆస్ట్రేలియా',
   'Jamaica': 'జమైకా',
-  'United Kingdom': 'యునైటెడ్ కింగ్‌డమ్'
+  'United Kingdom': 'యునైటెడ్ కింగ్‌డమ్',
+  'Ireland': 'ఐర్లాండ్',
+  'Germany': 'జర్మనీ',
+  'Poland': 'పోలాండ్',
+  'Netherlands': 'నెదర్లాండ్స్'
 };
 
 // Bottle Size mappings
@@ -104,6 +112,7 @@ const SIZE_TRANSLATIONS = {
   '375ml': '375 మి.లీ',
   '180ml': '180 మి.లీ',
   '650ml': '650 మి.లీ',
+  '500ml': '500 మి.లీ',
   '330ml': '330 మి.లీ'
 };
 

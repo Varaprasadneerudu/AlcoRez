@@ -2,7 +2,7 @@ from datetime import date
 from decimal import Decimal
 
 from app.models.order import Order, OrderItem
-from app.models.product import Category, Inventory, InventoryMovement, Product
+from app.models.product import Category, Inventory, InventoryMovement, Product, ProductImage
 from app.models.retailer import (
     Retailer,
     RetailerLicense,
@@ -864,11 +864,12 @@ class RetailerService:
     ):
         """
         Parses CSV, validates each row against master product catalogue and business rules.
-        Returns actionable row-level previews without mutating database.
+        Automatically recognizes new catalogue products and prepares them for creation & stocking.
         """
         import csv
         import io
-        from decimal import InvalidOperation
+        import re
+        from decimal import Decimal, InvalidOperation
 
         from app.schemas.catalog import (
             InventoryCsvRowPreview,
@@ -885,30 +886,49 @@ class RetailerService:
                 detail="Uploaded CSV file is empty"
             )
 
-        # Detect header mapping
+        # Detect header mapping with broad synonym recognition
         header_idx = -1
         col_map = {}
         for i, row in enumerate(rows_list[:10]):
             norm = [c.strip().lower() for c in row]
-            if any(k in norm for k in ["product name", "product_name", "product id", "product_id", "product"]):
+            if any(k in norm for k in ["product name", "product_name", "product id", "product_id", "product", "item name", "item_name", "sku"]):
                 header_idx = i
                 for col_pos, cell in enumerate(norm):
-                    if cell in ["product name", "product_name", "product"]:
+                    if cell in ["product name", "product_name", "product", "item name", "item_name", "name", "title"]:
                         col_map["product_name"] = col_pos
-                    elif cell in ["brand"]:
+                    elif cell in ["sku", "barcode", "code"]:
+                        col_map["sku"] = col_pos
+                    elif cell in ["brand", "brand name", "brand_name", "manufacturer"]:
                         col_map["brand"] = col_pos
-                    elif cell in ["bottle size", "bottle_size", "size"]:
+                    elif cell in ["category", "category name", "category_name", "type"]:
+                        col_map["category"] = col_pos
+                    elif cell in ["subcategory", "sub_category"]:
+                        col_map["subcategory"] = col_pos
+                    elif cell in [
+                        "bottle size", "bottle_size", "size", "volume", "pack_size", "pack size",
+                        "bottle_size_ml", "bottle_size (ml)", "size_ml", "size (ml)", "volume_ml", "volume (ml)"
+                    ]:
                         col_map["bottle_size"] = col_pos
-                    elif cell in ["price", "price (inr)", "rate", "mrp"]:
+                    elif cell in [
+                        "price", "price (inr)", "rate", "mrp", "unit_price", "cost", "sale_price",
+                        "price_inr_demo", "price_inr", "price (demo)", "price_demo"
+                    ]:
                         col_map["price"] = col_pos
-                    elif cell in ["stock quantity", "stock_quantity", "stock", "quantity", "units"]:
+                    elif cell in [
+                        "stock quantity", "stock_quantity", "stock", "quantity", "units", "qty", "count",
+                        "stock_quantity_demo", "stock_demo", "quantity_demo"
+                    ]:
                         col_map["stock_quantity"] = col_pos
-                    elif cell in ["available", "is_available"]:
+                    elif cell in ["available", "is_available", "availability", "status", "active", "in_stock"]:
                         col_map["is_available"] = col_pos
-                    elif cell in ["low stock threshold", "low_stock_threshold", "threshold"]:
+                    elif cell in ["low stock threshold", "low_stock_threshold", "threshold", "min_stock", "reorder_level"]:
                         col_map["low_stock_threshold"] = col_pos
-                    elif cell in ["product id", "product_id"]:
+                    elif cell in ["product id", "product_id", "item_id", "id"]:
                         col_map["product_id"] = col_pos
+                    elif cell in ["description", "desc", "details"]:
+                        col_map["description"] = col_pos
+                    elif cell in ["image_url", "image", "image url", "photo", "photo_url"]:
+                        col_map["image_url"] = col_pos
                 break
 
         if header_idx == -1:
@@ -945,31 +965,48 @@ class RetailerService:
             raw_pid = r[col_map["product_id"]].strip() if "product_id" in col_map and col_map["product_id"] < len(r) else ""
             raw_pname = r[col_map["product_name"]].strip() if "product_name" in col_map and col_map["product_name"] < len(r) else ""
             raw_brand = r[col_map["brand"]].strip() if "brand" in col_map and col_map["brand"] < len(r) else ""
+            raw_cat = r[col_map["category"]].strip() if "category" in col_map and col_map["category"] < len(r) else ""
             raw_size = r[col_map["bottle_size"]].strip() if "bottle_size" in col_map and col_map["bottle_size"] < len(r) else ""
             raw_price = r[col_map["price"]].strip() if "price" in col_map and col_map["price"] < len(r) else ""
             raw_stock = r[col_map["stock_quantity"]].strip() if "stock_quantity" in col_map and col_map["stock_quantity"] < len(r) else ""
             raw_avail = r[col_map["is_available"]].strip().lower() if "is_available" in col_map and col_map["is_available"] < len(r) else "true"
             raw_thresh = r[col_map["low_stock_threshold"]].strip() if "low_stock_threshold" in col_map and col_map["low_stock_threshold"] < len(r) else "5"
 
-            # Match product
+            if not raw_pname and not raw_pid:
+                row_errors.append("Product name is required")
+
+            # Normalize bottle size
+            if raw_size and raw_size.isdigit():
+                raw_size = f"{raw_size}ml"
+            elif not raw_size and raw_pname:
+                match = re.search(r'(\d+)\s*(ml|l)\b', raw_pname, re.IGNORECASE)
+                if match:
+                    raw_size = f"{match.group(1)}{match.group(2).lower()}"
+                else:
+                    raw_size = "750ml"
+            elif not raw_size:
+                raw_size = "750ml"
+
+            # Match product or identify as new catalog item
             matched_product = None
             if raw_pid and raw_pid in products_by_id:
                 matched_product = products_by_id[raw_pid]
             elif raw_pname and raw_pname.lower() in products_by_name:
                 matched_product = products_by_name[raw_pname.lower()]
             elif raw_pname:
-                for p in all_products:
-                    if p.name.strip().lower() == raw_pname.lower() or (
-                        raw_brand and p.brand.lower() == raw_brand.lower() and p.name.lower().startswith(raw_pname.lower()[:8])
-                    ):
-                        matched_product = p
-                        break
-
-            if not matched_product:
-                row_errors.append(f"Product '{raw_pname or raw_pid}' not found in catalogue")
-
-            if not raw_size:
-                row_errors.append("Bottle size is required (e.g. 750ml, 375ml)")
+                clean_name = re.sub(r'\s*-\s*\d+\s*(ml|l)\b', '', raw_pname, flags=re.IGNORECASE).strip().lower()
+                if clean_name in products_by_name:
+                    matched_product = products_by_name[clean_name]
+                else:
+                    for p in all_products:
+                        p_norm = p.name.strip().lower()
+                        if p_norm == raw_pname.lower() or p_norm == clean_name or (
+                            raw_brand and p.brand.lower() == raw_brand.lower() and (
+                                p_norm in raw_pname.lower() or raw_pname.lower() in p_norm
+                            )
+                        ):
+                            matched_product = p
+                            break
 
             parsed_price = None
             try:
@@ -989,7 +1026,7 @@ class RetailerService:
             except ValueError:
                 row_errors.append(f"Invalid stock quantity '{raw_stock}'")
 
-            is_available = raw_avail not in ["false", "0", "no", "inactive"]
+            is_available = raw_avail not in ["false", "0", "no", "inactive", "out of stock", "outofstock", "unavailable"]
             parsed_thresh = 5
             try:
                 parsed_thresh = int(raw_thresh) if raw_thresh else 5
@@ -1000,11 +1037,11 @@ class RetailerService:
 
             sku_key = f"{matched_product.id if matched_product else raw_pname}_{raw_size}"
             if sku_key in seen_skus:
-                row_errors.append(f"Duplicate entry in CSV for product size {raw_size}")
+                row_errors.append(f"Duplicate entry in file for size {raw_size}")
             else:
                 seen_skus.add(sku_key)
 
-            action = "NEW"
+            action = "NEW PRODUCT"
             changes_summary = None
             if matched_product and not row_errors:
                 existing_inv = inv_by_sku.get(f"{matched_product.id}_{raw_size}")
@@ -1013,10 +1050,13 @@ class RetailerService:
                     changes_summary = f"Update: Price ₹{existing_inv.price} -> ₹{parsed_price}, Stock {existing_inv.stock_quantity} -> {parsed_stock}"
                 else:
                     action = "NEW"
-                    changes_summary = f"New listing: ₹{parsed_price}, Stock: {parsed_stock} units"
+                    changes_summary = f"Add SKU to store: ₹{parsed_price}, Stock: {parsed_stock} units ({raw_size})"
+            elif not matched_product and not row_errors:
+                action = "NEW PRODUCT"
+                changes_summary = f"Create new catalog product & inventory SKU: ₹{parsed_price}, Stock: {parsed_stock} ({raw_size})"
 
-            status_str = "ERROR" if row_errors else "VALID"
-            if status_str == "VALID":
+            is_valid_row = len(row_errors) == 0
+            if is_valid_row:
                 valid_count += 1
             else:
                 error_count += 1
@@ -1026,14 +1066,17 @@ class RetailerService:
                 product_id=matched_product.id if matched_product else None,
                 product_name=matched_product.name if matched_product else (raw_pname or None),
                 brand=matched_product.brand if matched_product else (raw_brand or None),
+                category=raw_cat or (matched_product.category.name if matched_product and matched_product.category else None),
                 bottle_size=raw_size,
                 price=parsed_price,
                 stock_quantity=parsed_stock,
                 is_available=is_available,
                 low_stock_threshold=parsed_thresh,
-                action=action if not row_errors else "INVALID",
-                status=status_str,
+                action=action if is_valid_row else "INVALID",
+                status="VALID" if is_valid_row else "ERROR",
+                is_valid=is_valid_row,
                 errors=row_errors,
+                error_message="; ".join(row_errors) if row_errors else None,
                 changes_summary=changes_summary
             ))
 
@@ -1041,7 +1084,8 @@ class RetailerService:
             total_rows=len(preview_rows),
             valid_rows=valid_count,
             error_rows=error_count,
-            rows=preview_rows
+            rows=preview_rows,
+            items=preview_rows
         )
 
     @staticmethod
@@ -1054,15 +1098,90 @@ class RetailerService:
     ) -> dict:
         """
         Applies validated bulk CSV items within a transaction.
-        Preserves inventory movements history, concurrency versioning, and audit logs.
+        Automatically creates missing products in master catalog with primary imagery,
+        and provisions retailer inventory SKUs, concurrency versioning, and audit logs.
         """
+        import re
+        from sqlalchemy import func
+
+        all_categories = db.query(Category).all()
+        cat_by_slug = {c.slug.lower(): c for c in all_categories}
+        default_cat = all_categories[0] if all_categories else None
+
         imported_count = 0
         updated_count = 0
 
         for item in items:
+            product = None
+            if item.product_id:
+                product = db.query(Product).filter(Product.id == item.product_id).first()
+
+            if not product and item.product_name:
+                clean_name = re.sub(r'\s*-\s*\d+\s*(ml|l)\b', '', item.product_name, flags=re.IGNORECASE).strip()
+                product = db.query(Product).filter(
+                    (func.lower(Product.name) == item.product_name.strip().lower()) |
+                    (func.lower(Product.name) == clean_name.lower())
+                ).first()
+
+            if not product and item.product_name:
+                clean_name = re.sub(r'\s*-\s*\d+\s*(ml|l)\b', '', item.product_name, flags=re.IGNORECASE).strip()
+                cat_input = (item.category or "").strip().lower()
+                combined = f"{cat_input} {item.product_name}".lower()
+                matched_cat = None
+                for c in all_categories:
+                    if c.slug in combined or c.name.lower() in combined:
+                        matched_cat = c
+                        break
+                if not matched_cat:
+                    if any(k in combined for k in ["whisky", "whiskey", "malt", "scotch"]):
+                        matched_cat = cat_by_slug.get("whisky", default_cat)
+                    elif any(k in combined for k in ["beer", "lager", "ale", "stout", "cider"]):
+                        matched_cat = cat_by_slug.get("beer", default_cat)
+                    elif any(k in combined for k in ["wine", "shiraz", "cabernet", "sauvignon"]):
+                        matched_cat = cat_by_slug.get("wine", default_cat)
+                    elif "rum" in combined:
+                        matched_cat = cat_by_slug.get("rum", default_cat)
+                    elif "vodka" in combined:
+                        matched_cat = cat_by_slug.get("vodka", default_cat)
+                    elif "gin" in combined:
+                        matched_cat = cat_by_slug.get("gin", default_cat)
+                    elif any(k in combined for k in ["brandy", "cognac"]):
+                        matched_cat = cat_by_slug.get("brandy", default_cat)
+                    elif any(k in combined for k in ["tequila", "agave"]):
+                        matched_cat = cat_by_slug.get("tequila", default_cat)
+                    elif any(k in combined for k in ["liqueur", "cream", "digestif"]):
+                        matched_cat = cat_by_slug.get("liqueur", default_cat)
+                    else:
+                        matched_cat = default_cat
+
+                brand_str = item.brand.strip() if item.brand and item.brand.strip() else "Premium Collection"
+                product = Product(
+                    name=clean_name,
+                    brand=brand_str,
+                    category_id=matched_cat.id if matched_cat else "",
+                    description=f"Licensed beverage: {clean_name}",
+                    country_of_origin="India",
+                    is_active=True,
+                    is_demo_data=True
+                )
+                db.add(product)
+                db.flush()
+
+                sample_img = (matched_cat.image_url if matched_cat else None) or "https://images.unsplash.com/photo-1527061011665-3652c757a4d4?auto=format&fit=crop&w=600&q=80"
+                prod_img = ProductImage(
+                    product_id=product.id,
+                    image_url=sample_img,
+                    is_primary=True
+                )
+                db.add(prod_img)
+                db.flush()
+
+            if not product:
+                continue
+
             existing = db.query(Inventory).filter(
                 Inventory.retailer_id == retailer.id,
-                Inventory.product_id == item.product_id,
+                Inventory.product_id == product.id,
                 Inventory.bottle_size == item.bottle_size
             ).first()
 
@@ -1084,7 +1203,7 @@ class RetailerService:
                         new_quantity=item.stock_quantity,
                         change_quantity=change,
                         reason="BULK_CSV_IMPORT",
-                        notes=f"Updated via bulk inventory CSV import (Price: ₹{item.price})",
+                        notes=f"Updated via bulk inventory spreadsheet import (Price: ₹{item.price})",
                         actor_user_id=actor_user.id,
                         actor_name=actor_user.full_name,
                         actor_role=actor_user.role.value
@@ -1096,7 +1215,7 @@ class RetailerService:
             else:
                 new_inv = Inventory(
                     retailer_id=retailer.id,
-                    product_id=item.product_id,
+                    product_id=product.id,
                     bottle_size=item.bottle_size,
                     price=item.price,
                     stock_quantity=item.stock_quantity,
@@ -1114,7 +1233,7 @@ class RetailerService:
                     new_quantity=item.stock_quantity,
                     change_quantity=item.stock_quantity,
                     reason="BULK_CSV_IMPORT",
-                    notes="Created via bulk inventory CSV import",
+                    notes="Created via bulk inventory spreadsheet import",
                     actor_user_id=actor_user.id,
                     actor_name=actor_user.full_name,
                     actor_role=actor_user.role.value
@@ -1143,6 +1262,7 @@ class RetailerService:
 
         return {
             "imported_count": imported_count,
+            "created_count": imported_count,
             "updated_count": updated_count,
             "total_processed": imported_count + updated_count,
             "message": f"Successfully processed {imported_count + updated_count} inventory listings ({imported_count} new, {updated_count} updated)."
