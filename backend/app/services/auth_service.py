@@ -38,13 +38,21 @@ class AuthService:
             dob_date = datetime.strptime(reg_in.date_of_birth, "%Y-%m-%d").date()
             age_verified = True
 
+        # Public self-registration is strictly restricted to Customer accounts.
+        # Retailer and Administrator accounts can ONLY be provisioned by a Super Admin.
+        if reg_in.role and reg_in.role != UserRole.CUSTOMER:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Public registration of Administrator or Retailer accounts is prohibited. These roles must be provisioned by a Super Admin."
+            )
+
         hashed_pw = hash_password(reg_in.password)
         new_user = User(
             email=reg_in.email,
             hashed_password=hashed_pw,
             full_name=reg_in.full_name,
             phone=reg_in.phone,
-            role=reg_in.role,
+            role=UserRole.CUSTOMER,
             is_active=True,
             is_verified=age_verified
         )
@@ -53,26 +61,13 @@ class AuthService:
         db.refresh(new_user)
 
         # Create linked profile for customer
-        if new_user.role == UserRole.CUSTOMER:
-            profile = CustomerProfile(
-                user_id=new_user.id,
-                date_of_birth=dob_date,
-                age_verified=age_verified
-            )
-            db.add(profile)
-            db.commit()
-
-        # Link existing store if provided for retailer
-        if new_user.role == UserRole.RETAILER and reg_in.retailer_id:
-            store = db.query(Retailer).filter(Retailer.id == reg_in.retailer_id).first()
-            if store:
-                membership = RetailerMembership(
-                    retailer_id=store.id,
-                    user_id=new_user.id,
-                    role_in_retailer="OWNER" if not store.user_id else "MANAGER"
-                )
-                db.add(membership)
-                db.commit()
+        profile = CustomerProfile(
+            user_id=new_user.id,
+            date_of_birth=dob_date,
+            age_verified=age_verified
+        )
+        db.add(profile)
+        db.commit()
 
         AuditService.log_event(
             db=db,

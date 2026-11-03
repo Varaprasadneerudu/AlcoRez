@@ -20,7 +20,7 @@ import { optimizeImageUrl } from '../utils/imageUtils';
 export default function CartDrawer() {
   const { cart, itemCount, subtotal, isDrawerOpen, closeDrawer, updateQuantity, removeItem, loading } = useCart();
   const { tp, tb, ts, tr, language } = useLanguage();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, role } = useAuth();
   const navigate = useNavigate();
 
   const [ageConfirmed, setAgeConfirmed] = useState(true);
@@ -36,7 +36,8 @@ export default function CartDrawer() {
     }
   }, [isDrawerOpen]);
 
-  if (!isDrawerOpen) return null;
+  // Cart drawer is strictly disabled for Super Admin and Retailers
+  if (!isDrawerOpen || role === 'admin' || role === 'retailer') return null;
 
   const items = cart?.items || [];
   const numSubtotal = Number(subtotal || 0);

@@ -333,6 +333,10 @@ export const api = {
 
   // Admin Portal
   getAdminDashboard: () => apiRequest('/admin/dashboard'),
+  createAdminUser: (userData) => apiRequest('/admin/users', {
+    method: 'POST',
+    body: JSON.stringify(userData),
+  }),
   getUsers: (params = {}) => {
     const query = new URLSearchParams();
     if (params.role) query.set('role', params.role);

@@ -22,7 +22,7 @@ import { useAuth } from '../../context/AuthContext';
 import { useLanguage } from '../../context/LanguageContext';
 
 export default function RetailerDashboard() {
-  const { role, switchDemoAccount } = useAuth();
+  const { role } = useAuth();
   const { t, language } = useLanguage();
 
   const [dashboard, setDashboard] = useState(null);
@@ -54,8 +54,8 @@ export default function RetailerDashboard() {
     loadDashboard();
   }, [loadDashboard, role]);
 
-  // If user is not logged in as a retailer or has no retailer profile
-  if (error === 'NO_PROFILE' || role !== 'retailer') {
+  // If user is not logged in as a retailer or super admin, or has no retailer profile
+  if (error === 'NO_PROFILE' || (role !== 'retailer' && role !== 'admin')) {
     return (
       <div className="max-w-2xl mx-auto px-4 py-16 text-center space-y-6">
         <div className="w-16 h-16 bg-amber-100 dark:bg-amber-950/80 text-amber-800 dark:text-amber-300 rounded-2xl flex items-center justify-center mx-auto border border-amber-200 dark:border-amber-800">
@@ -69,15 +69,15 @@ export default function RetailerDashboard() {
         </p>
 
         <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-3">
-          <button
-            onClick={() => switchDemoAccount('retailer')}
-            className="w-full sm:w-auto py-3 px-6 rounded-xl font-bold text-xs bg-amber-600 hover:bg-amber-700 text-white shadow cursor-pointer"
+          <Link
+            to="/login"
+            className="w-full sm:w-auto py-3 px-6 rounded-xl font-bold text-xs bg-amber-600 hover:bg-amber-700 text-white shadow cursor-pointer text-center"
           >
-            {t('retailerDash.switchToDemo')}
-          </button>
+            {language === 'te' ? 'రిటైలర్ ఖాతాకు లాగిన్ చేయండి' : 'Sign in as Retailer'}
+          </Link>
           <Link
             to="/retailer/apply"
-            className="w-full sm:w-auto py-3 px-6 rounded-xl font-bold text-xs bg-stone-900 dark:bg-stone-800 hover:bg-stone-800 dark:hover:bg-stone-700 text-white shadow"
+            className="w-full sm:w-auto py-3 px-6 rounded-xl font-bold text-xs bg-stone-900 dark:bg-stone-800 hover:bg-stone-800 dark:hover:bg-stone-700 text-white shadow text-center"
           >
             {t('retailerDash.submitApplication')}
           </Link>

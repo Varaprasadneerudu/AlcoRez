@@ -25,7 +25,7 @@ import { api } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 
 export default function AdminDashboard() {
-  const { user: currentAdmin, role, switchDemoAccount } = useAuth();
+  const { user: currentAdmin, role } = useAuth();
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -121,12 +121,20 @@ export default function AdminDashboard() {
           This dashboard is reserved for State Prohibition & Excise Administrators for license verification and compliance oversight.
         </p>
 
-        <button
-          onClick={() => switchDemoAccount('admin')}
-          className="py-3 px-6 rounded-xl font-bold text-xs bg-stone-900 hover:bg-stone-800 text-white shadow"
-        >
-          Switch to Excise Admin Profile (Govt of Telangana)
-        </button>
+        <div className="pt-2 flex items-center justify-center gap-3">
+          <Link
+            to="/"
+            className="py-2.5 px-5 rounded-xl font-bold text-xs bg-stone-100 dark:bg-stone-800 hover:bg-stone-200 dark:hover:bg-stone-700 text-stone-800 dark:text-stone-200 transition"
+          >
+            Back to Home
+          </Link>
+          <Link
+            to="/login"
+            className="py-2.5 px-5 rounded-xl font-bold text-xs bg-amber-600 hover:bg-amber-700 text-white shadow-sm transition"
+          >
+            Sign in as Super Admin
+          </Link>
+        </div>
       </div>
     );
   }
@@ -151,7 +159,7 @@ export default function AdminDashboard() {
         ...createUserData,
         retailer_id: createUserData.role === 'retailer' && createUserData.retailer_id ? createUserData.retailer_id : undefined
       };
-      await api.register(payload);
+      await api.createAdminUser(payload);
       const assignedStore = existingStores.find((s) => s.id === createUserData.retailer_id);
       const storeNote = assignedStore ? ` & assigned to "${assignedStore.shop_name}"` : '';
       setCreateUserSuccess(`User account created for ${createUserData.email} (${createUserData.role.toUpperCase()})${storeNote}!`);
@@ -282,12 +290,12 @@ export default function AdminDashboard() {
               <h1 className="text-xl sm:text-2xl font-extrabold tracking-tight">
                 State Excise Regulatory Portal
               </h1>
-              <span className="bg-amber-400 text-stone-950 text-[10px] font-black px-2 py-0.5 rounded uppercase">
-                ADMIN
+              <span className="bg-amber-400 text-stone-950 text-[10px] font-black px-2 py-0.5 rounded uppercase tracking-wider">
+                SUPER ADMIN
               </span>
             </div>
             <p className="text-xs text-stone-400 mt-1 font-medium">
-              Government of Telangana • Prohibition & Excise Department Oversight Portal
+              Government of Telangana • Full Platform Super Admin Control & Regulatory Oversight
             </p>
           </div>
         </div>
@@ -302,7 +310,7 @@ export default function AdminDashboard() {
             className="py-2.5 px-4 rounded-xl text-xs font-bold bg-amber-600 hover:bg-amber-700 text-white shadow transition flex items-center gap-1.5"
           >
             <UserPlus className="w-3.5 h-3.5" />
-            Provision New User
+            Provision Retailer / Admin
           </button>
           <Link
             to="/admin/retailers"
@@ -829,8 +837,7 @@ export default function AdminDashboard() {
                   className="w-full p-2.5 rounded-xl border border-stone-200 bg-stone-50 font-bold outline-none"
                 >
                   <option value="retailer">Licensed Retailer (Wine Shop Licensee)</option>
-                  <option value="customer">Customer (Age 21+ Consumer)</option>
-                  <option value="admin">Excise Administrator (Govt of Telangana)</option>
+                  <option value="admin">Excise Administrator (Super Admin / Government)</option>
                 </select>
               </div>
 

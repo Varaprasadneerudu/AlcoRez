@@ -22,7 +22,7 @@ export default function ProductDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { addToCart, loading: cartLoading } = useCart();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, role } = useAuth();
   const { t, tp, tb, tc, ts, tr, to, language } = useLanguage();
 
   const [product, setProduct] = useState(null);
@@ -262,8 +262,30 @@ export default function ProductDetailPage() {
             )}
           </div>
 
-          {/* Quantity & Add to Cart */}
-          {selectedInventory ? (
+          {/* Quantity & Add to Cart (Customer only) */}
+          {role === 'admin' || role === 'retailer' ? (
+            <div className="p-4 rounded-2xl bg-stone-100 dark:bg-stone-900 border border-stone-200 dark:border-stone-800 space-y-2">
+              <div className="flex items-center gap-2 font-bold text-xs text-stone-800 dark:text-stone-200">
+                <Store className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+                <span>
+                  {role === 'admin' ? 'Super Admin Inspection Mode' : 'Retailer Catalogue Mode'}
+                </span>
+              </div>
+              <p className="text-[11px] text-stone-500 dark:text-stone-400 leading-relaxed">
+                {role === 'admin'
+                  ? 'Cart reservations are reserved for customer consumers. As Super Admin, you can inspect SKU compliance, stock levels, and retailer pricing across Telangana.'
+                  : 'Cart reservations are reserved for consumer accounts. To modify your shop stock, pricing, or availability for this SKU, visit the Retailer Inventory portal.'}
+              </p>
+              {role === 'retailer' && (
+                <Link
+                  to="/retailer/inventory"
+                  className="inline-flex items-center gap-1.5 py-2 px-4 rounded-xl text-xs font-bold bg-amber-600 hover:bg-amber-700 text-white shadow-xs transition"
+                >
+                  <span>Go to Retailer Inventory</span>
+                </Link>
+              )}
+            </div>
+          ) : selectedInventory ? (
             <div className="space-y-4 pt-2">
               <div className="flex items-center gap-4">
                 <span className="text-xs font-bold text-stone-700 dark:text-stone-300">{t('productDetail.quantity')}</span>
@@ -339,8 +361,8 @@ export default function ProductDetailPage() {
 
       </div>
 
-      {/* Mobile Sticky Quick-Reserve Bar */}
-      {product.in_stock && selectedInventory && (
+      {/* Mobile Sticky Quick-Reserve Bar (Only for Customers/Prospective Visitors) */}
+      {product.in_stock && selectedInventory && role !== 'admin' && role !== 'retailer' && (
         <div className="sm:hidden fixed bottom-0 left-0 right-0 p-3 bg-white/95 dark:bg-stone-900/95 backdrop-blur-md border-t border-stone-200 dark:border-stone-800 z-30 shadow-xl flex items-center justify-between gap-3">
           <div className="min-w-0">
             <div className="text-[10px] text-stone-500 dark:text-stone-400 font-semibold uppercase tracking-wider truncate">

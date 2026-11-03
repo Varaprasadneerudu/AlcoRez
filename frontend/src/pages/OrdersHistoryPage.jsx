@@ -197,42 +197,17 @@ export default function OrdersHistoryPage() {
     );
   }
 
-  if (role === 'admin') {
-    return (
-      <div className="max-w-lg mx-auto px-4 py-20 text-center space-y-5">
-        <div className="w-16 h-16 bg-stone-100 dark:bg-stone-800 text-stone-700 dark:text-stone-300 rounded-2xl flex items-center justify-center mx-auto shadow-inner">
-          <ShieldCheck className="w-8 h-8" />
-        </div>
-        <h2 className="text-2xl font-extrabold text-stone-900 dark:text-stone-100">
-          {t('ordersHistory.adminNoticeTitle', 'Excise Administrator Notice')}
-        </h2>
-        <p className="text-xs text-stone-500 dark:text-stone-400 leading-relaxed">
-          {t('ordersHistory.adminNoticeDesc', 'You are signed in as an Excise Administrator. Regulatory inspection, retailer licensing, and immutable audit logs are managed from the Administrator Dashboard.')}
-        </p>
-        <div className="pt-2">
-          <Link
-            to="/admin"
-            className="inline-flex items-center gap-2 py-2.5 px-6 rounded-xl font-bold text-xs bg-stone-900 dark:bg-stone-100 hover:bg-stone-800 dark:hover:bg-stone-200 text-white dark:text-stone-900 shadow-md transition"
-          >
-            <span>{t('ordersHistory.openAdminDashboard', 'Open Admin Dashboard')}</span>
-            <ArrowRight className="w-4 h-4" />
-          </Link>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-6 sm:py-8 space-y-6">
       
       {/* Back Link */}
       <div>
         <Link
-          to="/products"
+          to={role === 'admin' ? '/admin' : '/products'}
           className="inline-flex items-center gap-1.5 text-xs font-semibold text-stone-600 dark:text-stone-400 hover:text-amber-800 dark:hover:text-amber-300 transition-colors"
         >
           <ArrowLeft className="w-3.5 h-3.5" />
-          <span>{language === 'te' ? 'కేటలాగ్‌కు తిరిగి వెళ్ళండి' : 'Back to Catalog'}</span>
+          <span>{role === 'admin' ? (language === 'te' ? 'అడ్మిన్ పోర్టల్‌కు తిరిగి వెళ్ళండి' : 'Back to Admin Portal') : (language === 'te' ? 'కేటలాగ్‌కు తిరిగి వెళ్ళండి' : 'Back to Catalog')}</span>
         </Link>
       </div>
 
@@ -241,21 +216,22 @@ export default function OrdersHistoryPage() {
         <div>
           <div className="flex items-center gap-2">
             <span className="text-[10px] font-bold bg-amber-100 dark:bg-amber-950 text-amber-900 dark:text-amber-300 border border-amber-300 dark:border-amber-800 px-2 py-0.5 rounded uppercase tracking-wider">
-              {t('ordersHistory.customerAccount', 'Customer Account')}
+              {role === 'admin' ? 'Super Admin Oversight' : t('ordersHistory.customerAccount', 'Customer Account')}
             </span>
             <span className="text-xs text-stone-400">•</span>
             <span className="text-xs text-stone-500 dark:text-stone-400 flex items-center gap-1">
               <ShieldCheck className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
-              {t('ordersHistory.ageVerified', 'Telangana Age Verified (21+)')}
+              {role === 'admin' ? 'State Excise Full Regulatory Access' : t('ordersHistory.ageVerified', 'Telangana Age Verified (21+)')}
             </span>
           </div>
 
           <h1 className="text-2xl sm:text-3xl font-extrabold text-stone-900 dark:text-stone-100 tracking-tight mt-1">
-            {t('ordersHistory.title', 'My Orders & Experience Reviews')}
+            {role === 'admin' ? 'All Platform Demonstration Orders' : t('ordersHistory.title', 'My Orders & Experience Reviews')}
           </h1>
           <p className="text-xs text-stone-500 dark:text-stone-400 mt-1">
-            {t('ordersHistory.subtitle', 'Review previous demonstration orders for')}{' '}
-            <strong className="text-stone-700 dark:text-stone-300 font-semibold">{user?.full_name}</strong> ({user?.email})
+            {role === 'admin'
+              ? 'Complete regulatory inspection of all consumer reservations across licensed Telangana outlets.'
+              : `${t('ordersHistory.subtitle', 'Review previous demonstration orders for')} ${user?.full_name || ''} (${user?.email || ''})`}
           </p>
         </div>
 

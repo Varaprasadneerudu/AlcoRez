@@ -194,13 +194,10 @@ class OrderService:
 
     @staticmethod
     def get_customer_orders(db: Session, user: User) -> list[OrderOut]:
-        orders = (
-            db.query(Order)
-            .options(joinedload(Order.items))
-            .filter(Order.user_id == user.id)
-            .order_by(Order.created_at.desc())
-            .all()
-        )
+        query = db.query(Order).options(joinedload(Order.items))
+        if user.role.value != "admin":
+            query = query.filter(Order.user_id == user.id)
+        orders = query.order_by(Order.created_at.desc()).all()
         return OrderService.to_order_out_batch(db, orders)
 
     @staticmethod

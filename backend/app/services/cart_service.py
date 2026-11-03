@@ -3,7 +3,7 @@ from decimal import Decimal
 from app.models.order import Cart, CartItem
 from app.models.product import Inventory, Product
 from app.models.retailer import Retailer, RetailerStatus
-from app.models.user import User
+from app.models.user import User, UserRole
 from app.schemas.cart import CartItemAdd, CartItemOut, CartOut
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session, joinedload
@@ -12,6 +12,11 @@ from sqlalchemy.orm import Session, joinedload
 class CartService:
     @staticmethod
     def get_or_create_cart(db: Session, user: User) -> Cart:
+        if user.role != UserRole.CUSTOMER:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Shopping cart reservations are available for customer accounts only."
+            )
         cart = db.query(Cart).filter(Cart.user_id == user.id).first()
         if not cart:
             cart = Cart(user_id=user.id)

@@ -18,8 +18,32 @@ import { optimizeImageUrl } from '../utils/imageUtils';
 
 export default function CartPage() {
   const { cart, itemCount, subtotal, updateQuantity, removeItem, clearCart, loading } = useCart();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, role } = useAuth();
   const { t, tp, tb, ts, tr, language } = useLanguage();
+
+  if (role === 'admin' || role === 'retailer') {
+    return (
+      <div className="max-w-md mx-auto px-4 py-16 text-center space-y-4">
+        <div className="w-16 h-16 bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-400 rounded-2xl flex items-center justify-center mx-auto">
+          <Store className="w-8 h-8" />
+        </div>
+        <h2 className="text-xl font-bold text-stone-900 dark:text-stone-100">
+          {role === 'admin' ? 'Super Admin Account Active' : 'Retailer Account Active'}
+        </h2>
+        <p className="text-xs text-stone-500 dark:text-stone-400 leading-relaxed">
+          {role === 'admin'
+            ? 'The reservation cart is reserved for customer consumer accounts. Use the Super Admin portal to oversee licenses, audits, and platform settings.'
+            : 'The reservation cart is reserved for customer consumer accounts. Use the Retailer portal to manage your store inventory, catalog pricing, and incoming reservations.'}
+        </p>
+        <Link
+          to={role === 'admin' ? '/admin' : '/retailer'}
+          className="inline-block py-2.5 px-6 rounded-xl font-bold text-xs bg-amber-600 hover:bg-amber-700 text-white shadow"
+        >
+          {role === 'admin' ? 'Go to Admin Portal' : 'Go to Retailer Portal'}
+        </Link>
+      </div>
+    );
+  }
 
   if (!isAuthenticated) {
     return (

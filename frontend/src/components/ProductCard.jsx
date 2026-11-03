@@ -62,11 +62,15 @@ export default function ProductCard({ product }) {
       return;
     }
 
-    if (role !== 'customer' && role !== 'admin') {
+    if (role === 'admin' || role === 'retailer') {
+      return;
+    }
+
+    if (role !== 'customer') {
       setErrorMessage(
         language === 'te'
           ? 'కార్ట్ కస్టమర్ ఖాతాలకు మాత్రమే అందుబాటులో ఉంది.'
-          : 'Cart is available for customer accounts. Please switch to a customer profile.'
+          : 'Cart reservation is available for customer accounts only.'
       );
       setTimeout(() => setErrorMessage(null), 3500);
       return;
@@ -281,8 +285,12 @@ export default function ProductCard({ product }) {
           </div>
 
           <div className="flex items-center gap-1 sm:gap-1.5 shrink-0">
-            {/* Direct Add to Cart (Only "+" icon) OR Interactive Stepper if already in cart */}
-            {cartItem ? (
+            {/* Direct Add to Cart (Only for customers and prospective visitors) */}
+            {role === 'admin' || role === 'retailer' ? (
+              <span className="text-[10px] font-bold text-stone-500 dark:text-stone-400 bg-stone-100 dark:bg-stone-800/80 px-2 py-1 rounded-lg select-none">
+                {role === 'admin' ? 'Inspection' : 'Retailer'}
+              </span>
+            ) : cartItem ? (
               <div className="flex items-center border border-amber-300 dark:border-amber-700/80 rounded-xl bg-amber-50/80 dark:bg-amber-950/50 shadow-xs overflow-hidden h-8 sm:h-9">
                 <button
                   type="button"

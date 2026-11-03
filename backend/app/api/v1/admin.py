@@ -5,6 +5,7 @@ from app.models.order import Order
 from app.models.user import User
 from app.schemas.admin import (
     AdminDashboardStats,
+    AdminUserCreate,
     AuditLogOut,
     ComplianceApprovalOut,
     UserUpdateAdmin,
@@ -14,7 +15,7 @@ from app.schemas.order import OrderOut
 from app.schemas.retailer import RetailerOut, RetailerReviewRequest
 from app.services.admin_service import AdminService
 from app.services.order_service import OrderService
-from fastapi import APIRouter, Depends, Query, Request
+from fastapi import APIRouter, Depends, Query, Request, status
 from sqlalchemy.orm import Session, joinedload
 
 router = APIRouter(prefix="/admin", tags=["Administrator Portal"])
@@ -31,6 +32,16 @@ def get_all_users(
     db: Session = Depends(get_db)
 ):
     return AdminService.get_users(db, role_filter=role, search=search)
+
+@router.post("/users", response_model=UserOut, status_code=status.HTTP_201_CREATED)
+def create_user_by_admin(
+    user_in: AdminUserCreate,
+    request: Request,
+    admin: User = Depends(get_current_admin),
+    db: Session = Depends(get_db)
+):
+    ip = request.client.host if request.client else None
+    return AdminService.create_user(db, user_in, admin_user=admin, ip_address=ip)
 
 @router.patch("/users/{user_id}", response_model=UserOut)
 def update_user_details(

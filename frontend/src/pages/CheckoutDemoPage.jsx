@@ -17,8 +17,16 @@ import { useAuth } from '../context/AuthContext';
 export default function CheckoutDemoPage() {
   const { cart, subtotal, fetchCart } = useCart();
   const { t, tp, ts, language } = useLanguage();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, role } = useAuth();
   const navigate = useNavigate();
+
+  useEffect(() => {
+    if (role === 'admin') {
+      navigate('/admin', { replace: true });
+    } else if (role === 'retailer') {
+      navigate('/retailer', { replace: true });
+    }
+  }, [role, navigate]);
 
   const [addresses, setAddresses] = useState([]);
   const [selectedAddressId, setSelectedAddressId] = useState('');

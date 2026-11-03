@@ -1,6 +1,8 @@
+import contextlib
 from datetime import datetime, timezone
 
 from app.core.compliance import ComplianceEngine
+from app.core.security import hash_password
 from app.models.compliance import AuditLog, ComplianceApproval
 from app.models.order import Order, OrderItem
 from app.models.product import Inventory, Product
@@ -10,9 +12,10 @@ from app.models.retailer import (
     RetailerMembership,
     RetailerStatus,
 )
-from app.models.user import User, UserRole
+from app.models.user import CustomerProfile, User, UserRole
 from app.schemas.admin import (
     AdminDashboardStats,
+    AdminUserCreate,
     AuditLogOut,
     ComplianceApprovalOut,
     UserUpdateAdmin,
@@ -163,6 +166,77 @@ class AdminService:
             )
         users = query.order_by(User.created_at.desc()).all()
         return [UserOut.model_validate(u) for u in users]
+
+    @staticmethod
+    def create_user(
+        db: Session,
+        user_in: AdminUserCreate,
+        admin_user: User,
+        ip_address: str | None = None
+    ) -> UserOut:
+        existing = db.query(User).filter(User.email == user_in.email).first()
+        if existing:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="An account with this email already exists"
+            )
+
+        hashed_pw = hash_password(user_in.password)
+        new_user = User(
+            email=user_in.email,
+            hashed_password=hashed_pw,
+            full_name=user_in.full_name,
+            phone=user_in.phone,
+            role=user_in.role,
+            is_active=True,
+            is_verified=user_in.is_verified
+        )
+        db.add(new_user)
+        db.commit()
+        db.refresh(new_user)
+
+        # Profile for customer if provisioned
+        if new_user.role == UserRole.CUSTOMER:
+            dob_date = None
+            if user_in.date_of_birth:
+                with contextlib.suppress(Exception):
+                    dob_date = datetime.strptime(user_in.date_of_birth, "%Y-%m-%d").date()
+            profile = CustomerProfile(
+                user_id=new_user.id,
+                date_of_birth=dob_date,
+                age_verified=True
+            )
+            db.add(profile)
+            db.commit()
+
+        # Link existing store if provided for retailer
+        if new_user.role == UserRole.RETAILER and user_in.retailer_id:
+            store = db.query(Retailer).filter(Retailer.id == user_in.retailer_id).first()
+            if store:
+                membership = RetailerMembership(
+                    retailer_id=store.id,
+                    user_id=new_user.id,
+                    role_in_retailer="OWNER" if not store.user_id else "MANAGER"
+                )
+                db.add(membership)
+                db.commit()
+
+        AuditService.log_event(
+            db=db,
+            action="USER_CREATED_BY_ADMIN",
+            entity_type="user",
+            actor_user_id=admin_user.id,
+            actor_role=admin_user.role.value,
+            entity_id=new_user.id,
+            ip_address=ip_address,
+            details={
+                "email": new_user.email,
+                "role": new_user.role.value,
+                "created_by_admin": admin_user.email,
+                "retailer_id": user_in.retailer_id
+            }
+        )
+        return UserOut.model_validate(new_user)
 
     @staticmethod
     def update_user(

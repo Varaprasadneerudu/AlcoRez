@@ -1,7 +1,18 @@
 from datetime import datetime
 
 from app.models.user import UserRole
-from pydantic import BaseModel, ConfigDict, EmailStr
+from pydantic import BaseModel, ConfigDict, EmailStr, Field
+
+
+class AdminUserCreate(BaseModel):
+    email: EmailStr
+    password: str = Field(..., min_length=6, max_length=128)
+    full_name: str = Field(..., min_length=2, max_length=100)
+    phone: str | None = None
+    role: UserRole = UserRole.RETAILER
+    date_of_birth: str | None = None
+    retailer_id: str | None = None
+    is_verified: bool = True
 
 
 class UserUpdateAdmin(BaseModel):

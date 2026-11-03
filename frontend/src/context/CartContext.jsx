@@ -11,7 +11,8 @@ export function CartProvider({ children }) {
   const [error, setError] = useState(null);
 
   const fetchCart = useCallback(async () => {
-    if (!isAuthenticated || (role !== 'customer' && role !== 'admin')) {
+    // Cart is strictly reserved for Customer accounts
+    if (!isAuthenticated || role !== 'customer') {
       setCart(null);
       return;
     }
@@ -209,9 +210,15 @@ export function CartProvider({ children }) {
 
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
 
-  const openDrawer = () => setIsDrawerOpen(true);
+  const openDrawer = () => {
+    if (role === 'admin' || role === 'retailer') return;
+    setIsDrawerOpen(true);
+  };
   const closeDrawer = () => setIsDrawerOpen(false);
-  const toggleDrawer = () => setIsDrawerOpen(prev => !prev);
+  const toggleDrawer = () => {
+    if (role === 'admin' || role === 'retailer') return;
+    setIsDrawerOpen(prev => !prev);
+  };
 
   return (
     <CartContext.Provider

@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation as useRouterLocation } from 'react-router-dom';
 import {
   MapPin,
   Search,
@@ -33,6 +33,8 @@ export default function Navbar() {
   const { selectedZoneId, selectedZone, setZone } = useGeoLocation();
   const { totalFavoritesCount } = useFavorites();
   const navigate = useNavigate();
+  const routerLocation = useRouterLocation();
+  const isAuthPage = routerLocation.pathname === '/login' || routerLocation.pathname === '/register';
 
   const [searchQuery, setSearchQuery] = useState('');
   const [zoneOpen, setZoneOpen] = useState(false);
@@ -74,7 +76,7 @@ export default function Navbar() {
 
   const getRoleDisplayName = (r) => {
     if (r === 'retailer') return language === 'te' ? 'రిటైలర్' : 'Retailer';
-    if (r === 'admin') return language === 'te' ? 'ఎక్సైజ్ అడ్మిన్' : 'Admin';
+    if (r === 'admin') return language === 'te' ? 'సూపర్ అడ్మిన్' : 'Super Admin';
     if (r === 'customer') return language === 'te' ? 'కస్టమర్' : 'Customer';
     return r;
   };
@@ -177,21 +179,23 @@ export default function Navbar() {
             {/* Notification Center */}
             <NotificationCenter />
 
-            {/* Cart Button with Quick-Drawer Trigger */}
-            <button
-              type="button"
-              onClick={toggleDrawer}
-              className="relative p-1.5 sm:p-2 rounded-xl bg-amber-50 dark:bg-amber-950/60 hover:bg-amber-100 dark:hover:bg-amber-900/60 text-stone-800 dark:text-amber-200 border border-amber-200/80 dark:border-amber-800/60 transition flex items-center justify-center cursor-pointer group shrink-0"
-              aria-label={t('nav.cart')}
-              title={t('nav.cart')}
-            >
-              <ShoppingCart className="w-4 h-4 text-amber-900 dark:text-amber-300 group-hover:scale-105 transition-transform" />
-              {itemCount > 0 && (
-                <span className="absolute -top-1.5 -right-1.5 bg-gradient-to-r from-amber-600 to-amber-700 text-white text-[10px] sm:text-[11px] font-black w-4 h-4 sm:w-4.5 sm:h-4.5 rounded-full flex items-center justify-center shadow-md animate-in zoom-in-75">
-                  {itemCount}
-                </span>
-              )}
-            </button>
+            {/* Cart Button with Quick-Drawer Trigger (Hidden for Admin, Retailer, and Auth Pages) */}
+            {role !== 'admin' && role !== 'retailer' && !isAuthPage && (
+              <button
+                type="button"
+                onClick={toggleDrawer}
+                className="relative p-1.5 sm:p-2 rounded-xl bg-amber-50 dark:bg-amber-950/60 hover:bg-amber-100 dark:hover:bg-amber-900/60 text-stone-800 dark:text-amber-200 border border-amber-200/80 dark:border-amber-800/60 transition flex items-center justify-center cursor-pointer group shrink-0"
+                aria-label={t('nav.cart')}
+                title={t('nav.cart')}
+              >
+                <ShoppingCart className="w-4 h-4 text-amber-900 dark:text-amber-300 group-hover:scale-105 transition-transform" />
+                {itemCount > 0 && (
+                  <span className="absolute -top-1.5 -right-1.5 bg-gradient-to-r from-amber-600 to-amber-700 text-white text-[10px] sm:text-[11px] font-black w-4 h-4 sm:w-4.5 sm:h-4.5 rounded-full flex items-center justify-center shadow-md animate-in zoom-in-75">
+                    {itemCount}
+                  </span>
+                )}
+              </button>
+            )}
 
             {/* User Name at Rightmost Side with Dropdown (or Login if guest) */}
             {!isAuthenticated ? (
@@ -206,14 +210,16 @@ export default function Navbar() {
                   <span className="font-bold hidden sm:inline">{language === 'en' ? 'EN' : 'తెలుగు'}</span>
                 </button>
 
-                <Link
-                  to="/login"
-                  className="flex items-center gap-1.5 px-2.5 sm:px-3.5 py-1.5 rounded-xl text-xs font-bold bg-amber-600 hover:bg-amber-700 text-white shadow-xs transition cursor-pointer shrink-0"
-                  title={t('nav.login')}
-                >
-                  <LogIn className="w-3.5 h-3.5" />
-                  <span className="hidden sm:inline">{t('nav.login')}</span>
-                </Link>
+                {!isAuthPage && (
+                  <Link
+                    to="/login"
+                    className="flex items-center gap-1.5 px-2.5 sm:px-3.5 py-1.5 rounded-xl text-xs font-bold bg-amber-600 hover:bg-amber-700 text-white shadow-xs transition cursor-pointer shrink-0"
+                    title={t('nav.login')}
+                  >
+                    <LogIn className="w-3.5 h-3.5" />
+                    <span className="hidden sm:inline">{t('nav.login')}</span>
+                  </Link>
+                )}
               </div>
             ) : (
               <div className="relative shrink-0" ref={userMenuRef}>
@@ -261,8 +267,8 @@ export default function Navbar() {
                       )}
                     </div>
 
-                    {/* Navigation Buttons: Orders & Favorites (Only for Customers) */}
-                    {role === 'customer' && (
+                    {/* Navigation Buttons: Orders & Favorites (Available for Customer and Super Admin) */}
+                    {(role === 'customer' || role === 'admin') && (
                       <div className="py-1.5 space-y-0.5 border-b border-stone-100 dark:border-stone-800">
                         <Link
                           to="/orders"
@@ -295,7 +301,7 @@ export default function Navbar() {
                     )}
 
                     {/* Portal Links based on role */}
-                    {role === 'retailer' && (
+                    {(role === 'retailer' || role === 'admin') && (
                       <div className="py-1.5 border-b border-stone-100 dark:border-stone-800">
                         <Link
                           to="/retailer"
@@ -424,14 +430,16 @@ export default function Navbar() {
 
             {/* Mobile Auth action */}
             {!isAuthenticated ? (
-              <Link
-                to="/login"
-                onClick={() => setMobileMenuOpen(false)}
-                className="w-full flex items-center justify-center gap-2 py-2 px-4 rounded-xl text-xs font-bold bg-amber-600 hover:bg-amber-700 text-white shadow-xs transition"
-              >
-                <LogIn className="w-4 h-4" />
-                <span>{t('nav.login')}</span>
-              </Link>
+              !isAuthPage && (
+                <Link
+                  to="/login"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="w-full flex items-center justify-center gap-2 py-2 px-4 rounded-xl text-xs font-bold bg-amber-600 hover:bg-amber-700 text-white shadow-xs transition"
+                >
+                  <LogIn className="w-4 h-4" />
+                  <span>{t('nav.login')}</span>
+                </Link>
+              )
             ) : (
               <div className="rounded-xl bg-stone-100 dark:bg-stone-800/80 border border-stone-200 dark:border-stone-700 overflow-hidden">
                 <button
@@ -489,24 +497,24 @@ export default function Navbar() {
               <Link to="/products" onClick={() => setMobileMenuOpen(false)} className="p-2 bg-stone-100 dark:bg-stone-800 text-stone-800 dark:text-stone-200 rounded-lg text-center font-medium">
                 {t('nav.browseAll')}
               </Link>
-              {isAuthenticated && role === 'customer' && (
+              {isAuthenticated && (role === 'customer' || role === 'admin') && (
                 <Link to="/orders" onClick={() => setMobileMenuOpen(false)} className="p-2 bg-amber-50 dark:bg-amber-950/60 text-amber-900 dark:text-amber-300 border border-amber-200 dark:border-amber-800 rounded-lg text-center font-bold">
                   {t('nav.orders')}
                 </Link>
               )}
-              {isAuthenticated && role === 'customer' && (
+              {isAuthenticated && (role === 'customer' || role === 'admin') && (
                 <Link to="/favorites" onClick={() => setMobileMenuOpen(false)} className="p-2 bg-rose-50 dark:bg-rose-950/40 text-rose-800 dark:text-rose-300 border border-rose-200 dark:border-rose-900/60 rounded-lg text-center font-bold flex items-center justify-center gap-1.5">
                   <Heart className="w-3.5 h-3.5 fill-rose-500/20" />
                   <span>Favorites ({totalFavoritesCount})</span>
                 </Link>
               )}
-              {role === 'retailer' && (
+              {(role === 'retailer' || role === 'admin') && (
                 <Link to="/retailer" onClick={() => setMobileMenuOpen(false)} className="p-2 bg-stone-100 dark:bg-stone-800 text-stone-800 dark:text-stone-200 rounded-lg text-center font-medium">
                   {t('nav.retailerPortal')}
                 </Link>
               )}
               {role === 'admin' && (
-                <Link to="/admin" onClick={() => setMobileMenuOpen(false)} className="p-2 bg-stone-100 dark:bg-stone-800 text-stone-800 dark:text-stone-200 rounded-lg text-center font-medium">
+                <Link to="/admin" onClick={() => setMobileMenuOpen(false)} className="p-2 bg-amber-100 dark:bg-amber-950 text-amber-900 dark:text-amber-300 border border-amber-300 dark:border-amber-700 rounded-lg text-center font-bold">
                   {t('nav.adminPortal')}
                 </Link>
               )}

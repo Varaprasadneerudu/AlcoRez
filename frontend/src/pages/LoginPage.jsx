@@ -1,19 +1,18 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Lock, Mail, Sparkles, ArrowRight, ArrowLeft, AlertCircle, Loader2 } from 'lucide-react';
-import { useAuth, DEMO_ACCOUNTS } from '../context/AuthContext';
+import { Lock, Mail, ArrowLeft, AlertCircle, Loader2 } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
 import { AlcoRezIcon } from '../components/AlcoRezLogo';
 
 export default function LoginPage() {
-  const { login, switchDemoAccount, loading } = useAuth();
+  const { login, loading } = useAuth();
   const { t, language } = useLanguage();
   const navigate = useNavigate();
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState(null);
-  const [loadingDemoKey, setLoadingDemoKey] = useState(null);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -30,29 +29,6 @@ export default function LoginPage() {
           : (err.message || 'Login failed. Please check your credentials.')
       );
     }
-  };
-
-  const handleQuickDemo = async (key) => {
-    try {
-      setLoadingDemoKey(key);
-      setError(null);
-      const data = await switchDemoAccount(key);
-      if (data.role === 'retailer') navigate('/retailer');
-      else if (data.role === 'admin') navigate('/admin');
-      else navigate('/');
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setLoadingDemoKey(null);
-    }
-  };
-
-  const getDemoLabel = (key, defaultLabel) => {
-    if (language !== 'te') return defaultLabel;
-    if (key === 'customer') return 'రవి తేజ వర్మ (కస్టమర్)';
-    if (key === 'retailer') return 'మాదాపూర్ వైన్స్ (రిటైలర్)';
-    if (key === 'admin') return 'రాష్ట్ర ఎక్సైజ్ అడ్మిన్';
-    return defaultLabel;
   };
 
   return (
@@ -84,44 +60,6 @@ export default function LoginPage() {
         <p className="text-xs text-stone-500 dark:text-stone-400 font-medium tracking-wide">
           Reserve. Verify. Collect.
         </p>
-      </div>
-
-      {/* Quick 1-Click Demo Login Box */}
-      <div className="bg-amber-50/90 dark:bg-amber-950/40 rounded-3xl border border-amber-200 dark:border-amber-800 p-5 space-y-3">
-        <div className="flex items-center gap-1.5 text-xs font-bold text-amber-900 dark:text-amber-300">
-          <Sparkles className="w-4 h-4 text-amber-600 dark:text-amber-400" />
-          <span>{t('auth.quickDemoTitle', 'Quick 1-Click Demo Personas')}</span>
-        </div>
-        <div className="space-y-1.5">
-          {Object.entries(DEMO_ACCOUNTS).map(([key, acc]) => {
-            const isThisLoading = loadingDemoKey === key;
-            return (
-              <button
-                key={key}
-                type="button"
-                disabled={loading || Boolean(loadingDemoKey)}
-                onClick={() => handleQuickDemo(key)}
-                className={`w-full py-2 px-3 rounded-xl border text-left text-xs font-semibold flex items-center justify-between transition shadow-sm ${
-                  isThisLoading
-                    ? 'bg-amber-100 dark:bg-amber-900/60 border-amber-400 text-amber-900 dark:text-amber-200'
-                    : 'bg-white dark:bg-stone-900 hover:bg-amber-100/60 dark:hover:bg-amber-900/40 border-amber-200/80 dark:border-amber-800 text-stone-800 dark:text-stone-200'
-                } disabled:opacity-60`}
-              >
-                <div>
-                  <span className="block text-stone-900 dark:text-stone-100 font-bold">
-                    {getDemoLabel(key, acc.label)}
-                  </span>
-                  <span className="text-[10px] text-stone-500 dark:text-stone-400 font-normal">{acc.email}</span>
-                </div>
-                {isThisLoading ? (
-                  <Loader2 className="w-3.5 h-3.5 text-amber-700 dark:text-amber-400 animate-spin shrink-0" />
-                ) : (
-                  <ArrowRight className="w-3.5 h-3.5 text-amber-700 dark:text-amber-400 shrink-0" />
-                )}
-              </button>
-            );
-          })}
-        </div>
       </div>
 
       {/* Standard Form */}
@@ -171,7 +109,7 @@ export default function LoginPage() {
 
         <button
           type="submit"
-          disabled={loading || Boolean(loadingDemoKey)}
+          disabled={loading}
           className="w-full py-3 rounded-xl font-bold text-xs bg-amber-600 hover:bg-amber-700 text-white shadow-md shadow-amber-600/20 transition disabled:opacity-50 flex items-center justify-center gap-2"
         >
           {loading && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
