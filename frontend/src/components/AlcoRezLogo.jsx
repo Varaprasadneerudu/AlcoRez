@@ -26,8 +26,8 @@ export function AlcoRezBrandLockup({ subtitle = "Reserve. Verify. Collect." }) {
       </div>
       <div className="flex flex-col">
         <div className="flex items-center text-xl tracking-tight leading-none">
-          <span className="text-amber-800 dark:text-amber-400 font-black">Alco</span>
-          <span className="text-stone-900 dark:text-stone-100 font-extrabold">Rez</span>
+          <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#FF4500] via-[#FF6600] to-[#FFE500] font-black">Alco</span>
+          <span className="text-slate-900 dark:text-white font-black">Rez</span>
         </div>
         <span className="text-[10px] text-stone-500 dark:text-stone-400 font-medium tracking-wide mt-0.5">
           {subtitle}

@@ -1,5 +1,48 @@
 @import "tailwindcss";
 
+@theme {
+  --color-amber-50: #FFF6F0;
+  --color-amber-100: #FFE8DD;
+  --color-amber-200: #FFCDBD;
+  --color-amber-300: #FFA37E;
+  --color-amber-400: #FFE500;
+  --color-amber-500: #FF6600;
+  --color-amber-600: #FF4500;
+  --color-amber-700: #DE3500;
+  --color-amber-800: #B82800;
+  --color-amber-900: #7E1800;
+  --color-amber-950: #380B00;
+
+  --color-redorange-50: #FFF6F0;
+  --color-redorange-100: #FFE8DD;
+  --color-redorange-200: #FFCDBD;
+  --color-redorange-300: #FFA37E;
+  --color-redorange-400: #FF662A;
+  --color-redorange-500: #FF4500;
+  --color-redorange-600: #DE3500;
+  --color-redorange-700: #B82800;
+  --color-redorange-800: #8A1C00;
+  --color-redorange-900: #5C1200;
+
+  --color-yellowpunk-50: #FFFFEB;
+  --color-yellowpunk-100: #FFFFC2;
+  --color-yellowpunk-200: #FFFF8F;
+  --color-yellowpunk-300: #FFFF4D;
+  --color-yellowpunk-400: #FFF214;
+  --color-yellowpunk-500: #FFE500;
+  --color-yellowpunk-600: #D6BF00;
+  --color-yellowpunk-700: #A89500;
+  --color-yellowpunk-800: #7A6D00;
+  --color-yellowpunk-900: #4D4400;
+
+  --color-snowy-50: #FFFFFF;
+  --color-snowy-100: #FAFCFF;
+  --color-snowy-200: #F3F7FC;
+  --color-snowy-300: #E6EFF8;
+  --color-snowy-400: #CEE0F2;
+}
+
+
 @custom-variant dark (&:where(.dark, .dark *));
 
 @layer base {
@@ -24,22 +67,22 @@
   }
 
   body {
-    background-color: #F8F7F4;
-    color: #18181b;
+    background-color: #FAFCFF;
+    color: #0f172a;
     font-family: 'Plus Jakarta Sans', 'Noto Sans Telugu', Inter, system-ui, sans-serif;
     min-height: 100vh;
     transition: background-color 0.2s ease, color 0.2s ease;
   }
 
   .dark body {
-    background-color: #0f1115;
-    color: #f4f4f5;
+    background-color: #0c0e14;
+    color: #F8FAFC;
   }
 }
 
 /* Direction 3 Quick-Reserve Dark Mode enhancements */
 .dark .bg-white {
-  background-color: #171920 !important;
+  background-color: #12141c !important;
 }
 
 .dark .bg-stone-50,
@@ -56,7 +99,7 @@
 
 .dark .border-stone-200,
 .dark .border-stone-100 {
-  border-color: #262a36 !important;
+  border-color: #222634 !important;
 }
 
 .dark .text-stone-900 {
@@ -83,8 +126,8 @@
 .dark .bg-amber-50,
 .dark [class~="bg-amber-50"],
 .dark [class*="bg-amber-50/"] {
-  background-color: #1e1910 !important;
-  border-color: #78350f !important;
+  background-color: #210a03 !important;
+  border-color: #8c1e00 !important;
 }
 
 .dark .bg-amber-50 p,
@@ -99,7 +142,7 @@
 .dark [class*="bg-amber-50/"] span,
 .dark [class*="bg-amber-50/"] li,
 .dark [class*="bg-amber-50/"] div {
-  color: #fde68a !important;
+  color: #FFE500 !important;
 }
 
 .dark .bg-amber-50 .font-bold,
@@ -117,20 +160,20 @@
 .dark [class*="bg-amber-50/"] h1,
 .dark [class*="bg-amber-50/"] h2,
 .dark [class*="bg-amber-50/"] h3 {
-  color: #fbbf24 !important;
+  color: #FFF214 !important;
 }
 
 .dark .border-amber-200 {
-  border-color: #78350f !important;
+  border-color: #8c1e00 !important;
 }
 
 .dark .text-amber-900,
 .dark .text-amber-950 {
-  color: #fbbf24 !important;
+  color: #FFF214 !important;
 }
 
 .dark .text-amber-800 {
-  color: #f59e0b !important;
+  color: #FF5A1F !important;
 }
 
 .dark select,
@@ -151,13 +194,13 @@
 
 /* Glass panel */
 .glass-panel {
-  background: rgba(255, 255, 255, 0.88);
+  background: rgba(250, 252, 255, 0.94); border: 1px solid rgba(255, 69, 0, 0.1);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
 }
 
 .dark .glass-panel {
-  background: rgba(23, 25, 32, 0.88) !important;
+  background: rgba(14, 16, 23, 0.92) !important; border: 1px solid rgba(255, 69, 0, 0.22) !important;
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
 }
@@ -191,4 +234,44 @@
 /* iOS and modern mobile safe area insets */
 .safe-bottom {
   padding-bottom: max(0.75rem, env(safe-area-inset-bottom));
+}
+
+
+/* Red Orange, Snowy White & Yellow Punk Signature Accents */
+.btn-red-orange {
+  background: linear-gradient(135deg, #FF4500 0%, #FF6600 100%);
+  color: #FFFFFF;
+  box-shadow: 0 4px 14px 0 rgba(255, 69, 0, 0.35);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.btn-red-orange:hover {
+  background: linear-gradient(135deg, #DE3500 0%, #FF4500 100%);
+  box-shadow: 0 6px 20px 0 rgba(255, 69, 0, 0.45);
+  transform: translateY(-1px);
+}
+
+.badge-yellow-punk {
+  background-color: #FFE500 !important;
+  color: #0A0A0C !important;
+  font-weight: 900 !important;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.text-gradient-fiery {
+  background: linear-gradient(135deg, #FF4500 0%, #FFE500 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* Snowy White card surface enhancement for light mode */
+.snowy-card {
+  background-color: #FFFFFF;
+  border: 1px solid rgba(226, 232, 240, 0.9);
+  box-shadow: 0 1px 3px 0 rgba(15, 23, 42, 0.04), 0 1px 2px -1px rgba(15, 23, 42, 0.04);
+}
+.dark .snowy-card {
+  background-color: #12141c;
+  border-color: #222634;
+  box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.5);
 }

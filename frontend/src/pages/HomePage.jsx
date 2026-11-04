@@ -54,11 +54,12 @@ export default function HomePage() {
       
       {/* Hero Section */}
       <section className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 mt-4 sm:mt-6">
-        <div className="relative overflow-hidden bg-gradient-to-br from-stone-900 via-stone-900 to-amber-950 dark:from-stone-950 dark:via-stone-900 dark:to-stone-950 text-white rounded-2xl sm:rounded-3xl p-5 sm:p-10 lg:p-14 border border-amber-900/40 dark:border-stone-800 shadow-2xl">
-          <div className="absolute -right-20 -top-20 w-96 h-96 bg-amber-600/10 rounded-full blur-3xl pointer-events-none" />
+        <div className="relative overflow-hidden bg-gradient-to-br from-[#12141c] via-[#1a0f0a] to-[#2b0c03] dark:from-[#0a0c12] dark:via-[#140b07] dark:to-[#1f0902] text-white rounded-2xl sm:rounded-3xl p-5 sm:p-10 lg:p-14 border border-[#FF4500]/30 shadow-2xl">
+          <div className="absolute -right-20 -top-20 w-96 h-96 bg-[#FF4500]/20 rounded-full blur-3xl pointer-events-none" />
+          <div className="absolute -left-20 -bottom-20 w-80 h-80 bg-[#FFE500]/15 rounded-full blur-3xl pointer-events-none" />
           
           <div className="max-w-3xl space-y-4 sm:space-y-5 relative z-10">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/20 border border-amber-400/30 text-amber-300 text-xs font-bold tracking-wide uppercase">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#FFE500]/15 border border-[#FFE500]/40 text-[#FFE500] text-xs font-black tracking-wide uppercase">
               <ShieldCheck className="w-4 h-4 text-emerald-400" />
               {t('home.heroBadge')}
             </div>
@@ -66,11 +67,11 @@ export default function HomePage() {
             <h1 className="text-2xl sm:text-5xl font-extrabold tracking-tight leading-tight">
               {language === 'en' ? (
                 <>
-                  Discover Premium Spirits & Verified <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-400 via-amber-200 to-amber-500">Wine Retailers</span> in Telangana
+                  Discover Premium Spirits & Verified <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#FF4500] via-[#FFE500] to-[#FF6600]">Wine Retailers</span> in Telangana
                 </>
               ) : (
                 <>
-                  తెలంగాణలో ప్రీమియం లిక్కర్ మరియు అధీకృత <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-400 via-amber-200 to-amber-500">వైన్ షాపులను</span> అన్వేషించండి
+                  తెలంగాణలో ప్రీమియం లిక్కర్ మరియు అధీకృత <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#FF4500] via-[#FFE500] to-[#FF6600]">వైన్ షాపులను</span> అన్వేషించండి
                 </>
               )}
             </h1>
@@ -80,8 +81,8 @@ export default function HomePage() {
             </p>
 
             {/* Demonstration Notice Box */}
-            <div className="bg-white/10 dark:bg-stone-900/60 backdrop-blur-md rounded-2xl p-3.5 sm:p-4 border border-white/15 dark:border-stone-700/50 text-xs text-amber-100 dark:text-amber-200 flex items-start gap-3">
-              <AlertTriangle className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
+            <div className="bg-white/10 dark:bg-stone-900/60 backdrop-blur-md rounded-2xl p-3.5 sm:p-4 border border-[#FF4500]/30 text-xs text-stone-200 flex items-start gap-3">
+              <AlertTriangle className="w-5 h-5 text-[#FFE500] shrink-0 mt-0.5" />
               <div>
                 <strong className="text-white block font-semibold mb-0.5">{t('home.disclosureTitle')}</strong>
                 {t('home.disclosureText')}
@@ -91,14 +92,14 @@ export default function HomePage() {
             <div className="pt-2 flex flex-wrap gap-2.5 sm:gap-3">
               <Link
                 to="/products"
-                className="py-2.5 sm:py-3 px-5 sm:px-6 rounded-xl font-bold text-xs sm:text-sm bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-stone-950 shadow-lg shadow-amber-500/20 flex items-center gap-2 transition"
+                className="py-2.5 sm:py-3 px-5 sm:px-6 rounded-xl font-black text-xs sm:text-sm bg-gradient-to-r from-[#FF4500] via-[#FF5A1F] to-[#FF7700] hover:from-[#DE3500] hover:to-[#FF4500] text-white shadow-lg shadow-orange-600/30 flex items-center gap-2 transition active:scale-95"
               >
                 <span>{t('home.exploreBtn')}</span>
                 <ArrowRight className="w-4 h-4" />
               </Link>
               <Link
                 to="/compliance-info"
-                className="py-2.5 sm:py-3 px-5 sm:px-6 rounded-xl font-semibold text-xs sm:text-sm bg-white/10 hover:bg-white/20 text-white border border-white/20 transition flex items-center gap-2"
+                className="py-2.5 sm:py-3 px-5 sm:px-6 rounded-xl font-bold text-xs sm:text-sm bg-white/10 hover:bg-white/20 text-white border border-white/20 backdrop-blur-md transition flex items-center gap-2"
               >
                 <span>{t('home.guidelinesBtn')}</span>
               </Link>
