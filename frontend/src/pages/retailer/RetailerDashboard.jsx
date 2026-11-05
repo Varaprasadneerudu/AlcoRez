@@ -22,12 +22,13 @@ import { useAuth } from '../../context/AuthContext';
 import { useLanguage } from '../../context/LanguageContext';
 
 export default function RetailerDashboard() {
-  const { role } = useAuth();
+  const { user, role, switchDemoAccount } = useAuth();
   const { t, language } = useLanguage();
 
   const [dashboard, setDashboard] = useState(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [switching, setSwitching] = useState(false);
   const [error, setError] = useState(null);
 
   const loadDashboard = useCallback(async (isRefresh = false) => {
@@ -39,8 +40,8 @@ export default function RetailerDashboard() {
       setDashboard(data);
       setError(null);
     } catch (err) {
-      if (err.status === 404) {
-        setError('NO_PROFILE');
+      if (err.status === 404 || err.status === 403 || err.message?.includes('Retailer privileges required')) {
+        setError(err.status === 404 ? 'NO_PROFILE' : 'FORBIDDEN');
       } else {
         setError(err.message || 'Failed to load dashboard metrics');
       }
@@ -54,26 +55,56 @@ export default function RetailerDashboard() {
     loadDashboard();
   }, [loadDashboard, role]);
 
-  // If user is not logged in as a retailer or super admin, or has no retailer profile
-  if (error === 'NO_PROFILE' || (role !== 'retailer' && role !== 'admin')) {
+  const handleQuickSwitchToRetailer = async () => {
+    setSwitching(true);
+    try {
+      if (switchDemoAccount) {
+        await switchDemoAccount('retailer');
+        await loadDashboard();
+      }
+    } catch (e) {
+      console.error('Failed to switch to retailer demo account:', e);
+    } finally {
+      setSwitching(false);
+    }
+  };
+
+  // If user is not logged in as a retailer or super admin, has no retailer profile, or received 403 forbidden
+  if (error === 'NO_PROFILE' || error === 'FORBIDDEN' || (role !== 'retailer' && role !== 'admin')) {
+    const isForbidden = error === 'FORBIDDEN' || (role && role !== 'retailer' && role !== 'admin');
     return (
       <div className="max-w-2xl mx-auto px-4 py-16 text-center space-y-6">
         <div className="w-16 h-16 bg-amber-100 dark:bg-amber-950/80 text-amber-800 dark:text-amber-300 rounded-2xl flex items-center justify-center mx-auto border border-amber-200 dark:border-amber-800">
           <Store className="w-8 h-8" />
         </div>
         <h2 className="text-2xl font-extrabold text-stone-900 dark:text-stone-100">
-          {t('retailerDash.onboardingTitle')}
+          {isForbidden
+            ? (language === 'te' ? 'రిటైలర్ అధికారాలు అవసరం' : 'Retailer Privileges Required')
+            : t('retailerDash.onboardingTitle')}
         </h2>
         <p className="text-xs text-stone-600 dark:text-stone-400 max-w-md mx-auto leading-relaxed">
-          {t('retailerDash.onboardingDesc')}
+          {isForbidden
+            ? (language === 'te'
+                ? `మీరు ప్రస్తుతం ${user?.email || 'కస్టమర్'} ఖాతాతో ఉన్నారు. లైసెన్స్ పొందిన మద్యం రిటైలర్ డాష్‌బోర్డ్‌ను యాక్సెస్ చేయడానికి దయచేసి రిటైలర్ ఖాతాతో లాగిన్ చేయండి.`
+                : `You are currently authenticated as ${user?.email || 'a customer account'}. Access to the Telangana Retailer Operations Portal requires verified licensed retailer credentials.`)
+            : t('retailerDash.onboardingDesc')}
         </p>
 
         <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-3">
+          <button
+            type="button"
+            onClick={handleQuickSwitchToRetailer}
+            disabled={switching}
+            className="w-full sm:w-auto py-3 px-6 rounded-xl font-bold text-xs bg-amber-600 hover:bg-amber-700 text-white shadow cursor-pointer text-center disabled:opacity-50 flex items-center justify-center gap-2"
+          >
+            {switching ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Store className="w-3.5 h-3.5" />}
+            <span>{language === 'te' ? 'డెమో రిటైలర్‌గా మారండి (మాదాపూర్ వైన్స్)' : 'Sign in as Demo Retailer (Madhapur Wines)'}</span>
+          </button>
           <Link
             to="/login"
-            className="w-full sm:w-auto py-3 px-6 rounded-xl font-bold text-xs bg-amber-600 hover:bg-amber-700 text-white shadow cursor-pointer text-center"
+            className="w-full sm:w-auto py-3 px-6 rounded-xl font-bold text-xs bg-stone-100 dark:bg-stone-800 hover:bg-stone-200 dark:hover:bg-stone-700 text-stone-800 dark:text-stone-200 border border-stone-200 dark:border-stone-700 transition cursor-pointer text-center"
           >
-            {language === 'te' ? 'రిటైలర్ ఖాతాకు లాగిన్ చేయండి' : 'Sign in as Retailer'}
+            {language === 'te' ? 'మరొక ఖాతాతో లాగిన్' : 'Sign in with Credentials'}
           </Link>
           <Link
             to="/retailer/apply"
@@ -105,7 +136,7 @@ export default function RetailerDashboard() {
     );
   }
 
-  if (error && error !== 'NO_PROFILE') {
+  if (error && error !== 'NO_PROFILE' && error !== 'FORBIDDEN') {
     return (
       <div className="max-w-xl mx-auto px-4 py-16 text-center space-y-4">
         <div className="w-12 h-12 bg-rose-100 dark:bg-rose-950/80 text-rose-600 rounded-2xl flex items-center justify-center mx-auto">
@@ -115,12 +146,22 @@ export default function RetailerDashboard() {
           {language === 'te' ? 'డాష్‌బోర్డ్ లోడ్ చేయడం విఫలమైంది' : 'Failed to Load Dashboard'}
         </h3>
         <p className="text-xs text-stone-500 dark:text-stone-400">{error}</p>
-        <button
-          onClick={() => loadDashboard()}
-          className="py-2.5 px-5 rounded-xl text-xs font-bold bg-amber-600 hover:bg-amber-700 text-white shadow transition cursor-pointer"
-        >
-          {language === 'te' ? 'మళ్లీ ప్రయత్నించండి' : 'Retry'}
-        </button>
+        <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
+          <button
+            onClick={() => loadDashboard()}
+            className="py-2.5 px-5 rounded-xl text-xs font-bold bg-amber-600 hover:bg-amber-700 text-white shadow transition cursor-pointer"
+          >
+            {language === 'te' ? 'మళ్లీ ప్రయత్నించండి' : 'Retry'}
+          </button>
+          <button
+            type="button"
+            onClick={handleQuickSwitchToRetailer}
+            disabled={switching}
+            className="py-2.5 px-5 rounded-xl text-xs font-bold bg-stone-100 dark:bg-stone-800 hover:bg-stone-200 dark:hover:bg-stone-700 text-stone-800 dark:text-stone-200 border border-stone-200 dark:border-stone-700 transition cursor-pointer disabled:opacity-50"
+          >
+            {language === 'te' ? 'డెమో రిటైలర్‌గా మారండి' : 'Switch to Demo Retailer'}
+          </button>
+        </div>
       </div>
     );
   }
@@ -137,17 +178,6 @@ export default function RetailerDashboard() {
   return (
     <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-6 sm:py-8 space-y-6 transition-colors duration-200">
       
-      {/* Back Link */}
-      <div>
-        <Link
-          to="/"
-          className="inline-flex items-center gap-1.5 text-xs font-semibold text-stone-600 dark:text-stone-400 hover:text-amber-800 dark:hover:text-amber-300 transition-colors"
-        >
-          <ArrowLeft className="w-3.5 h-3.5" />
-          <span>{language === 'te' ? 'మార్కెట్‌ప్లేస్‌కు తిరిగి వెళ్ళండి' : 'Back to Marketplace'}</span>
-        </Link>
-      </div>
-
       {/* 1. Critical License Alerts */}
       {isLicenseExpired && (
         <div className="p-4 sm:p-5 rounded-3xl bg-rose-50 dark:bg-rose-950/50 border border-rose-200 dark:border-rose-900 flex items-start gap-3.5 shadow-sm">

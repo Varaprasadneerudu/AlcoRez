@@ -47,7 +47,6 @@ class AvailableDeliveryOrderOut(BaseModel):
     payout_amount: Decimal
     status: str
     created_at: datetime
-    delivery_otp: str | None = None
 
 
 class DeliveryCompleteRequest(BaseModel):

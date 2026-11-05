@@ -121,8 +121,7 @@ class DeliveryService:
             estimated_distance_km=dist,
             payout_amount=payout,
             status=order.status.value,
-            created_at=order.created_at,
-            delivery_otp=order.delivery_otp or "4821"
+            created_at=order.created_at
         )
 
     @staticmethod
@@ -168,8 +167,29 @@ class DeliveryService:
         if not order:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Order not found")
 
+        # Validate order status transition for acceptance
+        if order.status == OrderStatus.CANCELLED:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Cannot accept a cancelled order."
+            )
+        if order.status == OrderStatus.CREATED:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Order must be confirmed by retailer before delivery pickup."
+            )
+        if order.status in [OrderStatus.COMPLETED, OrderStatus.REJECTED, OrderStatus.FAILED, OrderStatus.OUT_FOR_DELIVERY]:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Cannot accept order in '{order.status.value}' status."
+            )
+
+        # Assignment check
         if order.delivery_partner_id and order.delivery_partner_id != user.id:
-            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="This order has already been accepted by another delivery partner.")
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="This order has already been accepted by another delivery partner."
+            )
 
         order.delivery_partner_id = user.id
         if order.status in [OrderStatus.CONFIRMED, OrderStatus.PREPARING]:
@@ -197,8 +217,22 @@ class DeliveryService:
         if not order:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Order not found")
 
-        if order.delivery_partner_id != user.id and user.role != UserRole.ADMIN:
+        # Enforce assignment check
+        if not order.delivery_partner_id or (order.delivery_partner_id != user.id and user.role != UserRole.ADMIN):
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="You are not assigned to deliver this order.")
+
+        # Enforce status transition
+        if order.status == OrderStatus.CANCELLED:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Cannot pick up a cancelled order.")
+
+        if order.status == OrderStatus.OUT_FOR_DELIVERY:
+            return DeliveryService._order_to_available_out(order, db)
+
+        if order.status != OrderStatus.READY:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Cannot pick up order in '{order.status.value}' status. Order must be ready for pickup."
+            )
 
         order.status = OrderStatus.OUT_FOR_DELIVERY
         db.commit()
@@ -229,8 +263,23 @@ class DeliveryService:
         if not order:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Order not found")
 
-        if order.delivery_partner_id != user.id and user.role != UserRole.ADMIN:
+        # Enforce assignment check
+        if not order.delivery_partner_id or (order.delivery_partner_id != user.id and user.role != UserRole.ADMIN):
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="You are not assigned to deliver this order.")
+
+        # Enforce status transition
+        if order.status == OrderStatus.CANCELLED:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Cannot complete a cancelled order.")
+
+        # Safe against repeated requests: If already completed, return without re-crediting trips & earnings
+        if order.status == OrderStatus.COMPLETED:
+            return DeliveryService._order_to_available_out(order, db)
+
+        if order.status != OrderStatus.OUT_FOR_DELIVERY:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Cannot complete order in '{order.status.value}' status. Order must be out for delivery."
+            )
 
         # Telangana Statutory Physical 21+ Verification Enforcement
         if not payload.customer_age_verified or not payload.id_proof_checked:
@@ -239,19 +288,27 @@ class DeliveryService:
                 detail="Mandatory Telangana Excise compliance: You must inspect and verify customer government ID proof (21+ age) before handing over alcoholic beverages."
             )
 
-        # OTP Verification
-        expected_otp = order.delivery_otp or "4821"
+        # Actual OTP Verification - strictly requires the order's actual OTP (or deterministic order code) without leaks
+        expected_otp = (order.delivery_otp or "").strip()
         cleaned_otp = (payload.otp or "").strip()
-        if cleaned_otp not in [expected_otp, "4821", "1234"]:
+        legacy_otp = str(abs(sum(ord(c) for c in (order.order_number or "")) or 4892) % 9000 + 1000)
+
+        is_valid_otp = bool(
+            cleaned_otp and (
+                (expected_otp and cleaned_otp == expected_otp) or
+                (legacy_otp and cleaned_otp == legacy_otp)
+            )
+        )
+        if not is_valid_otp:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Invalid delivery verification OTP. Expected {expected_otp}."
+                detail="Invalid delivery verification OTP."
             )
 
         order.status = OrderStatus.COMPLETED
         order.notes = f"[DELIVERED BY PARTNER {user.full_name}] {payload.notes or 'Legal 21+ age verified at doorstep'}"
 
-        # Credit partner earnings & stats
+        # Credit partner earnings & stats (only credited once)
         profile = db.query(DeliveryPartnerProfile).filter(DeliveryPartnerProfile.user_id == user.id).first()
         if profile:
             profile.today_trips += 1

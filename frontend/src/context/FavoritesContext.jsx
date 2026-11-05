@@ -1,8 +1,8 @@
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
 import { api } from '../services/api';
 import { useAuth } from './AuthContext';
 
-const FavoritesContext = createContext();
+const FavoritesContext = createContext(null);
 
 export function FavoritesProvider({ children }) {
   const { isAuthenticated, role } = useAuth();
@@ -11,12 +11,12 @@ export function FavoritesProvider({ children }) {
   const [loading, setLoading] = useState(false);
   const [toastMessage, setToastMessage] = useState(null);
 
-  const showToast = (msg) => {
+  const showToast = useCallback((msg) => {
     setToastMessage(msg);
     setTimeout(() => {
       setToastMessage(null);
     }, 3000);
-  };
+  }, []);
 
   const loadFavoriteIds = useCallback(async () => {
     if (!isAuthenticated || (role !== 'customer' && role !== 'admin')) {
@@ -48,7 +48,7 @@ export function FavoritesProvider({ children }) {
     return favoriteRetailerIds.has(retailerId);
   }, [favoriteRetailerIds]);
 
-  const toggleProductFavorite = async (product) => {
+  const toggleProductFavorite = useCallback(async (product) => {
     if (!isAuthenticated) {
       showToast('Please sign in to save your favorite spirits.');
       return false;
@@ -85,9 +85,9 @@ export function FavoritesProvider({ children }) {
       }
     }
     return !isFav;
-  };
+  }, [isAuthenticated, role, favoriteProductIds, showToast]);
 
-  const toggleRetailerFavorite = async (retailer) => {
+  const toggleRetailerFavorite = useCallback(async (retailer) => {
     if (!isAuthenticated) {
       showToast('Please sign in to save licensed wine stores.');
       return false;
@@ -124,12 +124,12 @@ export function FavoritesProvider({ children }) {
       }
     }
     return !isFav;
-  };
+  }, [isAuthenticated, role, favoriteRetailerIds, showToast]);
 
   const totalFavoritesCount = favoriteProductIds.size + favoriteRetailerIds.size;
 
-  return (
-    <FavoritesContext.Provider value={{
+  const value = useMemo(
+    () => ({
       favoriteProductIds,
       favoriteRetailerIds,
       totalFavoritesCount,
@@ -139,7 +139,12 @@ export function FavoritesProvider({ children }) {
       toggleRetailerFavorite,
       reloadFavorites: loadFavoriteIds,
       loading
-    }}>
+    }),
+    [favoriteProductIds, favoriteRetailerIds, totalFavoritesCount, isProductFavorite, isRetailerFavorite, toggleProductFavorite, toggleRetailerFavorite, loadFavoriteIds, loading]
+  );
+
+  return (
+    <FavoritesContext.Provider value={value}>
       {children}
       {toastMessage && (
         <div className="fixed bottom-6 right-6 z-50 bg-stone-900/95 dark:bg-stone-100/95 text-stone-100 dark:text-stone-900 text-xs font-semibold px-4 py-3 rounded-xl shadow-xl border border-stone-700 dark:border-stone-300 flex items-center gap-2 animate-in fade-in slide-in-from-bottom-3 duration-200">

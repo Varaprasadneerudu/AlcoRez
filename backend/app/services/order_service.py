@@ -1,3 +1,4 @@
+import secrets
 import uuid
 from datetime import datetime, timezone
 from decimal import Decimal
@@ -12,7 +13,7 @@ from app.models.order import (
     PaymentAttempt,
 )
 from app.models.product import Inventory, InventoryMovement, Product
-from app.models.retailer import Retailer, RetailerMembership
+from app.models.retailer import Retailer, RetailerMembership, RetailerStatus
 from app.models.user import Address, User, UserRole
 from app.schemas.order import (
     OrderItemOut,
@@ -65,17 +66,33 @@ class OrderService:
             if addr:
                 address_snapshot_str = f"{addr.label}: {addr.address_line1}, {addr.city}, {addr.state} - {addr.postal_code}"
 
-        # Group items by retailer
+        # Group items by retailer and revalidate listing availability and retailer approval
         items_by_retailer = {}
         for c_item in cart_items:
             inv = db.query(Inventory).filter(Inventory.id == c_item.inventory_id).with_for_update().first()
             if not inv:
                 raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Inventory listing is no longer available")
+            # Revalidate retailer approval status first
+            retailer = db.query(Retailer).filter(Retailer.id == inv.retailer_id).first()
+            if not retailer or retailer.status != RetailerStatus.APPROVED:
+                shop_name = retailer.shop_name if retailer else "Unknown Shop"
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=f"Retailer '{shop_name}' is not approved to fulfill orders."
+                )
+
+            # Revalidate listing availability
+            if not inv.is_available:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=f"Item '{inv.bottle_size}' is currently unavailable for order."
+                )
             if inv.stock_quantity < c_item.quantity:
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
                     detail=f"Item {inv.bottle_size} is out of stock (available: {inv.stock_quantity})"
                 )
+
             if inv.retailer_id not in items_by_retailer:
                 items_by_retailer[inv.retailer_id] = []
             items_by_retailer[inv.retailer_id].append((c_item, inv))
@@ -91,10 +108,13 @@ class OrderService:
                 for c_item, inv in items_list:
                     subtotal += inv.price * c_item.quantity
 
+                actual_otp = f"{secrets.randbelow(9000) + 1000}"
+
                 order = Order(
                     order_number=order_num,
                     user_id=user.id,
                     retailer_id=retailer_id,
+                    delivery_otp=actual_otp,
                     status=OrderStatus.CREATED,
                     subtotal=subtotal,
                     delivery_fee=Decimal("0.00"),
@@ -166,6 +186,9 @@ class OrderService:
 
             return OrderService.to_order_out_batch(db, created_orders)
 
+        except HTTPException:
+            db.rollback()
+            raise
         except Exception as e:
             db.rollback()
             raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Order checkout failed: {e!s}") from e
@@ -192,11 +215,13 @@ class OrderService:
                 raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access to other retailers' orders is forbidden")
 
         # Delivery partner can only view orders assigned to them or unassigned
-        if requesting_user.role == UserRole.DELIVERY_PARTNER:
-            if order.delivery_partner_id and order.delivery_partner_id != requesting_user.id:
-                raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access to other delivery partners' orders is forbidden")
+        if requesting_user.role == UserRole.DELIVERY_PARTNER and order.delivery_partner_id and order.delivery_partner_id != requesting_user.id:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access to other delivery partners' orders is forbidden")
 
-        return OrderService.to_order_out(db, order)
+        order_out = OrderService.to_order_out(db, order)
+        if requesting_user.role == UserRole.DELIVERY_PARTNER:
+            order_out.delivery_otp = None
+        return order_out
 
     @staticmethod
     def get_customer_orders(db: Session, user: User) -> list[OrderOut]:

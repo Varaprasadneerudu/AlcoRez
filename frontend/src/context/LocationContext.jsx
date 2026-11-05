@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useMemo, useCallback } from 'react';
 
 export const HYDERABAD_ZONES = [
   { id: '500081', postal_code: '500081', locality: 'Madhapur & HITEC City', en: 'Madhapur & HITEC City (500081)', te: 'మాదాపూర్ & హైటెక్ సిటీ (500081)' },
@@ -8,31 +8,39 @@ export const HYDERABAD_ZONES = [
   { id: '500084', postal_code: '500084', locality: 'Kondapur', en: 'Kondapur (500084)', te: 'కొండాపూర్ (500084)' }
 ];
 
-const LocationContext = createContext();
+const LocationContext = createContext(null);
 
 export function LocationProvider({ children }) {
   const [selectedZoneId, setSelectedZoneId] = useState(() => {
     return localStorage.getItem('alco_selected_zone') || HYDERABAD_ZONES[0].id;
   });
 
-  const selectedZone = HYDERABAD_ZONES.find((z) => z.id === selectedZoneId) || HYDERABAD_ZONES[0];
+  const selectedZone = useMemo(
+    () => HYDERABAD_ZONES.find((z) => z.id === selectedZoneId) || HYDERABAD_ZONES[0],
+    [selectedZoneId]
+  );
 
   useEffect(() => {
     localStorage.setItem('alco_selected_zone', selectedZoneId);
   }, [selectedZoneId]);
 
-  const setZone = (zoneId) => {
+  const setZone = useCallback((zoneId) => {
     setSelectedZoneId(zoneId);
-  };
+  }, []);
 
-  return (
-    <LocationContext.Provider value={{
+  const value = useMemo(
+    () => ({
       selectedZoneId,
       selectedZone,
       postalCode: selectedZone.postal_code,
       setZone,
       allZones: HYDERABAD_ZONES
-    }}>
+    }),
+    [selectedZoneId, selectedZone, setZone]
+  );
+
+  return (
+    <LocationContext.Provider value={value}>
       {children}
     </LocationContext.Provider>
   );

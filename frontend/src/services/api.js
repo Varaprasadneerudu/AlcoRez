@@ -2,20 +2,84 @@ const isDev = import.meta.env.DEV;
 const API_BASE = import.meta.env.VITE_API_BASE_URL || (isDev ? '/api/v1' : 'https://alcorez.onrender.com/api/v1');
 
 export function getStoredToken() {
-  return localStorage.getItem('alco_access_token');
+  try {
+    const sessionToken = sessionStorage.getItem('alco_access_token');
+    if (sessionToken) {
+      return sessionToken;
+    }
+    const localToken = localStorage.getItem('alco_access_token');
+    if (localToken) {
+      sessionStorage.setItem('alco_access_token', localToken);
+      const localRole = localStorage.getItem('alco_user_role');
+      if (localRole) sessionStorage.setItem('alco_user_role', localRole);
+      const localUser = localStorage.getItem('alco_user_profile');
+      if (localUser) sessionStorage.setItem('alco_user_profile', localUser);
+      return localToken;
+    }
+  } catch (err) {
+    console.warn('Error reading stored token:', err);
+  }
+  return null;
+}
+
+export function getStoredRole() {
+  try {
+    const sessionRole = sessionStorage.getItem('alco_user_role');
+    if (sessionRole) return sessionRole;
+    const localRole = localStorage.getItem('alco_user_role');
+    if (localRole) {
+      sessionStorage.setItem('alco_user_role', localRole);
+      return localRole;
+    }
+  } catch {
+    // fallback
+  }
+  return 'customer';
+}
+
+export function getStoredUser() {
+  try {
+    const sessionUser = sessionStorage.getItem('alco_user_profile');
+    if (sessionUser && sessionUser !== 'undefined') {
+      return JSON.parse(sessionUser);
+    }
+    const localUser = localStorage.getItem('alco_user_profile');
+    if (localUser && localUser !== 'undefined') {
+      sessionStorage.setItem('alco_user_profile', localUser);
+      return JSON.parse(localUser);
+    }
+  } catch {
+    // fallback
+  }
+  return null;
 }
 
 export function setStoredToken(token, role, user) {
-  if (token) {
-    localStorage.setItem('alco_access_token', token);
-    localStorage.setItem('alco_user_role', role || 'customer');
-    if (user) {
-      localStorage.setItem('alco_user_profile', JSON.stringify(user));
+  try {
+    if (token) {
+      sessionStorage.setItem('alco_access_token', token);
+      sessionStorage.setItem('alco_user_role', role || 'customer');
+      if (user) {
+        sessionStorage.setItem('alco_user_profile', JSON.stringify(user));
+      }
+      localStorage.setItem('alco_access_token', token);
+      localStorage.setItem('alco_user_role', role || 'customer');
+      if (user) {
+        localStorage.setItem('alco_user_profile', JSON.stringify(user));
+      }
+    } else {
+      const currentToken = sessionStorage.getItem('alco_access_token');
+      sessionStorage.removeItem('alco_access_token');
+      sessionStorage.removeItem('alco_user_role');
+      sessionStorage.removeItem('alco_user_profile');
+      if (localStorage.getItem('alco_access_token') === currentToken) {
+        localStorage.removeItem('alco_access_token');
+        localStorage.removeItem('alco_user_role');
+        localStorage.removeItem('alco_user_profile');
+      }
     }
-  } else {
-    localStorage.removeItem('alco_access_token');
-    localStorage.removeItem('alco_user_role');
-    localStorage.removeItem('alco_user_profile');
+  } catch (err) {
+    console.warn('Error setting stored token:', err);
   }
 }
 

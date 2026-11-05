@@ -1,5 +1,5 @@
-import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
-import { api, setStoredToken, getStoredToken, invalidateCache } from '../services/api';
+import React, { createContext, useContext, useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import { api, setStoredToken, getStoredToken, getStoredRole, getStoredUser, invalidateCache } from '../services/api';
 
 const AuthContext = createContext(null);
 
@@ -26,17 +26,17 @@ export const DEMO_ACCOUNTS = {
 
 export function AuthProvider({ children }) {
   const [token, setToken] = useState(() => getStoredToken());
-  const [user, setUser] = useState(() => {
-    try {
-      const saved = localStorage.getItem('alco_user_profile');
-      return saved && saved !== 'undefined' ? JSON.parse(saved) : null;
-    } catch {
-      return null;
-    }
-  });
-  const [role, setRole] = useState(() => localStorage.getItem('alco_user_role') || 'customer');
+  const [user, setUser] = useState(() => getStoredUser());
+  const [role, setRole] = useState(() => getStoredRole());
   const [ageVerified, setAgeVerified] = useState(() => {
-    return localStorage.getItem('alco_age_verified') === 'true';
+    try {
+      return (
+        sessionStorage.getItem('alco_age_verified') === 'true' ||
+        localStorage.getItem('alco_age_verified') === 'true'
+      );
+    } catch {
+      return false;
+    }
   });
   const [loading, setLoading] = useState(false);
   const initialValidationDone = useRef(false);
@@ -51,24 +51,23 @@ export function AuthProvider({ children }) {
   }, []);
 
   useEffect(() => {
-    // Only fetch /auth/me on initial app load if a stored token exists without user profile
+    // Validate session on app load to guarantee client role strictly matches backend token
     if (token && !initialValidationDone.current) {
       initialValidationDone.current = true;
-      if (!user) {
-        api.getMe()
-          .then((userData) => {
-            setUser(userData);
-            setRole(userData.role);
-            setStoredToken(token, userData.role, userData);
-          })
-          .catch(() => {
-            logout();
-          });
-      }
+      api.getMe()
+        .then((userData) => {
+          const userProfile = { id: userData.id, email: userData.email, full_name: userData.full_name, role: userData.role };
+          setUser(userProfile);
+          setRole(userData.role);
+          setStoredToken(token, userData.role, userProfile);
+        })
+        .catch(() => {
+          logout();
+        });
     }
-  }, [token, user, logout]);
+  }, [token, logout]);
 
-  const login = async (email, password) => {
+  const login = useCallback(async (email, password) => {
     setLoading(true);
     try {
       const data = await api.login({ email, password });
@@ -79,14 +78,19 @@ export function AuthProvider({ children }) {
       setStoredToken(data.access_token, data.role, userProfile);
       setToken(data.access_token);
       setAgeVerified(true);
-      localStorage.setItem('alco_age_verified', 'true');
+      try {
+        sessionStorage.setItem('alco_age_verified', 'true');
+        localStorage.setItem('alco_age_verified', 'true');
+      } catch (e) {
+        console.warn(e);
+      }
       return data;
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
-  const register = async (userData) => {
+  const register = useCallback(async (userData) => {
     setLoading(true);
     try {
       await api.register(userData);
@@ -95,36 +99,44 @@ export function AuthProvider({ children }) {
     } finally {
       setLoading(false);
     }
-  };
+  }, [login]);
 
-  const switchDemoAccount = async (accountKey) => {
+  const switchDemoAccount = useCallback(async (accountKey) => {
     const creds = DEMO_ACCOUNTS[accountKey];
     if (creds) {
       return await login(creds.email, creds.password);
     }
-  };
+  }, [login]);
 
-  const confirmAge = () => {
+  const confirmAge = useCallback(() => {
     setAgeVerified(true);
-    localStorage.setItem('alco_age_verified', 'true');
-  };
+    try {
+      sessionStorage.setItem('alco_age_verified', 'true');
+      localStorage.setItem('alco_age_verified', 'true');
+    } catch (e) {
+      console.warn(e);
+    }
+  }, []);
+
+  const value = useMemo(
+    () => ({
+      token,
+      user,
+      role,
+      isAuthenticated: !!token,
+      ageVerified,
+      confirmAge,
+      login,
+      register,
+      logout,
+      switchDemoAccount,
+      loading,
+    }),
+    [token, user, role, ageVerified, confirmAge, login, register, logout, switchDemoAccount, loading]
+  );
 
   return (
-    <AuthContext.Provider
-      value={{
-        token,
-        user,
-        role,
-        isAuthenticated: !!token,
-        ageVerified,
-        confirmAge,
-        login,
-        register,
-        logout,
-        switchDemoAccount,
-        loading,
-      }}
-    >
+    <AuthContext.Provider value={value}>
       {children}
     </AuthContext.Provider>
   );

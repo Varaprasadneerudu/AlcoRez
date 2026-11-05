@@ -113,3 +113,82 @@ def test_order_status_state_transitions(client):
     res_bad = client.patch(f"/api/v1/retailer/orders/{order_id}/status", json={"status": "completed"}, headers=ret_headers)
     assert res_bad.status_code == 400
     assert "Invalid order transition" in res_bad.json()["detail"]
+
+def test_checkout_revalidates_unavailable_listing_and_suspended_retailer(client):
+    # 1. Login as customer
+    login_res = client.post("/api/v1/auth/login", json={
+        "email": "customer@demo.com",
+        "password": "Customer@123456"
+    })
+    cust_headers = {"Authorization": f"Bearer {login_res.json()['access_token']}"}
+
+    # Clear cart
+    client.delete("/api/v1/cart", headers=cust_headers)
+
+    # Pick a product inventory from Retailer 1 (Madhapur)
+    cat_res = client.get("/api/v1/products?search=Kingfisher")
+    p_id = cat_res.json()["items"][0]["id"]
+    p_detail = client.get(f"/api/v1/products/{p_id}").json()
+    inv_obj = p_detail["inventories"][0]
+    inv_id = inv_obj["id"]
+    retailer_id = inv_obj["retailer_id"]
+
+    # Add to cart
+    add_res = client.post("/api/v1/cart/items", json={"inventory_id": inv_id, "quantity": 1}, headers=cust_headers)
+    assert add_res.status_code == 201
+
+    # Login as retailer to toggle listing availability
+    ret_login = client.post("/api/v1/auth/login", json={
+        "email": "retailer@madhapurwines.mock",
+        "password": "Retailer@123456"
+    })
+    ret_headers = {"Authorization": f"Bearer {ret_login.json()['access_token']}"}
+
+    # Deactivate inventory listing (is_available = False)
+    patch_inv = client.patch(f"/api/v1/retailer/inventory/{inv_id}", json={"is_available": False}, headers=ret_headers)
+    assert patch_inv.status_code == 200
+    assert patch_inv.json()["is_available"] is False
+
+    # Attempt simulated checkout -> MUST FAIL (400 Bad Request)
+    fail_checkout_1 = client.post("/api/v1/test-orders", json={"simulate_payment_success": True}, headers=cust_headers)
+    assert fail_checkout_1.status_code == 400
+    assert "unavailable" in fail_checkout_1.json()["detail"].lower()
+
+    # Restore listing availability
+    restore_inv = client.patch(f"/api/v1/retailer/inventory/{inv_id}", json={"is_available": True}, headers=ret_headers)
+    assert restore_inv.status_code == 200
+
+    # Admin suspends retailer
+    admin_login = client.post("/api/v1/auth/login", json={
+        "email": "admin@telanganaliquor.gov.mock",
+        "password": "Admin@123456"
+    })
+    admin_headers = {"Authorization": f"Bearer {admin_login.json()['access_token']}"}
+
+    suspend_res = client.patch(f"/api/v1/admin/retailers/{retailer_id}/review", json={
+        "status": "suspended",
+        "review_notes": "Temporary audit suspension"
+    }, headers=admin_headers)
+    assert suspend_res.status_code == 200
+    assert suspend_res.json()["status"] == "suspended"
+
+    # Attempt simulated checkout -> MUST FAIL because retailer is suspended (400 Bad Request)
+    fail_checkout_2 = client.post("/api/v1/test-orders", json={"simulate_payment_success": True}, headers=cust_headers)
+    assert fail_checkout_2.status_code == 400
+    assert "not approved" in fail_checkout_2.json()["detail"].lower()
+
+    # Re-approve retailer and restore inventory
+    approve_res = client.patch(f"/api/v1/admin/retailers/{retailer_id}/review", json={
+        "status": "approved",
+        "review_notes": "Restored after audit",
+        "verify_license": True
+    }, headers=admin_headers)
+    assert approve_res.status_code == 200
+
+    # Ensure inventory item is available
+    client.patch(f"/api/v1/retailer/inventory/{inv_id}", json={"is_available": True}, headers=ret_headers)
+
+    # Now checkout succeeds
+    success_checkout = client.post("/api/v1/test-orders", json={"simulate_payment_success": True}, headers=cust_headers)
+    assert success_checkout.status_code == 201
+    assert len(success_checkout.json()) >= 1

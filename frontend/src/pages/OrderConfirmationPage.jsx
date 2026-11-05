@@ -11,6 +11,39 @@ import {
 import { api } from '../services/api';
 import { useLanguage } from '../context/LanguageContext';
 
+const STATUS_THEMES = {
+  created: {
+    bg: 'bg-amber-100 dark:bg-amber-950/80',
+    text: 'text-amber-900 dark:text-amber-300',
+    border: 'border-amber-300 dark:border-amber-800'
+  },
+  confirmed: {
+    bg: 'bg-sky-100 dark:bg-sky-950/80',
+    text: 'text-sky-900 dark:text-sky-300',
+    border: 'border-sky-300 dark:border-sky-800'
+  },
+  preparing: {
+    bg: 'bg-indigo-100 dark:bg-indigo-950/80',
+    text: 'text-indigo-900 dark:text-indigo-300',
+    border: 'border-indigo-300 dark:border-indigo-800'
+  },
+  ready: {
+    bg: 'bg-purple-100 dark:bg-purple-950/80',
+    text: 'text-purple-900 dark:text-purple-300',
+    border: 'border-purple-300 dark:border-purple-800'
+  },
+  completed: {
+    bg: 'bg-emerald-100 dark:bg-emerald-950/80',
+    text: 'text-emerald-900 dark:text-emerald-300',
+    border: 'border-emerald-300 dark:border-emerald-800'
+  },
+  cancelled: {
+    bg: 'bg-rose-100 dark:bg-rose-950/80',
+    text: 'text-rose-900 dark:text-rose-300',
+    border: 'border-rose-300 dark:border-rose-800'
+  }
+};
+
 export default function OrderConfirmationPage() {
   const { id } = useParams();
   const location = useLocation();
@@ -73,6 +106,7 @@ export default function OrderConfirmationPage() {
   }
 
   const currentStepIndex = orderSteps.findIndex((s) => s.key === order.status);
+  const statusTheme = STATUS_THEMES[order.status] || STATUS_THEMES.created;
 
   return (
     <div className="max-w-4xl mx-auto px-3 sm:px-6 lg:px-8 py-6 sm:py-8 space-y-6">
@@ -131,10 +165,10 @@ export default function OrderConfirmationPage() {
           </div>
 
           <div className="text-left sm:text-right">
-            <span className="text-xs text-stone-400 block">
+            <span className="text-xs text-stone-400 dark:text-stone-400 block">
               {t('orderConfirmation.currentStatus', 'Current Order Status')}
             </span>
-            <span className="inline-block mt-0.5 px-3 py-1 rounded-full text-xs font-bold capitalize bg-amber-100 dark:bg-amber-950 text-amber-900 dark:text-amber-300 border border-amber-300 dark:border-amber-800">
+            <span className={`inline-block mt-0.5 px-3 py-1 rounded-full text-xs font-bold capitalize border ${statusTheme.bg} ${statusTheme.text} ${statusTheme.border}`}>
               {tstatus(order.status)}
             </span>
           </div>
@@ -150,15 +184,20 @@ export default function OrderConfirmationPage() {
             {orderSteps.map((step, idx) => {
               const isPastOrCurrent = currentStepIndex >= idx;
               const isCurrent = currentStepIndex === idx;
+              const isCompleted = order.status === 'completed';
 
               return (
                 <div
                   key={step.key}
                   className={`p-3 rounded-xl border text-xs text-center transition ${idx === 4 ? 'col-span-2 sm:col-span-1' : ''} ${
                     isCurrent
-                      ? 'bg-amber-600 text-white font-bold border-amber-600 shadow-md'
+                      ? isCompleted
+                        ? 'bg-emerald-600 text-white font-bold border-emerald-600 shadow-md'
+                        : 'bg-amber-600 text-white font-bold border-amber-600 shadow-md'
                       : isPastOrCurrent
-                      ? 'bg-amber-50 dark:bg-amber-950/40 text-amber-900 dark:text-amber-200 font-semibold border-amber-200 dark:border-amber-800'
+                      ? isCompleted
+                        ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-900 dark:text-emerald-200 font-semibold border-emerald-200 dark:border-emerald-800'
+                        : 'bg-amber-50 dark:bg-amber-950/40 text-amber-900 dark:text-amber-200 font-semibold border-amber-200 dark:border-amber-800'
                       : 'bg-stone-50 dark:bg-stone-950 text-stone-400 border-stone-200 dark:border-stone-800'
                   }`}
                 >
@@ -176,14 +215,14 @@ export default function OrderConfirmationPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="p-5 rounded-2xl bg-gradient-to-br from-amber-500/10 via-amber-500/5 to-transparent border border-amber-300 dark:border-amber-700/80 space-y-2">
             <span className="text-[10px] font-bold uppercase tracking-wider text-amber-800 dark:text-amber-400 block">
-              {language === 'te' ? 'కౌంటర్ పికప్ సెక్యూర్ కోడ్' : 'Secure Store Counter Pickup Code'}
+              {language === 'te' ? 'డెలివరీ & కౌంటర్ పికప్ సెక్యూర్ OTP' : 'Secure Delivery & Counter Pickup OTP'}
             </span>
             <div className="flex items-center gap-3">
               <div className="font-mono text-3xl sm:text-4xl font-black text-amber-900 dark:text-amber-200 tracking-widest bg-white dark:bg-stone-800 px-4 py-2 rounded-xl border border-amber-300 dark:border-amber-700 shadow-sm">
-                {String(Math.abs(order.order_number?.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0) || 4892) % 9000 + 1000)}
+                {order.delivery_otp || String(Math.abs(order.order_number?.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0) || 4892) % 9000 + 1000)}
               </div>
               <span className="text-[11px] text-stone-500 dark:text-stone-400">
-                {language === 'te' ? 'వైన్ షాప్ వద్ద ఆర్డర్ తీసుకునేటప్పుడు ఈ కోడ్ చూపించండి.' : 'Present this 4-digit code at the licensed counter during pickup.'}
+                {language === 'te' ? 'డెలివరీ పార్ట్నర్ వద్ద లేదా దుకాణం వద్ద ఆర్డర్ తీసుకునేటప్పుడు ఈ 4-అంకెల OTPని అందించండి.' : 'Share this 4-digit verification OTP with the delivery partner upon arrival or at the store counter.'}
               </span>
             </div>
           </div>

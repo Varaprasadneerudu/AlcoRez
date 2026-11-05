@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useMemo, useCallback } from 'react';
 
 // Product name mappings (English to Telugu)
 const PRODUCT_TRANSLATIONS = {
@@ -1023,7 +1023,7 @@ export function LanguageProvider({ children }) {
     return 'en';
   });
 
-  const setLanguage = (lang) => {
+  const setLanguage = useCallback((lang) => {
     if (lang === 'en' || lang === 'te') {
       setLanguageState(lang);
       try {
@@ -1033,14 +1033,14 @@ export function LanguageProvider({ children }) {
         console.warn('Could not save language preference:', e);
       }
     }
-  };
+  }, []);
 
-  const toggleLanguage = () => {
-    setLanguage(language === 'en' ? 'te' : 'en');
-  };
+  const toggleLanguage = useCallback(() => {
+    setLanguage((prev) => (prev === 'en' ? 'te' : 'en'));
+  }, [setLanguage]);
 
   // Helper for UI keys
-  const t = (key, fallback = '') => {
+  const t = useCallback((key, fallback = '') => {
     if (!key) return '';
     const keys = key.split('.');
     let result = translations[language];
@@ -1068,10 +1068,10 @@ export function LanguageProvider({ children }) {
       return fallbackResult;
     }
     return fallback || key;
-  };
+  }, [language]);
 
   // Helper: Product Name
-  const tp = (name) => {
+  const tp = useCallback((name) => {
     if (!name || language === 'en') return name;
     if (PRODUCT_TRANSLATIONS[name]) return PRODUCT_TRANSLATIONS[name];
     // Dynamic transliteration fallback for unknown products
@@ -1080,40 +1080,40 @@ export function LanguageProvider({ children }) {
       translated = translated.replace(new RegExp(`\\b${enWord}\\b`, 'gi'), teWord);
     }
     return translated;
-  };
+  }, [language]);
 
   // Helper: Brand Name
-  const tb = (brand) => {
+  const tb = useCallback((brand) => {
     if (!brand || language === 'en') return brand;
     return BRAND_TRANSLATIONS[brand] || brand;
-  };
+  }, [language]);
 
   // Helper: Category Name
-  const tc = (category) => {
+  const tc = useCallback((category) => {
     if (!category || language === 'en') return category;
     return CATEGORY_TRANSLATIONS[category] || category;
-  };
+  }, [language]);
 
   // Helper: Bottle Size
-  const ts = (size) => {
+  const ts = useCallback((size) => {
     if (!size || language === 'en') return size;
     return SIZE_TRANSLATIONS[size] || size;
-  };
+  }, [language]);
 
   // Helper: Retailer / Shop Name
-  const tr = (shop) => {
+  const tr = useCallback((shop) => {
     if (!shop || language === 'en') return shop;
     return RETAILER_TRANSLATIONS[shop] || shop;
-  };
+  }, [language]);
 
   // Helper: Country of Origin
-  const to = (country) => {
+  const to = useCallback((country) => {
     if (!country || language === 'en') return country;
     return COUNTRY_TRANSLATIONS[country] || country;
-  };
+  }, [language]);
 
   // Helper: Order Status Label
-  const tstatus = (status) => {
+  const tstatus = useCallback((status) => {
     if (!status) return '';
     const s = String(status).toLowerCase();
     if (language === 'te') {
@@ -1136,7 +1136,7 @@ export function LanguageProvider({ children }) {
       cancelled: 'Cancelled'
     };
     return STATUS_EN[s] || status;
-  };
+  }, [language]);
 
   useEffect(() => {
     try {
@@ -1147,7 +1147,7 @@ export function LanguageProvider({ children }) {
   }, [language]);
 
   return (
-    <LanguageContext.Provider value={{ language, setLanguage, toggleLanguage, t, tp, tb, tc, ts, tr, to, tstatus }}>
+    <LanguageContext.Provider value={useMemo(() => ({ language, setLanguage, toggleLanguage, t, tp, tb, tc, ts, tr, to, tstatus }), [language, setLanguage, toggleLanguage, t, tp, tb, tc, ts, tr, to, tstatus])}>
       {children}
     </LanguageContext.Provider>
   );

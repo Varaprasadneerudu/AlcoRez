@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import {
   Shield,
@@ -74,7 +74,7 @@ export default function AdminDashboard() {
   // Success action alert
   const [actionSuccess, setActionSuccess] = useState(null);
 
-  const loadStats = async () => {
+  const loadStats = useCallback(async () => {
     try {
       const [dashData, retailersData] = await Promise.all([
         api.getAdminDashboard(),
@@ -85,9 +85,9 @@ export default function AdminDashboard() {
     } catch (err) {
       console.error('Failed to load stats:', err);
     }
-  };
+  }, []);
 
-  const loadUsers = async () => {
+  const loadUsers = useCallback(async () => {
     try {
       setUsersLoading(true);
       const data = await api.getUsers();
@@ -97,7 +97,7 @@ export default function AdminDashboard() {
     } finally {
       setUsersLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     if (role === 'admin') {
@@ -106,7 +106,7 @@ export default function AdminDashboard() {
         .catch((err) => setError(err.message || 'Failed to load administrator dashboard'))
         .finally(() => setLoading(false));
     }
-  }, [role]);
+  }, [role, loadStats, loadUsers]);
 
   // If user is not admin
   if (role !== 'admin') {

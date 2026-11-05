@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
 import { api } from '../services/api';
 import { useAuth } from './AuthContext';
 
@@ -33,7 +33,7 @@ export function CartProvider({ children }) {
     fetchCart();
   }, [fetchCart]);
 
-  const addToCart = async (inventoryId, quantity = 1, metadata = {}) => {
+  const addToCart = useCallback(async (inventoryId, quantity = 1, metadata = {}) => {
     if (!isAuthenticated) {
       throw new Error('Please log in to add items to your cart.');
     }
@@ -110,9 +110,9 @@ export function CartProvider({ children }) {
       setError(err.message);
       throw err;
     }
-  };
+  }, [isAuthenticated, cart]);
 
-  const updateQuantity = async (itemId, quantity) => {
+  const updateQuantity = useCallback(async (itemId, quantity) => {
     const prevCart = cart;
     if (!prevCart) return;
 
@@ -161,9 +161,9 @@ export function CartProvider({ children }) {
       setError(err.message);
       throw err;
     }
-  };
+  }, [cart]);
 
-  const removeItem = async (itemId) => {
+  const removeItem = useCallback(async (itemId) => {
     const prevCart = cart;
     if (!prevCart) return;
 
@@ -196,9 +196,9 @@ export function CartProvider({ children }) {
       setError(err.message);
       throw err;
     }
-  };
+  }, [cart]);
 
-  const clearCart = async () => {
+  const clearCart = useCallback(async () => {
     setLoading(true);
     try {
       await api.clearCart();
@@ -206,39 +206,46 @@ export function CartProvider({ children }) {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
 
-  const openDrawer = () => {
+  const openDrawer = useCallback(() => {
     if (role === 'admin' || role === 'retailer') return;
     setIsDrawerOpen(true);
-  };
-  const closeDrawer = () => setIsDrawerOpen(false);
-  const toggleDrawer = () => {
+  }, [role]);
+
+  const closeDrawer = useCallback(() => {
+    setIsDrawerOpen(false);
+  }, []);
+
+  const toggleDrawer = useCallback(() => {
     if (role === 'admin' || role === 'retailer') return;
     setIsDrawerOpen(prev => !prev);
-  };
+  }, [role]);
+
+  const value = useMemo(
+    () => ({
+      cart,
+      itemCount: cart?.item_count || 0,
+      subtotal: cart?.subtotal || '0.00',
+      loading,
+      error,
+      isDrawerOpen,
+      openDrawer,
+      closeDrawer,
+      toggleDrawer,
+      fetchCart,
+      addToCart,
+      updateQuantity,
+      removeItem,
+      clearCart,
+    }),
+    [cart, loading, error, isDrawerOpen, openDrawer, closeDrawer, toggleDrawer, fetchCart, addToCart, updateQuantity, removeItem, clearCart]
+  );
 
   return (
-    <CartContext.Provider
-      value={{
-        cart,
-        itemCount: cart?.item_count || 0,
-        subtotal: cart?.subtotal || '0.00',
-        loading,
-        error,
-        isDrawerOpen,
-        openDrawer,
-        closeDrawer,
-        toggleDrawer,
-        fetchCart,
-        addToCart,
-        updateQuantity,
-        removeItem,
-        clearCart,
-      }}
-    >
+    <CartContext.Provider value={value}>
       {children}
     </CartContext.Provider>
   );
