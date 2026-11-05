@@ -869,7 +869,7 @@ class RetailerService:
         import csv
         import io
         import re
-        from decimal import Decimal, InvalidOperation
+        from decimal import InvalidOperation
 
         from app.schemas.catalog import (
             InventoryCsvRowPreview,
@@ -980,10 +980,7 @@ class RetailerService:
                 raw_size = f"{raw_size}ml"
             elif not raw_size and raw_pname:
                 match = re.search(r'(\d+)\s*(ml|l)\b', raw_pname, re.IGNORECASE)
-                if match:
-                    raw_size = f"{match.group(1)}{match.group(2).lower()}"
-                else:
-                    raw_size = "750ml"
+                raw_size = f"{match.group(1)}{match.group(2).lower()}" if match else "750ml"
             elif not raw_size:
                 raw_size = "750ml"
 
@@ -991,6 +988,8 @@ class RetailerService:
             matched_product = None
             if raw_pid and raw_pid in products_by_id:
                 matched_product = products_by_id[raw_pid]
+            elif raw_pid:
+                row_errors.append(f"Product with ID '{raw_pid}' not found in catalogue")
             elif raw_pname and raw_pname.lower() in products_by_name:
                 matched_product = products_by_name[raw_pname.lower()]
             elif raw_pname:
@@ -1102,6 +1101,7 @@ class RetailerService:
         and provisions retailer inventory SKUs, concurrency versioning, and audit logs.
         """
         import re
+
         from sqlalchemy import func
 
         all_categories = db.query(Category).all()

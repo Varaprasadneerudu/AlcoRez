@@ -13,7 +13,7 @@ from app.models.order import (
 )
 from app.models.product import Inventory, InventoryMovement, Product
 from app.models.retailer import Retailer, RetailerMembership
-from app.models.user import Address, User
+from app.models.user import Address, User, UserRole
 from app.schemas.order import (
     OrderItemOut,
     OrderOut,
@@ -190,6 +190,11 @@ class OrderService:
                     retailer = db.query(Retailer).filter(Retailer.id == membership.retailer_id).first()
             if not retailer or order.retailer_id != retailer.id:
                 raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access to other retailers' orders is forbidden")
+
+        # Delivery partner can only view orders assigned to them or unassigned
+        if requesting_user.role == UserRole.DELIVERY_PARTNER:
+            if order.delivery_partner_id and order.delivery_partner_id != requesting_user.id:
+                raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access to other delivery partners' orders is forbidden")
 
         return OrderService.to_order_out(db, order)
 

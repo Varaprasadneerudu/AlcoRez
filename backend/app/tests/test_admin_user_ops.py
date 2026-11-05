@@ -65,3 +65,37 @@ def test_admin_user_operations(client):
     # Verify user is gone
     users_after = client.get("/api/v1/admin/users", headers=admin_headers).json()
     assert not any(u["id"] == target_id for u in users_after)
+
+def test_admin_provision_delivery_partner(client):
+    admin_login = client.post("/api/v1/auth/login", json={
+        "email": "admin@telanganaliquor.gov.mock",
+        "password": "Admin@123456"
+    })
+    admin_headers = {"Authorization": f"Bearer {admin_login.json()['access_token']}"}
+
+    partner_email = f"rider_{uuid.uuid4().hex[:6]}@demo.com"
+    res = client.post("/api/v1/admin/users", json={
+        "email": partner_email,
+        "password": "Password@123",
+        "full_name": "Rider Mahesh",
+        "phone": "+91-9876543210",
+        "role": "delivery_partner",
+        "is_verified": True
+    }, headers=admin_headers)
+    assert res.status_code == 201
+    partner_id = res.json()["id"]
+
+    # Delivery partner can log in and view profile
+    dp_login = client.post("/api/v1/auth/login", json={
+        "email": partner_email,
+        "password": "Password@123"
+    })
+    assert dp_login.status_code == 200
+    dp_token = dp_login.json()["access_token"]
+    dp_prof = client.get("/api/v1/delivery/profile", headers={"Authorization": f"Bearer {dp_token}"})
+    assert dp_prof.status_code == 200
+    assert dp_prof.json()["email"] == partner_email
+
+    # Admin deletes this test delivery partner
+    del_res = client.delete(f"/api/v1/admin/users/{partner_id}", headers=admin_headers)
+    assert del_res.status_code == 200

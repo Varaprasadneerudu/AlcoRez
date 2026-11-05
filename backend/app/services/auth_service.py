@@ -8,7 +8,6 @@ from app.core.security import (
     hash_password,
     verify_password,
 )
-from app.models.retailer import Retailer, RetailerMembership
 from app.models.user import CustomerProfile, User, UserRole
 from app.schemas.auth import Token, UserLogin, UserRegister
 from app.services.audit_service import AuditService

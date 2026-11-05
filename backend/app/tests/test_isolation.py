@@ -77,3 +77,38 @@ def test_customer_cannot_access_other_customer_cart_or_address(client):
     c2_cart = client.get("/api/v1/cart", headers=headers_c2).json()
     assert len(c2_cart["items"]) == 0
     assert float(c2_cart["subtotal"]) == 0.0
+
+def test_customer_cannot_view_other_customer_order(client):
+    # Customer 1 login & checkout an order
+    login_c1 = client.post("/api/v1/auth/login", json={
+        "email": "customer@demo.com",
+        "password": "Customer@123456"
+    })
+    headers_c1 = {"Authorization": f"Bearer {login_c1.json()['access_token']}"}
+
+    cat_res = client.get("/api/v1/products")
+    p_id = cat_res.json()["items"][0]["id"]
+    p_detail = client.get(f"/api/v1/products/{p_id}").json()
+    inv_id = p_detail["inventories"][0]["id"]
+
+    client.post("/api/v1/cart/items", json={"inventory_id": inv_id, "quantity": 1}, headers=headers_c1)
+    checkout_res = client.post("/api/v1/test-orders", json={"simulate_payment_success": True}, headers=headers_c1)
+    order_id = checkout_res.json()[0]["id"]
+
+    # Customer 2 registers and attempts to access Customer 1's order
+    c2_email = f"snoop_{uuid.uuid4().hex[:6]}@demo.com"
+    client.post("/api/v1/auth/register", json={
+        "email": c2_email,
+        "password": "Password@123",
+        "full_name": "Snoop Customer",
+        "date_of_birth": "1992-02-02"
+    })
+    login_c2 = client.post("/api/v1/auth/login", json={
+        "email": c2_email,
+        "password": "Password@123"
+    })
+    headers_c2 = {"Authorization": f"Bearer {login_c2.json()['access_token']}"}
+
+    forbidden_order = client.get(f"/api/v1/orders/{order_id}", headers=headers_c2)
+    assert forbidden_order.status_code == 403
+    assert "forbidden" in forbidden_order.json()["detail"].lower()

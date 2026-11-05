@@ -59,3 +59,24 @@ def test_token_refresh(client):
     })
     assert refresh_res.status_code == 200
     assert "access_token" in refresh_res.json()
+
+def test_public_registration_of_non_customer_roles_forbidden(client):
+    # Attempting to register as retailer publicly must be rejected
+    res_retailer = client.post("/api/v1/auth/register", json={
+        "email": f"malicious_retailer_{uuid.uuid4().hex[:6]}@demo.com",
+        "password": "Password@123",
+        "full_name": "Retailer Infiltrator",
+        "role": "retailer"
+    })
+    assert res_retailer.status_code == 403
+    assert "prohibited" in res_retailer.json()["detail"].lower()
+
+    # Attempting to register as admin publicly must be rejected
+    res_admin = client.post("/api/v1/auth/register", json={
+        "email": f"malicious_admin_{uuid.uuid4().hex[:6]}@demo.com",
+        "password": "Password@123",
+        "full_name": "Admin Infiltrator",
+        "role": "admin"
+    })
+    assert res_admin.status_code == 403
+    assert "prohibited" in res_admin.json()["detail"].lower()

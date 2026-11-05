@@ -7,14 +7,23 @@ from app.models.user import User, UserRole
 
 
 def get_auth_retailer(client, email_prefix="adv_retailer"):
+    # Super Admin provisions retailer user
+    admin_login = client.post("/api/v1/auth/login", json={
+        "email": "admin@telanganaliquor.gov.mock",
+        "password": "Admin@123456"
+    })
+    admin_headers = {"Authorization": f"Bearer {admin_login.json()['access_token']}"}
+
     email = f"{email_prefix}_{uuid.uuid4().hex[:6]}@telanganamock.gov"
     pwd = "TestPassword@123"
-    client.post("/api/v1/auth/register", json={
+    client.post("/api/v1/admin/users", json={
         "email": email,
         "password": pwd,
         "full_name": "Advanced Retailer Owner",
-        "role": "retailer"
-    })
+        "role": "retailer",
+        "is_verified": True
+    }, headers=admin_headers)
+
     login_res = client.post("/api/v1/auth/login", json={"email": email, "password": pwd})
     token = login_res.json()["access_token"]
     headers = {"Authorization": f"Bearer {token}"}

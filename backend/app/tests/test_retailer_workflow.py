@@ -2,14 +2,21 @@ import uuid
 
 
 def test_retailer_onboarding_and_admin_approval_workflow(client):
-    # 1. Register a new user with retailer role
+    # 1. Admin provisions a new retailer applicant user
+    admin_login = client.post("/api/v1/auth/login", json={
+        "email": "admin@telanganaliquor.gov.mock",
+        "password": "Admin@123456"
+    })
+    admin_headers = {"Authorization": f"Bearer {admin_login.json()['access_token']}"}
+
     r_email = f"retailer_applicant_{uuid.uuid4().hex[:6]}@demo.mock"
-    reg_res = client.post("/api/v1/auth/register", json={
+    reg_res = client.post("/api/v1/admin/users", json={
         "email": r_email,
         "password": "Retailer@123456",
         "full_name": "Applicant Shop Owner",
-        "role": "retailer"
-    })
+        "role": "retailer",
+        "is_verified": True
+    }, headers=admin_headers)
     assert reg_res.status_code == 201
 
     login_res = client.post("/api/v1/auth/login", json={
@@ -99,16 +106,23 @@ def test_create_retailer_linked_to_existing_store(client):
     assert len(existing_stores) > 0
     target_store = existing_stores[0]
 
-    # 2. Register a new retailer with retailer_id specified
+    # 2. Admin provisions a new retailer user linked to target_store
+    admin_login = client.post("/api/v1/auth/login", json={
+        "email": "admin@telanganaliquor.gov.mock",
+        "password": "Admin@123456"
+    })
+    admin_headers = {"Authorization": f"Bearer {admin_login.json()['access_token']}"}
+
     new_email = f"staff_{uuid.uuid4().hex[:6]}@store.com"
-    reg_res = client.post("/api/v1/auth/register", json={
+    reg_res = client.post("/api/v1/admin/users", json={
         "email": new_email,
         "password": "Password@123",
         "full_name": "Store Associate",
         "phone": "+91-9876543211",
         "role": "retailer",
-        "retailer_id": target_store["id"]
-    })
+        "retailer_id": target_store["id"],
+        "is_verified": True
+    }, headers=admin_headers)
     assert reg_res.status_code == 201
 
     # 3. Log in as this new retailer
@@ -128,13 +142,20 @@ def test_create_retailer_linked_to_existing_store(client):
 
 def test_duplicate_retailer_application_rejected(client):
     # Register user
+    admin_login = client.post("/api/v1/auth/login", json={
+        "email": "admin@telanganaliquor.gov.mock",
+        "password": "Admin@123456"
+    })
+    admin_headers = {"Authorization": f"Bearer {admin_login.json()['access_token']}"}
+
     email = f"dup_applicant_{uuid.uuid4().hex[:6]}@demo.mock"
-    client.post("/api/v1/auth/register", json={
+    client.post("/api/v1/admin/users", json={
         "email": email,
         "password": "Password@123",
         "full_name": "Duplicate Tester",
-        "role": "retailer"
-    })
+        "role": "retailer",
+        "is_verified": True
+    }, headers=admin_headers)
     login_res = client.post("/api/v1/auth/login", json={"email": email, "password": "Password@123"})
     token = login_res.json()["access_token"]
     headers = {"Authorization": f"Bearer {token}"}
@@ -164,13 +185,20 @@ def test_duplicate_retailer_application_rejected(client):
 
 def test_suspended_store_hidden_from_customer(client):
     # 1. Register retailer
+    admin_login = client.post("/api/v1/auth/login", json={
+        "email": "admin@telanganaliquor.gov.mock",
+        "password": "Admin@123456"
+    })
+    admin_headers = {"Authorization": f"Bearer {admin_login.json()['access_token']}"}
+
     email = f"suspend_owner_{uuid.uuid4().hex[:6]}@demo.mock"
-    client.post("/api/v1/auth/register", json={
+    client.post("/api/v1/admin/users", json={
         "email": email,
         "password": "Password@123",
         "full_name": "Suspendable Owner",
-        "role": "retailer"
-    })
+        "role": "retailer",
+        "is_verified": True
+    }, headers=admin_headers)
     login_res = client.post("/api/v1/auth/login", json={"email": email, "password": "Password@123"})
     token = login_res.json()["access_token"]
     r_headers = {"Authorization": f"Bearer {token}"}
