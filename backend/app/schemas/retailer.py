@@ -23,6 +23,7 @@ class RetailerApplicationCreate(BaseModel):
     expiry_date: date
     document_url: str | None = "https://mock-storage.telangana.gov/licenses/sample-a4-license.pdf"
     existing_retailer_id: str | None = None # Optional ID of existing store to associate with
+    invitation_code: str | None = None # Required when existing_retailer_id is specified
 
 class RetailerLicenseOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
@@ -63,7 +64,6 @@ class RetailerReviewRequest(BaseModel):
     review_notes: str | None = None
     verify_license: bool = True
 
-
 class RetailerDashboardOut(BaseModel):
     retailer: RetailerOut
     total_listings: int
@@ -77,3 +77,20 @@ class RetailerDashboardOut(BaseModel):
     is_license_expired: bool = False
     is_license_expiring_soon: bool = False
     recent_movements: list[InventoryMovementOut] = []
+
+class RetailerInvitationCreate(BaseModel):
+    invited_email: EmailStr | None = None
+    role_in_retailer: str = Field(default="STAFF", description="STAFF or MANAGER")
+    expires_in_days: int = Field(default=7, ge=1, le=30)
+
+class RetailerInvitationOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: str
+    retailer_id: str
+    code: str
+    invited_email: str | None = None
+    role_in_retailer: str
+    is_used: bool
+    expires_at: datetime | None = None
+    created_at: datetime

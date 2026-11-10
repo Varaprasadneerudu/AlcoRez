@@ -14,7 +14,7 @@ from app.models.order import (
 )
 from app.models.product import Inventory, InventoryMovement, Product
 from app.models.retailer import Retailer, RetailerMembership, RetailerStatus
-from app.models.user import Address, User, UserRole
+from app.models.user import Address, CustomerProfile, User, UserRole
 from app.schemas.order import (
     OrderItemOut,
     OrderOut,
@@ -51,6 +51,21 @@ class OrderService:
         Partitions cart items by retailer, snapshots item details, decrements mock stock,
         and records a simulated payment attempt.
         """
+        # Statutory 21+ verification enforcement for simulated orders
+        if not user.is_verified:
+            profile = db.query(CustomerProfile).filter(CustomerProfile.user_id == user.id).first()
+            if not profile or not profile.age_verified:
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="Under the Telangana Excise Act, 1968, verified 21+ legal age status is strictly required to execute simulated liquor checkout reservations."
+                )
+
+        if not checkout_in.simulate_payment_success:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Simulated payment authorization failed. No order was created and cart contents have been preserved."
+            )
+
         cart = db.query(Cart).filter(Cart.user_id == user.id).first()
         if not cart:
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="No active cart found")
@@ -72,13 +87,13 @@ class OrderService:
             inv = db.query(Inventory).filter(Inventory.id == c_item.inventory_id).with_for_update().first()
             if not inv:
                 raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Inventory listing is no longer available")
-            # Revalidate retailer approval status first
-            retailer = db.query(Retailer).filter(Retailer.id == inv.retailer_id).first()
-            if not retailer or retailer.status != RetailerStatus.APPROVED:
+            # Revalidate retailer approval status and license validity
+            retailer = db.query(Retailer).options(joinedload(Retailer.licenses)).filter(Retailer.id == inv.retailer_id).first()
+            if not retailer or retailer.status != RetailerStatus.APPROVED or not retailer.has_valid_license():
                 shop_name = retailer.shop_name if retailer else "Unknown Shop"
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
-                    detail=f"Retailer '{shop_name}' is not approved to fulfill orders."
+                    detail=f"Retailer '{shop_name}' is not approved or has an invalid/expired license to fulfill orders."
                 )
 
             # Revalidate listing availability
@@ -266,6 +281,22 @@ class OrderService:
 
         # Validate status state machine
         current_status: OrderStatus = OrderStatus(order.status)
+
+        # Disallow redundant / duplicate status transitions
+        if status_in.status == current_status:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Order is already in '{current_status.value}' state."
+            )
+
+        # Terminal orders cannot be transitioned back to active state by anyone (including admins)
+        terminal_states = [OrderStatus.COMPLETED, OrderStatus.CANCELLED, OrderStatus.REJECTED, OrderStatus.FAILED]
+        if current_status in terminal_states:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Cannot alter order in terminal state '{current_status.value}'."
+            )
+
         allowed_transitions = VALID_ORDER_TRANSITIONS.get(current_status, [])
         if status_in.status not in allowed_transitions and actor_user.role.value != "admin":
             raise HTTPException(
@@ -307,9 +338,9 @@ class OrderService:
                         )
                         db.add(movement)
 
-        # Automatic Inventory Stock Restoration if an accepted order is cancelled or rejected
+        # Automatic Inventory Stock Restoration if an accepted order is cancelled or rejected (including after pickup)
         elif status_in.status in [OrderStatus.CANCELLED, OrderStatus.REJECTED] and current_status in [
-            OrderStatus.CONFIRMED, OrderStatus.PREPARING, OrderStatus.READY
+            OrderStatus.CONFIRMED, OrderStatus.PREPARING, OrderStatus.READY, OrderStatus.OUT_FOR_DELIVERY
         ]:
             for item in order.items:
                 if item.inventory_id:

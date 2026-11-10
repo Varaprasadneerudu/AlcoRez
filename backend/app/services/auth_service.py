@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 
 from app.core.compliance import ComplianceEngine
 from app.core.security import (
@@ -8,7 +8,7 @@ from app.core.security import (
     hash_password,
     verify_password,
 )
-from app.models.user import CustomerProfile, User, UserRole
+from app.models.user import CustomerProfile, RefreshToken, User, UserRole
 from app.schemas.auth import Token, UserLogin, UserRegister
 from app.services.audit_service import AuditService
 from fastapi import HTTPException, status
@@ -96,7 +96,17 @@ class AuthService:
             )
 
         access_token = create_access_token(subject=user.id, role=user.role.value)
-        refresh_token = create_refresh_token(subject=user.id, role=user.role.value)
+        refresh_token, jti, expire = create_refresh_token(subject=user.id, role=user.role.value)
+
+        # Persist refresh token in database for rotation/revocation tracking
+        stored_token = RefreshToken(
+            token_id=jti,
+            user_id=user.id,
+            expires_at=expire,
+            is_revoked=False
+        )
+        db.add(stored_token)
+        db.commit()
 
         # Transparently upgrade legacy high-cost hashes to rounds=10 for faster mobile logins
         if user.hashed_password.startswith(("$2b$12$", "$2a$12$")):
@@ -134,14 +144,69 @@ class AuthService:
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Invalid or expired refresh token"
             )
+
+        token_id = payload.get("jti")
         user_id = payload.get("sub")
+        if not token_id or not user_id:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Malformed refresh token claims"
+            )
+
+        # Check server-side token status
+        stored_token = db.query(RefreshToken).filter(RefreshToken.token_id == token_id).first()
+        if not stored_token or stored_token.is_revoked:
+            # Token reuse/replay detected! Revoke all tokens for this user for security
+            db.query(RefreshToken).filter(RefreshToken.user_id == user_id).update({
+                "is_revoked": True,
+                "revoked_at": datetime.now(timezone.utc)
+            })
+            db.commit()
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Refresh token has been revoked or already used"
+            )
+
+        # Check token expiration
+        now = datetime.now(timezone.utc)
+        token_expires = stored_token.expires_at
+        if token_expires.tzinfo is None:
+            token_expires = token_expires.replace(tzinfo=timezone.utc)
+        if token_expires < now:
+            stored_token.is_revoked = True
+            stored_token.revoked_at = now
+            db.commit()
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Refresh token has expired"
+            )
+
+        # Check user active status
         user = db.query(User).filter(User.id == user_id, User.is_active == True).first()
         if not user:
+            stored_token.is_revoked = True
+            stored_token.revoked_at = now
+            db.commit()
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="User account not found or inactive")
 
-        # Rotate tokens
+        # Invalidate the submitted refresh token (rotation)
+        stored_token.is_revoked = True
+        stored_token.revoked_at = now
+
+        # Issue new pair
         new_access_token = create_access_token(subject=user.id, role=user.role.value)
-        new_refresh_token = create_refresh_token(subject=user.id, role=user.role.value)
+        new_refresh_token, new_jti, new_expire = create_refresh_token(subject=user.id, role=user.role.value)
+
+        stored_token.replaced_by = new_jti
+
+        new_stored_token = RefreshToken(
+            token_id=new_jti,
+            user_id=user.id,
+            expires_at=new_expire,
+            is_revoked=False
+        )
+        db.add(new_stored_token)
+        db.commit()
 
         return Token(
             access_token=new_access_token,
@@ -151,3 +216,24 @@ class AuthService:
             full_name=user.full_name,
             email=user.email
         )
+
+    @staticmethod
+    def revoke_tokens(db: Session, user_id: str, refresh_token: str | None = None) -> None:
+        now = datetime.now(timezone.utc)
+        if refresh_token:
+            payload = decode_token(refresh_token)
+            if payload and payload.get("jti"):
+                token_rec = db.query(RefreshToken).filter(RefreshToken.token_id == payload.get("jti")).first()
+                if token_rec:
+                    token_rec.is_revoked = True
+                    token_rec.revoked_at = now
+
+        # Revoke all active refresh tokens for the user upon logout
+        db.query(RefreshToken).filter(
+            RefreshToken.user_id == user_id,
+            RefreshToken.is_revoked == False
+        ).update({
+            "is_revoked": True,
+            "revoked_at": now
+        })
+        db.commit()

@@ -1,5 +1,8 @@
 
+from datetime import datetime
+
 from app.api.deps import get_current_customer
+from app.core.compliance import ComplianceEngine
 from app.core.database import get_db
 from app.models.favorite import FavoriteProduct, FavoriteRetailer
 from app.models.product import Product
@@ -8,6 +11,7 @@ from app.models.user import Address, CustomerProfile, User
 from app.schemas.customer import (
     AddressCreate,
     AddressOut,
+    AgeVerificationRequest,
     CustomerFavoritesOut,
     CustomerProfileOut,
     FavoriteIdsOut,
@@ -63,6 +67,41 @@ def get_customer_profile(current_user: User = Depends(get_current_customer), db:
         db.add(profile)
         db.commit()
         db.refresh(profile)
+    return profile
+
+@router.post("/verify-age", response_model=CustomerProfileOut)
+def verify_customer_age(
+    age_in: AgeVerificationRequest,
+    current_user: User = Depends(get_current_customer),
+    db: Session = Depends(get_db)
+):
+    if not ComplianceEngine.validate_customer_age(age_in.date_of_birth):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Under the Telangana Excise Act, 1968, customers must be at least 21 years of age."
+        )
+    dob = datetime.strptime(age_in.date_of_birth, "%Y-%m-%d").date()
+    profile = db.query(CustomerProfile).filter(CustomerProfile.user_id == current_user.id).first()
+    if not profile:
+        profile = CustomerProfile(
+            user_id=current_user.id,
+            date_of_birth=dob,
+            age_verified=True,
+            id_proof_type=age_in.id_proof_type,
+            id_proof_number=age_in.id_proof_number
+        )
+        db.add(profile)
+    else:
+        profile.date_of_birth = dob
+        profile.age_verified = True
+        if age_in.id_proof_type:
+            profile.id_proof_type = age_in.id_proof_type
+        if age_in.id_proof_number:
+            profile.id_proof_number = age_in.id_proof_number
+
+    current_user.is_verified = True
+    db.commit()
+    db.refresh(profile)
     return profile
 
 # --- Customer Favorites Endpoints ---

@@ -1,15 +1,17 @@
-from datetime import date
+import secrets
+from datetime import date, datetime, timedelta, timezone
 from decimal import Decimal
 
 from app.models.order import Order, OrderItem
 from app.models.product import Category, Inventory, InventoryMovement, Product, ProductImage
 from app.models.retailer import (
     Retailer,
+    RetailerInvitation,
     RetailerLicense,
     RetailerMembership,
     RetailerStatus,
 )
-from app.models.user import User
+from app.models.user import User, UserRole
 from app.schemas.catalog import (
     CategoryOut,
     InventoryCreate,
@@ -23,6 +25,7 @@ from app.schemas.catalog import (
 from app.schemas.retailer import (
     RetailerApplicationCreate,
     RetailerDashboardOut,
+    RetailerInvitationCreate,
     RetailerLicenseOut,
     RetailerOut,
 )
@@ -50,6 +53,44 @@ class RetailerService:
             store = db.query(Retailer).filter(Retailer.id == app_in.existing_retailer_id).first()
             if not store:
                 raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Selected store not found")
+
+            # Admin users can link directly without invitation
+            assigned_role = "STAFF"
+            if user.role != UserRole.ADMIN:
+                inv_code = getattr(app_in, 'invitation_code', None)
+                if not inv_code or not inv_code.strip():
+                    raise HTTPException(
+                        status_code=status.HTTP_403_FORBIDDEN,
+                        detail="An authorized invitation code is required to join an existing licensed retailer store."
+                    )
+                invitation = db.query(RetailerInvitation).filter(
+                    RetailerInvitation.code == inv_code.strip(),
+                    RetailerInvitation.retailer_id == store.id,
+                    RetailerInvitation.is_used == False
+                ).first()
+                if not invitation:
+                    raise HTTPException(
+                        status_code=status.HTTP_403_FORBIDDEN,
+                        detail="Invalid, expired, or already used retailer invitation code."
+                    )
+                now = datetime.now(timezone.utc)
+                exp = invitation.expires_at
+                if exp.tzinfo is None:
+                    exp = exp.replace(tzinfo=timezone.utc)
+                if exp < now:
+                    raise HTTPException(
+                        status_code=status.HTTP_403_FORBIDDEN,
+                        detail="Retailer invitation code has expired."
+                    )
+                if invitation.invited_email and invitation.invited_email.lower().strip() != user.email.lower().strip():
+                    raise HTTPException(
+                        status_code=status.HTTP_403_FORBIDDEN,
+                        detail="Invitation code was issued to a different email address."
+                    )
+                invitation.is_used = True
+                invitation.used_by_user_id = user.id
+                assigned_role = invitation.role_in_retailer or "STAFF"
+
             existing_mem = db.query(RetailerMembership).filter(
                 RetailerMembership.retailer_id == store.id,
                 RetailerMembership.user_id == user.id
@@ -58,10 +99,13 @@ class RetailerService:
                 membership = RetailerMembership(
                     retailer_id=store.id,
                     user_id=user.id,
-                    role_in_retailer="STAFF"
+                    role_in_retailer=assigned_role
                 )
                 db.add(membership)
-                db.commit()
+            if user.role != UserRole.ADMIN:
+                user.role = UserRole.RETAILER
+            db.commit()
+
             AuditService.log_event(
                 db=db,
                 action="RETAILER_STORE_LINKED",
@@ -70,7 +114,7 @@ class RetailerService:
                 actor_role=user.role.value,
                 entity_id=store.id,
                 ip_address=ip_address,
-                details={"shop_name": store.shop_name, "joined_existing": True}
+                details={"shop_name": store.shop_name, "joined_existing": True, "role_assigned": assigned_role}
             )
             return RetailerService.to_retailer_out(db, store)
 
@@ -156,6 +200,44 @@ class RetailerService:
         )
 
         return RetailerService.to_retailer_out(db, retailer)
+
+    @staticmethod
+    def create_invitation(
+        db: Session,
+        retailer_id: str,
+        inv_in: RetailerInvitationCreate,
+        current_user: User
+    ) -> RetailerInvitation:
+        store = db.query(Retailer).filter(Retailer.id == retailer_id).first()
+        if not store:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Retailer not found")
+
+        if current_user.role != UserRole.ADMIN:
+            mem = db.query(RetailerMembership).filter(
+                RetailerMembership.retailer_id == store.id,
+                RetailerMembership.user_id == current_user.id
+            ).first()
+            if not mem or mem.role_in_retailer not in ("OWNER", "MANAGER"):
+                if store.user_id != current_user.id:
+                    raise HTTPException(
+                        status_code=status.HTTP_403_FORBIDDEN,
+                        detail="Only the retailer owner or managers can invite new staff members."
+                    )
+
+        code = f"INV-{secrets.token_hex(6).upper()}"
+        expires_at = datetime.now(timezone.utc) + timedelta(days=inv_in.expires_in_days or 7)
+        invitation = RetailerInvitation(
+            retailer_id=store.id,
+            created_by_user_id=current_user.id,
+            code=code,
+            invited_email=inv_in.invited_email.lower().strip() if inv_in.invited_email else None,
+            role_in_retailer=inv_in.role_in_retailer or "STAFF",
+            expires_at=expires_at
+        )
+        db.add(invitation)
+        db.commit()
+        db.refresh(invitation)
+        return invitation
 
     @staticmethod
     def get_retailer_by_user(db: Session, user_id: str) -> Retailer | None:
@@ -325,11 +407,16 @@ class RetailerService:
         actor_user: User,
         ip_address: str | None = None
     ) -> InventoryOut:
-        # Check retailer status
+        # Check retailer status and license validity
         if retailer.status != RetailerStatus.APPROVED and actor_user.role.value != "admin":
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Only approved licensed retailers can publish products to the catalogue."
+            )
+        if not retailer.has_valid_license() and actor_user.role.value != "admin":
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Retailer license is unverified, expired, or invalid. Cannot publish products to the catalogue."
             )
 
         product = db.query(Product).filter(Product.id == inv_in.product_id).first()
@@ -876,6 +963,17 @@ class RetailerService:
             InventoryImportPreviewResponse,
         )
 
+        if retailer.status != RetailerStatus.APPROVED:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Only approved licensed retailers can preview or import inventory."
+            )
+        if not retailer.has_valid_license():
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Retailer license is unverified, expired, or invalid. Cannot import inventory."
+            )
+
         csv_text = csv_text.removeprefix("\ufeff")
 
         reader = csv.reader(io.StringIO(csv_text))
@@ -932,10 +1030,10 @@ class RetailerService:
                 break
 
         if header_idx == -1:
-            header_idx = 0
             col_map = {
                 "product_name": 0,
                 "brand": 1,
+                "category": 2,
                 "bottle_size": 3,
                 "price": 4,
                 "stock_quantity": 5,
@@ -943,6 +1041,11 @@ class RetailerService:
                 "low_stock_threshold": 7,
                 "product_id": 8
             }
+            data_rows = rows_list
+            start_row_num = 1
+        else:
+            data_rows = rows_list[header_idx + 1:]
+            start_row_num = header_idx + 2
 
         all_products = db.query(Product).filter(Product.is_active == True).all()
         products_by_id = {str(p.id): p for p in all_products}
@@ -956,8 +1059,7 @@ class RetailerService:
         valid_count = 0
         error_count = 0
 
-        data_rows = rows_list[header_idx + 1:]
-        for idx, r in enumerate(data_rows, start=header_idx + 2):
+        for idx, r in enumerate(data_rows, start=start_row_num):
             if not r or all(c.strip() == "" for c in r):
                 continue
 
@@ -1096,13 +1198,24 @@ class RetailerService:
         ip_address: str | None = None
     ) -> dict:
         """
-        Applies validated bulk CSV items within a transaction.
+        Applies validated bulk CSV items within an atomic transaction.
         Automatically creates missing products in master catalog with primary imagery,
         and provisions retailer inventory SKUs, concurrency versioning, and audit logs.
         """
         import re
 
         from sqlalchemy import func
+
+        if retailer.status != RetailerStatus.APPROVED and actor_user.role.value != "admin":
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Only approved licensed retailers can import inventory."
+            )
+        if not retailer.has_valid_license() and actor_user.role.value != "admin":
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Retailer license is unverified, expired, or invalid. Cannot import inventory."
+            )
 
         all_categories = db.query(Category).all()
         cat_by_slug = {c.slug.lower(): c for c in all_categories}
@@ -1111,139 +1224,143 @@ class RetailerService:
         imported_count = 0
         updated_count = 0
 
-        for item in items:
-            product = None
-            if item.product_id:
-                product = db.query(Product).filter(Product.id == item.product_id).first()
+        try:
+            for item in items:
+                product = None
+                if item.product_id:
+                    product = db.query(Product).filter(Product.id == item.product_id).first()
 
-            if not product and item.product_name:
-                clean_name = re.sub(r'\s*-\s*\d+\s*(ml|l)\b', '', item.product_name, flags=re.IGNORECASE).strip()
-                product = db.query(Product).filter(
-                    (func.lower(Product.name) == item.product_name.strip().lower()) |
-                    (func.lower(Product.name) == clean_name.lower())
+                if not product and item.product_name:
+                    clean_name = re.sub(r'\s*-\s*\d+\s*(ml|l)\b', '', item.product_name, flags=re.IGNORECASE).strip()
+                    product = db.query(Product).filter(
+                        (func.lower(Product.name) == item.product_name.strip().lower()) |
+                        (func.lower(Product.name) == clean_name.lower())
+                    ).first()
+
+                if not product and item.product_name:
+                    clean_name = re.sub(r'\s*-\s*\d+\s*(ml|l)\b', '', item.product_name, flags=re.IGNORECASE).strip()
+                    cat_input = (item.category or "").strip().lower()
+                    combined = f"{cat_input} {item.product_name}".lower()
+                    matched_cat = None
+                    for c in all_categories:
+                        if c.slug in combined or c.name.lower() in combined:
+                            matched_cat = c
+                            break
+                    if not matched_cat:
+                        if any(k in combined for k in ["whisky", "whiskey", "malt", "scotch"]):
+                            matched_cat = cat_by_slug.get("whisky", default_cat)
+                        elif any(k in combined for k in ["beer", "lager", "ale", "stout", "cider"]):
+                            matched_cat = cat_by_slug.get("beer", default_cat)
+                        elif any(k in combined for k in ["wine", "shiraz", "cabernet", "sauvignon"]):
+                            matched_cat = cat_by_slug.get("wine", default_cat)
+                        elif "rum" in combined:
+                            matched_cat = cat_by_slug.get("rum", default_cat)
+                        elif "vodka" in combined:
+                            matched_cat = cat_by_slug.get("vodka", default_cat)
+                        elif "gin" in combined:
+                            matched_cat = cat_by_slug.get("gin", default_cat)
+                        elif any(k in combined for k in ["brandy", "cognac"]):
+                            matched_cat = cat_by_slug.get("brandy", default_cat)
+                        elif any(k in combined for k in ["tequila", "agave"]):
+                            matched_cat = cat_by_slug.get("tequila", default_cat)
+                        elif any(k in combined for k in ["liqueur", "cream", "digestif"]):
+                            matched_cat = cat_by_slug.get("liqueur", default_cat)
+                        else:
+                            matched_cat = default_cat
+
+                    brand_str = item.brand.strip() if item.brand and item.brand.strip() else "Premium Collection"
+                    product = Product(
+                        name=clean_name,
+                        brand=brand_str,
+                        category_id=matched_cat.id if matched_cat else "",
+                        description=f"Licensed beverage: {clean_name}",
+                        country_of_origin="India",
+                        is_active=True,
+                        is_demo_data=True
+                    )
+                    db.add(product)
+                    db.flush()
+
+                    sample_img = (matched_cat.image_url if matched_cat else None) or "https://images.unsplash.com/photo-1527061011665-3652c757a4d4?auto=format&fit=crop&w=600&q=80"
+                    prod_img = ProductImage(
+                        product_id=product.id,
+                        image_url=sample_img,
+                        is_primary=True
+                    )
+                    db.add(prod_img)
+                    db.flush()
+
+                if not product:
+                    continue
+
+                existing = db.query(Inventory).filter(
+                    Inventory.retailer_id == retailer.id,
+                    Inventory.product_id == product.id,
+                    Inventory.bottle_size == item.bottle_size
                 ).first()
 
-            if not product and item.product_name:
-                clean_name = re.sub(r'\s*-\s*\d+\s*(ml|l)\b', '', item.product_name, flags=re.IGNORECASE).strip()
-                cat_input = (item.category or "").strip().lower()
-                combined = f"{cat_input} {item.product_name}".lower()
-                matched_cat = None
-                for c in all_categories:
-                    if c.slug in combined or c.name.lower() in combined:
-                        matched_cat = c
-                        break
-                if not matched_cat:
-                    if any(k in combined for k in ["whisky", "whiskey", "malt", "scotch"]):
-                        matched_cat = cat_by_slug.get("whisky", default_cat)
-                    elif any(k in combined for k in ["beer", "lager", "ale", "stout", "cider"]):
-                        matched_cat = cat_by_slug.get("beer", default_cat)
-                    elif any(k in combined for k in ["wine", "shiraz", "cabernet", "sauvignon"]):
-                        matched_cat = cat_by_slug.get("wine", default_cat)
-                    elif "rum" in combined:
-                        matched_cat = cat_by_slug.get("rum", default_cat)
-                    elif "vodka" in combined:
-                        matched_cat = cat_by_slug.get("vodka", default_cat)
-                    elif "gin" in combined:
-                        matched_cat = cat_by_slug.get("gin", default_cat)
-                    elif any(k in combined for k in ["brandy", "cognac"]):
-                        matched_cat = cat_by_slug.get("brandy", default_cat)
-                    elif any(k in combined for k in ["tequila", "agave"]):
-                        matched_cat = cat_by_slug.get("tequila", default_cat)
-                    elif any(k in combined for k in ["liqueur", "cream", "digestif"]):
-                        matched_cat = cat_by_slug.get("liqueur", default_cat)
-                    else:
-                        matched_cat = default_cat
+                if existing:
+                    old_stock = existing.stock_quantity
+                    change = item.stock_quantity - old_stock
 
-                brand_str = item.brand.strip() if item.brand and item.brand.strip() else "Premium Collection"
-                product = Product(
-                    name=clean_name,
-                    brand=brand_str,
-                    category_id=matched_cat.id if matched_cat else "",
-                    description=f"Licensed beverage: {clean_name}",
-                    country_of_origin="India",
-                    is_active=True,
-                    is_demo_data=True
-                )
-                db.add(product)
-                db.flush()
+                    existing.price = item.price
+                    existing.stock_quantity = item.stock_quantity
+                    existing.is_available = item.is_available
+                    existing.low_stock_threshold = item.low_stock_threshold
+                    existing.version = existing.version + 1
 
-                sample_img = (matched_cat.image_url if matched_cat else None) or "https://images.unsplash.com/photo-1527061011665-3652c757a4d4?auto=format&fit=crop&w=600&q=80"
-                prod_img = ProductImage(
-                    product_id=product.id,
-                    image_url=sample_img,
-                    is_primary=True
-                )
-                db.add(prod_img)
-                db.flush()
+                    if change != 0:
+                        movement = InventoryMovement(
+                            inventory_id=existing.id,
+                            retailer_id=retailer.id,
+                            previous_quantity=old_stock,
+                            new_quantity=item.stock_quantity,
+                            change_quantity=change,
+                            reason="BULK_CSV_IMPORT",
+                            notes=f"Updated via bulk inventory spreadsheet import (Price: ₹{item.price})",
+                            actor_user_id=actor_user.id,
+                            actor_name=actor_user.full_name,
+                            actor_role=actor_user.role.value
+                        )
+                        db.add(movement)
 
-            if not product:
-                continue
-
-            existing = db.query(Inventory).filter(
-                Inventory.retailer_id == retailer.id,
-                Inventory.product_id == product.id,
-                Inventory.bottle_size == item.bottle_size
-            ).first()
-
-            if existing:
-                old_stock = existing.stock_quantity
-                change = item.stock_quantity - old_stock
-
-                existing.price = item.price
-                existing.stock_quantity = item.stock_quantity
-                existing.is_available = item.is_available
-                existing.low_stock_threshold = item.low_stock_threshold
-                existing.version = existing.version + 1
-
-                if change != 0:
-                    movement = InventoryMovement(
-                        inventory_id=existing.id,
+                    NotificationService.check_and_notify_low_stock(db, existing, commit=False)
+                    updated_count += 1
+                else:
+                    new_inv = Inventory(
                         retailer_id=retailer.id,
-                        previous_quantity=old_stock,
+                        product_id=product.id,
+                        bottle_size=item.bottle_size,
+                        price=item.price,
+                        stock_quantity=item.stock_quantity,
+                        is_available=item.is_available,
+                        low_stock_threshold=item.low_stock_threshold,
+                        version=1
+                    )
+                    db.add(new_inv)
+                    db.flush()
+
+                    movement = InventoryMovement(
+                        inventory_id=new_inv.id,
+                        retailer_id=retailer.id,
+                        previous_quantity=0,
                         new_quantity=item.stock_quantity,
-                        change_quantity=change,
+                        change_quantity=item.stock_quantity,
                         reason="BULK_CSV_IMPORT",
-                        notes=f"Updated via bulk inventory spreadsheet import (Price: ₹{item.price})",
+                        notes="Created via bulk inventory spreadsheet import",
                         actor_user_id=actor_user.id,
                         actor_name=actor_user.full_name,
                         actor_role=actor_user.role.value
                     )
                     db.add(movement)
 
-                NotificationService.check_and_notify_low_stock(db, existing)
-                updated_count += 1
-            else:
-                new_inv = Inventory(
-                    retailer_id=retailer.id,
-                    product_id=product.id,
-                    bottle_size=item.bottle_size,
-                    price=item.price,
-                    stock_quantity=item.stock_quantity,
-                    is_available=item.is_available,
-                    low_stock_threshold=item.low_stock_threshold,
-                    version=1
-                )
-                db.add(new_inv)
-                db.flush()
+                    NotificationService.check_and_notify_low_stock(db, new_inv, commit=False)
+                    imported_count += 1
 
-                movement = InventoryMovement(
-                    inventory_id=new_inv.id,
-                    retailer_id=retailer.id,
-                    previous_quantity=0,
-                    new_quantity=item.stock_quantity,
-                    change_quantity=item.stock_quantity,
-                    reason="BULK_CSV_IMPORT",
-                    notes="Created via bulk inventory spreadsheet import",
-                    actor_user_id=actor_user.id,
-                    actor_name=actor_user.full_name,
-                    actor_role=actor_user.role.value
-                )
-                db.add(movement)
-
-                NotificationService.check_and_notify_low_stock(db, new_inv)
-                imported_count += 1
-
-        db.commit()
+            db.commit()
+        except Exception:
+            db.rollback()
+            raise
 
         AuditService.log_event(
             db=db,

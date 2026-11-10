@@ -20,6 +20,11 @@ class CustomerProfileUpdate(BaseModel):
     id_proof_type: str | None = None
     id_proof_number: str | None = None
 
+class AgeVerificationRequest(BaseModel):
+    date_of_birth: str = Field(..., description="Date of birth in YYYY-MM-DD format for statutory 21+ verification")
+    id_proof_type: str | None = "Aadhaar"
+    id_proof_number: str | None = None
+
 class AddressCreate(BaseModel):
     label: str = Field(default="Home", description="Home, Work, or Other")
     address_line1: str = Field(..., min_length=3, max_length=255)

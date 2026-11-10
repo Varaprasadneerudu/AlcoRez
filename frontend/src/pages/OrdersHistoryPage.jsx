@@ -17,7 +17,8 @@ import {
   Printer,
   X,
   ShieldCheck,
-  ShoppingBag
+  ShoppingBag,
+  KeyRound
 } from 'lucide-react';
 import { api } from '../services/api';
 import { useAuth } from '../context/AuthContext';
@@ -408,6 +409,17 @@ export default function OrdersHistoryPage() {
                       {ord.is_simulated && (
                         <span className="text-[10px] font-semibold bg-stone-200 dark:bg-stone-800 text-stone-700 dark:text-stone-300 px-1.5 py-0.5 rounded">
                           {t('ordersHistory.simulatedBadge', 'SIMULATED')}
+                        </span>
+                      )}
+                      {['created', 'confirmed', 'preparing', 'ready', 'out_for_delivery'].includes(ord.status?.toLowerCase()) && (
+                        <span className="text-[11px] font-extrabold bg-amber-50 dark:bg-amber-950/70 text-amber-900 dark:text-amber-200 border border-amber-300 dark:border-amber-700/80 px-2 py-0.5 rounded-lg flex items-center gap-1.5 shadow-xs">
+                          <KeyRound className="w-3 h-3 text-amber-700 dark:text-amber-400" />
+                          <span className="text-[10px] uppercase font-bold text-amber-700 dark:text-amber-400">
+                            {language === 'te' ? 'హ్యాండ్‌ఓవర్ OTP:' : 'Handover OTP:'}
+                          </span>
+                          <span className="font-mono tracking-widest font-black text-amber-900 dark:text-amber-100">
+                            {ord.delivery_otp || String(Math.abs(ord.order_number?.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0) || 4892) % 9000 + 1000)}
+                          </span>
                         </span>
                       )}
                     </div>

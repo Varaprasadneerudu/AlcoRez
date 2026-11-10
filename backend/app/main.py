@@ -35,7 +35,7 @@ async def lifespan(app: FastAPI):
                 if "delivery_partner_id" not in cols:
                     conn.execute(text("ALTER TABLE orders ADD COLUMN delivery_partner_id VARCHAR(36)"))
                 if "delivery_otp" not in cols:
-                    conn.execute(text("ALTER TABLE orders ADD COLUMN delivery_otp VARCHAR(6) DEFAULT '4821'"))
+                    conn.execute(text("ALTER TABLE orders ADD COLUMN delivery_otp VARCHAR(6)"))
                 conn.commit()
         except Exception as mig_err:
             logger.warning(f"Auto-column check: {mig_err}")

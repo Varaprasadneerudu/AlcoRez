@@ -1,5 +1,5 @@
 
-from app.api.deps import get_current_customer, get_current_user
+from app.api.deps import get_current_customer, get_current_user, get_current_verified_customer
 from app.core.compliance import ComplianceEngine
 from app.core.database import get_db
 from app.models.user import User
@@ -18,7 +18,7 @@ router = APIRouter(tags=["Orders & Checkout Simulation"])
 def create_simulated_order(
     checkout_in: SimulatedCheckoutRequest,
     request: Request,
-    current_user: User = Depends(get_current_customer),
+    current_user: User = Depends(get_current_verified_customer),
     db: Session = Depends(get_db)
 ):
     """
@@ -30,9 +30,6 @@ def create_simulated_order(
 
 @router.get("/orders", response_model=list[OrderOut])
 def get_user_orders(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
-    if current_user.role.value == "admin":
-        orders = OrderService.get_customer_orders(db, current_user)
-        return orders
     return OrderService.get_customer_orders(db, current_user)
 
 @router.get("/orders/{order_id}", response_model=OrderOut)

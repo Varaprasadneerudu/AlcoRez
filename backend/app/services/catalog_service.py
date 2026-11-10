@@ -1,7 +1,8 @@
+from datetime import datetime, timezone
 from decimal import Decimal
 
 from app.models.product import Category, Inventory, Product, ProductImage
-from app.models.retailer import Retailer, RetailerStatus
+from app.models.retailer import Retailer, RetailerLicense, RetailerStatus
 from app.schemas.catalog import (
     CategoryOut,
     InventoryOut,
@@ -10,7 +11,7 @@ from app.schemas.catalog import (
     ProductInventorySummary,
     ProductOut,
 )
-from sqlalchemy import or_
+from sqlalchemy import and_, or_
 from sqlalchemy.orm import Session, joinedload
 
 
@@ -51,9 +52,20 @@ class CatalogService:
         postal_code: str | None = None
     ) -> tuple[list[ProductOut], int]:
         """
-        Query catalogue showing only active products from approved retailers.
+        Query catalogue showing only active products from approved retailers with valid excise licenses.
         Supports filtering by specific product_ids and retailer postal_code locality.
+        Consistently enforces availability and filter parameters across matching, counts, and returned inventory.
         """
+        today = datetime.now(timezone.utc).date()
+        valid_retailer_subquery = (
+            db.query(RetailerLicense.retailer_id)
+            .filter(
+                RetailerLicense.is_verified == True,
+                or_(RetailerLicense.expiry_date.is_(None), RetailerLicense.expiry_date >= today)
+            )
+            .scalar_subquery()
+        )
+
         # Determine if inventory/retailer joins are needed for filtering or sorting
         needs_inventory_join = bool(
             retailer_id
@@ -70,30 +82,21 @@ class CatalogService:
         if needs_inventory_join:
             query = (
                 query
-                .outerjoin(Inventory, Product.id == Inventory.product_id)
-                .outerjoin(Retailer, Inventory.retailer_id == Retailer.id)
+                .join(Inventory, Product.id == Inventory.product_id)
+                .join(Retailer, Inventory.retailer_id == Retailer.id)
+                .filter(
+                    Inventory.is_available == True,
+                    Inventory.stock_quantity > 0,
+                    Retailer.status == RetailerStatus.APPROVED,
+                    Retailer.id.in_(valid_retailer_subquery)
+                )
             )
 
             # Only link to approved retailers if an inventory item exists
             if retailer_id:
-                query = query.filter(
-                    Inventory.retailer_id == retailer_id,
-                    Retailer.status == RetailerStatus.APPROVED
-                )
-            elif postal_code:
-                query = query.filter(
-                    Inventory.retailer_id.is_not(None),
-                    Retailer.postal_code == postal_code,
-                    Retailer.status == RetailerStatus.APPROVED
-                )
-            else:
-                query = query.filter(
-                    or_(
-                        Inventory.id.is_(None),
-                        Retailer.status == RetailerStatus.APPROVED
-                    )
-                )
-
+                query = query.filter(Inventory.retailer_id == retailer_id)
+            if postal_code:
+                query = query.filter(Retailer.postal_code == postal_code)
             if bottle_size:
                 query = query.filter(Inventory.bottle_size == bottle_size)
             if min_price is not None:
@@ -161,20 +164,28 @@ class CatalogService:
             if img_pid not in images_by_product:
                 images_by_product[img_pid] = str(img.image_url)
 
-        # 2. Batch fetch active inventory from approved retailers in 1 query
+        # 2. Batch fetch active inventory from approved retailers with valid licenses in 1 query, applying requested filters
         inv_query = (
             db.query(Inventory)
             .join(Retailer, Inventory.retailer_id == Retailer.id)
             .filter(
                 Inventory.product_id.in_(fetched_product_ids),
                 Inventory.is_available == True,
-                Retailer.status == RetailerStatus.APPROVED
+                Inventory.stock_quantity > 0,
+                Retailer.status == RetailerStatus.APPROVED,
+                Retailer.id.in_(valid_retailer_subquery)
             )
         )
         if retailer_id:
             inv_query = inv_query.filter(Inventory.retailer_id == retailer_id)
-        elif postal_code:
+        if postal_code:
             inv_query = inv_query.filter(Retailer.postal_code == postal_code)
+        if bottle_size:
+            inv_query = inv_query.filter(Inventory.bottle_size == bottle_size)
+        if min_price is not None:
+            inv_query = inv_query.filter(Inventory.price >= min_price)
+        if max_price is not None:
+            inv_query = inv_query.filter(Inventory.price <= max_price)
 
         all_invs = inv_query.all()
         inv_by_product: dict[str, list[Inventory]] = {pid: [] for pid in fetched_product_ids}
@@ -260,7 +271,17 @@ class CatalogService:
                 is_primary=True
             )]
 
-        # Inventories from approved retailers that are active
+        # Inventories from approved retailers with valid licenses that are active
+        today = datetime.now(timezone.utc).date()
+        valid_retailer_subquery = (
+            db.query(RetailerLicense.retailer_id)
+            .filter(
+                RetailerLicense.is_verified == True,
+                or_(RetailerLicense.expiry_date.is_(None), RetailerLicense.expiry_date >= today)
+            )
+            .scalar_subquery()
+        )
+
         inventories = (
             db.query(Inventory)
             .options(joinedload(Inventory.retailer))
@@ -268,7 +289,8 @@ class CatalogService:
             .filter(
                 Inventory.product_id == product.id,
                 Inventory.is_available == True,
-                Retailer.status == RetailerStatus.APPROVED
+                Retailer.status == RetailerStatus.APPROVED,
+                Retailer.id.in_(valid_retailer_subquery)
             )
             .all()
         )

@@ -512,17 +512,37 @@ def test_customer_handover_otp_end_to_end(client):
     assert complete_res.json()["status"] == "completed"
     assert "delivery_otp" not in complete_res.json()
 
-    # 6. Verify deterministic legacy order-number hash code verification
+    # 6. Verify delivery OTP security: calculated code cannot complete a new order with random OTP,
+    # and safe migration path allows calculated code for legacy orders without OTP.
     client.post("/api/v1/cart/items", json={"inventory_id": inv_id, "quantity": 1}, headers=cust_headers)
     legacy_order = client.post("/api/v1/test-orders", json={"simulate_payment_success": True}, headers=cust_headers).json()[0]
     legacy_id = legacy_order["id"]
     legacy_num = legacy_order["order_number"]
+    actual_order_otp = legacy_order["delivery_otp"]
     computed_legacy_otp = str(abs(sum(ord(c) for c in legacy_num) or 4892) % 9000 + 1000)
 
     client.patch(f"/api/v1/retailer/orders/{legacy_id}/status", json={"status": "confirmed"}, headers=ret_headers)
     client.patch(f"/api/v1/retailer/orders/{legacy_id}/status", json={"status": "ready"}, headers=ret_headers)
     client.post(f"/api/v1/delivery/orders/{legacy_id}/accept", headers=dp_headers)
     client.post(f"/api/v1/delivery/orders/{legacy_id}/pickup", headers=dp_headers)
+
+    # If the computed legacy code differs from the order's actual random OTP, it must be rejected!
+    if computed_legacy_otp != actual_order_otp:
+        bad_calc_res = client.post(
+            f"/api/v1/delivery/orders/{legacy_id}/complete",
+            json={"customer_age_verified": True, "id_proof_checked": True, "otp": computed_legacy_otp},
+            headers=dp_headers
+        )
+        assert bad_calc_res.status_code == 400
+        assert bad_calc_res.json()["detail"] == "Invalid delivery verification OTP."
+
+    # Explicit migration path: simulate a legacy order where delivery_otp is None/empty
+    from app.models.order import Order as OrderModel
+    from app.tests.conftest import TestSessionLocal
+    with TestSessionLocal() as session:
+        ord_db = session.query(OrderModel).filter(OrderModel.id == legacy_id).first()
+        ord_db.delivery_otp = None
+        session.commit()
 
     legacy_complete_res = client.post(
         f"/api/v1/delivery/orders/{legacy_id}/complete",
@@ -531,4 +551,8 @@ def test_customer_handover_otp_end_to_end(client):
     )
     assert legacy_complete_res.status_code == 200
     assert legacy_complete_res.json()["status"] == "completed"
+
+    with TestSessionLocal() as session:
+        migrated = session.query(OrderModel).filter(OrderModel.id == legacy_id).first()
+        assert migrated.delivery_otp == computed_legacy_otp
 

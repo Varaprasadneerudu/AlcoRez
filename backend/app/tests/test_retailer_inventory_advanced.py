@@ -460,13 +460,14 @@ def test_automatic_stock_deduction_on_order_acceptance(client, db_session):
     assert inv_res.status_code == 201
     inv_id = inv_res.json()["id"]
 
-    # 2. Register & login customer
+    # 2. Register & login verified 21+ customer
     cust_email = f"cust_stock_{uuid.uuid4().hex[:6]}@demo.mock"
     client.post("/api/v1/auth/register", json={
         "email": cust_email,
         "password": "Password@123",
         "full_name": "Stock Test Customer",
-        "role": "customer"
+        "role": "customer",
+        "date_of_birth": "1995-05-15"
     })
     cust_login = client.post("/api/v1/auth/login", json={"email": cust_email, "password": "Password@123"})
     cust_headers = {"Authorization": f"Bearer {cust_login.json()['access_token']}"}

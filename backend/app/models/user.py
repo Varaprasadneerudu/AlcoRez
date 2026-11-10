@@ -1,9 +1,9 @@
 import enum
-from datetime import date
+from datetime import date, datetime
 from decimal import Decimal
 
 from app.models.base import TimeStampedUUIDModel
-from sqlalchemy import Boolean, Date, Enum, ForeignKey, Integer, Numeric, String
+from sqlalchemy import Boolean, Date, DateTime, Enum, ForeignKey, Integer, Numeric, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 
@@ -35,6 +35,7 @@ class User(TimeStampedUUIDModel):
     favorite_products = relationship("FavoriteProduct", back_populates="user", cascade="all, delete-orphan")
     favorite_retailers = relationship("FavoriteRetailer", back_populates="user", cascade="all, delete-orphan")
     delivery_profile = relationship("DeliveryPartnerProfile", back_populates="user", uselist=False, cascade="all, delete-orphan")
+    refresh_tokens = relationship("RefreshToken", back_populates="user", cascade="all, delete-orphan")
 
 
 class CustomerProfile(TimeStampedUUIDModel):
@@ -85,3 +86,15 @@ class DeliveryPartnerProfile(TimeStampedUUIDModel):
 
     user = relationship("User", back_populates="delivery_profile")
 
+
+class RefreshToken(TimeStampedUUIDModel):
+    __tablename__ = "refresh_tokens"
+
+    token_id: Mapped[str] = mapped_column(String(64), unique=True, index=True, nullable=False)
+    user_id: Mapped[str] = mapped_column(String(36), ForeignKey("users.id", ondelete="CASCADE"), index=True, nullable=False)
+    expires_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, index=True)
+    is_revoked: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False, index=True)
+    revoked_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    replaced_by: Mapped[str | None] = mapped_column(String(64), nullable=True)
+
+    user = relationship("User", back_populates="refresh_tokens")

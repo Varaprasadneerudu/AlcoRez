@@ -37,6 +37,18 @@ class Retailer(TimeStampedUUIDModel):
     memberships = relationship("RetailerMembership", back_populates="retailer", cascade="all, delete-orphan")
     inventories = relationship("Inventory", back_populates="retailer", cascade="all, delete-orphan")
     orders = relationship("Order", back_populates="retailer")
+    invitations = relationship("RetailerInvitation", back_populates="retailer", cascade="all, delete-orphan")
+
+    def has_valid_license(self, as_of_date: date | None = None) -> bool:
+        """
+        Check if retailer has approved status and at least one verified, non-expired license.
+        """
+        if self.status != RetailerStatus.APPROVED:
+            return False
+        ref_date = as_of_date or date.today()
+        if not self.licenses:
+            return False
+        return any(bool(lic.is_verified and lic.expiry_date >= ref_date) for lic in self.licenses)
 
 class RetailerLicense(TimeStampedUUIDModel):
     __tablename__ = "retailer_licenses"
@@ -62,3 +74,17 @@ class RetailerMembership(TimeStampedUUIDModel):
     role_in_retailer: Mapped[str] = mapped_column(String(50), default="OWNER", nullable=False)
 
     retailer = relationship("Retailer", back_populates="memberships")
+
+class RetailerInvitation(TimeStampedUUIDModel):
+    __tablename__ = "retailer_invitations"
+
+    retailer_id: Mapped[str] = mapped_column(String(36), ForeignKey("retailers.id", ondelete="CASCADE"), nullable=False, index=True)
+    code: Mapped[str] = mapped_column(String(100), unique=True, nullable=False, index=True)
+    invited_email: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    created_by_user_id: Mapped[str] = mapped_column(String(36), nullable=False)
+    role_in_retailer: Mapped[str] = mapped_column(String(50), default="STAFF", nullable=False)
+    is_used: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False, index=True)
+    used_by_user_id: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    expires_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+
+    retailer = relationship("Retailer", back_populates="invitations")

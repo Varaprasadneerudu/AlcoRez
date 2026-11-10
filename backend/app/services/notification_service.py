@@ -17,7 +17,8 @@ class NotificationService:
         user_id: str,
         title: str,
         message: str,
-        notification_type: str = "INFO"
+        notification_type: str = "INFO",
+        commit: bool = True
     ) -> Notification:
         notif = Notification(
             user_id=user_id,
@@ -27,8 +28,11 @@ class NotificationService:
             is_read=False
         )
         db.add(notif)
-        db.commit()
-        db.refresh(notif)
+        if commit:
+            db.commit()
+            db.refresh(notif)
+        else:
+            db.flush()
         return notif
 
     @staticmethod
@@ -89,7 +93,7 @@ class NotificationService:
     # --- Real Application Event Generators ---
 
     @staticmethod
-    def check_and_notify_low_stock(db: Session, inventory: Inventory):
+    def check_and_notify_low_stock(db: Session, inventory: Inventory, commit: bool = True):
         """
         Generates a low stock alert when inventory drops at or below low_stock_threshold.
         Prevents spamming by checking if an unread LOW_STOCK notification exists for this item.
@@ -118,7 +122,8 @@ class NotificationService:
                     user_id=retailer.user_id,
                     title=title,
                     message=msg,
-                    notification_type="LOW_STOCK"
+                    notification_type="LOW_STOCK",
+                    commit=commit
                 )
 
     @staticmethod

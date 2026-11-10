@@ -7,6 +7,9 @@ export function getStoredToken() {
     if (sessionToken) {
       return sessionToken;
     }
+    if (sessionStorage.getItem('alco_session_cleared') === '1') {
+      return null;
+    }
     const localToken = localStorage.getItem('alco_access_token');
     if (localToken) {
       sessionStorage.setItem('alco_access_token', localToken);
@@ -26,6 +29,13 @@ export function getStoredRole() {
   try {
     const sessionRole = sessionStorage.getItem('alco_user_role');
     if (sessionRole) return sessionRole;
+    const sessionToken = sessionStorage.getItem('alco_access_token');
+    if (sessionToken) {
+      return 'customer';
+    }
+    if (sessionStorage.getItem('alco_session_cleared') === '1') {
+      return 'customer';
+    }
     const localRole = localStorage.getItem('alco_user_role');
     if (localRole) {
       sessionStorage.setItem('alco_user_role', localRole);
@@ -43,6 +53,13 @@ export function getStoredUser() {
     if (sessionUser && sessionUser !== 'undefined') {
       return JSON.parse(sessionUser);
     }
+    const sessionToken = sessionStorage.getItem('alco_access_token');
+    if (sessionToken) {
+      return null;
+    }
+    if (sessionStorage.getItem('alco_session_cleared') === '1') {
+      return null;
+    }
     const localUser = localStorage.getItem('alco_user_profile');
     if (localUser && localUser !== 'undefined') {
       sessionStorage.setItem('alco_user_profile', localUser);
@@ -57,6 +74,7 @@ export function getStoredUser() {
 export function setStoredToken(token, role, user) {
   try {
     if (token) {
+      sessionStorage.removeItem('alco_session_cleared');
       sessionStorage.setItem('alco_access_token', token);
       sessionStorage.setItem('alco_user_role', role || 'customer');
       if (user) {
@@ -69,6 +87,7 @@ export function setStoredToken(token, role, user) {
       }
     } else {
       const currentToken = sessionStorage.getItem('alco_access_token');
+      sessionStorage.setItem('alco_session_cleared', '1');
       sessionStorage.removeItem('alco_access_token');
       sessionStorage.removeItem('alco_user_role');
       sessionStorage.removeItem('alco_user_profile');

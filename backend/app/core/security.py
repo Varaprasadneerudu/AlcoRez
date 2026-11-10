@@ -1,4 +1,5 @@
 import os
+import uuid
 from datetime import datetime, timedelta, timezone
 from typing import Any
 
@@ -38,8 +39,14 @@ def create_access_token(subject: str | Any, role: str, expires_delta: timedelta 
     encoded_jwt = jwt.encode(to_encode, settings.JWT_SECRET_KEY, algorithm=settings.JWT_ALGORITHM)
     return encoded_jwt
 
-def create_refresh_token(subject: str | Any, role: str, expires_delta: timedelta | None = None) -> str:
-    """Create a signed JWT refresh token."""
+def create_refresh_token(
+    subject: str | Any,
+    role: str,
+    expires_delta: timedelta | None = None,
+    token_id: str | None = None
+) -> tuple[str, str, datetime]:
+    """Create a signed JWT refresh token with unique jti identifier."""
+    jti = token_id or str(uuid.uuid4())
     if expires_delta:
         expire = datetime.now(timezone.utc) + expires_delta
     else:
@@ -49,11 +56,12 @@ def create_refresh_token(subject: str | Any, role: str, expires_delta: timedelta
         "sub": str(subject),
         "role": role,
         "type": "refresh",
+        "jti": jti,
         "exp": expire,
         "iat": datetime.now(timezone.utc)
     }
     encoded_jwt = jwt.encode(to_encode, settings.JWT_SECRET_KEY, algorithm=settings.JWT_ALGORITHM)
-    return encoded_jwt
+    return encoded_jwt, jti, expire
 
 def decode_token(token: str) -> dict[str, Any] | None:
     """Decode and validate a JWT token."""

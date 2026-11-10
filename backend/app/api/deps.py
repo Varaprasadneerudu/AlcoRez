@@ -1,7 +1,7 @@
 from app.core.database import get_db
 from app.core.security import decode_token
 from app.models.retailer import Retailer, RetailerMembership
-from app.models.user import User, UserRole
+from app.models.user import CustomerProfile, User, UserRole
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session
@@ -56,43 +56,49 @@ def get_current_customer(current_user: User = Depends(get_current_user)) -> User
         )
     return current_user
 
+def get_current_verified_customer(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)) -> User:
+    cust_role = getattr(current_user.role, "value", str(current_user.role)).lower()
+    if cust_role not in ("customer", "admin"):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Access forbidden: Customer privileges required"
+        )
+    if cust_role == "admin":
+        return current_user
+
+    profile = db.query(CustomerProfile).filter(CustomerProfile.user_id == current_user.id).first()
+    is_age_verified = bool(current_user.is_verified and profile and profile.age_verified)
+    if not is_age_verified:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Under the Telangana Excise Act, 1968, verified 21+ legal age status is strictly required to execute simulated liquor checkout reservations. Please complete age verification in your profile."
+        )
+    return current_user
+
 def get_current_retailer_user(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)) -> tuple[User, Retailer]:
-    # Check if user has an associated retailer record, membership, or email match
+    role_str = getattr(current_user.role, "value", str(current_user.role)).lower()
+    if role_str not in ("retailer", "admin"):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Access forbidden: Retailer privileges required"
+        )
+
+    # Check if user has an authorized retailer record or approved membership
     retailer = db.query(Retailer).filter(Retailer.user_id == current_user.id).first()
     if not retailer:
         membership = db.query(RetailerMembership).filter(RetailerMembership.user_id == current_user.id).first()
         if membership:
             retailer = db.query(Retailer).filter(Retailer.id == membership.retailer_id).first()
-    if not retailer and getattr(current_user, "email", None):
-        retailer = db.query(Retailer).filter(Retailer.email == current_user.email).first()
 
     # If Super Admin, allow access to primary licensed retailer if none explicitly linked
-    role_str = getattr(current_user.role, "value", str(current_user.role)).lower()
     if not retailer and role_str == "admin":
         retailer = db.query(Retailer).first()
-
-    # If no retailer store found and role is not retailer or admin, reject with 403
-    if not retailer and role_str not in ("retailer", "admin"):
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Access forbidden: Retailer privileges required"
-        )
 
     if not retailer:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="No licensed retailer profile linked to this user account"
         )
-
-    # Sync user role if they have an active retailer association
-    if current_user.role not in (UserRole.RETAILER, UserRole.ADMIN):
-        current_user.role = UserRole.RETAILER
-        db.add(current_user)
-        try:
-            db.commit()
-            db.refresh(current_user)
-        except Exception:
-            db.rollback()
 
     return current_user, retailer
 

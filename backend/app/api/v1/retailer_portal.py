@@ -19,6 +19,8 @@ from app.schemas.order import OrderOut, OrderStatusUpdate
 from app.schemas.retailer import (
     RetailerApplicationCreate,
     RetailerDashboardOut,
+    RetailerInvitationCreate,
+    RetailerInvitationOut,
     RetailerOut,
 )
 from app.services.order_service import OrderService
@@ -49,7 +51,8 @@ def list_approved_retailers(
             (Retailer.shop_name.ilike(term)) | (Retailer.trade_name.ilike(term))
         )
     retailers = query.order_by(Retailer.shop_name.asc()).all()
-    return RetailerService.to_retailer_out_batch(db, retailers)
+    valid_retailers = [r for r in retailers if r.has_valid_license()]
+    return RetailerService.to_retailer_out_batch(db, valid_retailers)
 
 @router.get("/retailers/{retailer_id}", response_model=RetailerOut)
 def get_retailer_public(retailer_id: str, db: Session = Depends(get_db)):
@@ -62,10 +65,10 @@ def get_retailer_public(retailer_id: str, db: Session = Depends(get_db)):
         )
         .first()
     )
-    if not r:
+    if not r or not r.has_valid_license():
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Retailer store not found or currently suspended under excise regulation"
+            detail="Retailer store not found, unverified, expired, or currently suspended under excise regulation"
         )
     return RetailerService.to_retailer_out(db, r)
 
@@ -78,9 +81,14 @@ def get_retailer_catalogue_public(
     limit: int = Query(50, ge=1, le=100),
     db: Session = Depends(get_db)
 ):
-    r = db.query(Retailer).filter(Retailer.id == retailer_id, Retailer.status == RetailerStatus.APPROVED).first()
-    if not r:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Retailer not found or inactive")
+    r = (
+        db.query(Retailer)
+        .options(joinedload(Retailer.licenses))
+        .filter(Retailer.id == retailer_id, Retailer.status == RetailerStatus.APPROVED)
+        .first()
+    )
+    if not r or not r.has_valid_license():
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Retailer not found, unverified, expired, or inactive")
     from app.services.catalog_service import CatalogService
     skip = (page - 1) * limit
     items, total = CatalogService.get_products(
@@ -109,6 +117,15 @@ def submit_retailer_application(
 ):
     ip = request.client.host if request.client else None
     return RetailerService.apply_for_onboarding(db, current_user, app_in, ip_address=ip)
+
+@router.post("/retailer/invitations", response_model=RetailerInvitationOut, status_code=status.HTTP_201_CREATED)
+def create_invitation(
+    inv_in: RetailerInvitationCreate,
+    auth_context=Depends(get_current_retailer_user),
+    db: Session = Depends(get_db)
+):
+    current_user, retailer = auth_context
+    return RetailerService.create_invitation(db, retailer.id, inv_in, current_user)
 
 @router.get("/retailer/dashboard", response_model=RetailerDashboardOut)
 def get_retailer_dashboard(auth_context=Depends(get_current_retailer_user), db: Session = Depends(get_db)):

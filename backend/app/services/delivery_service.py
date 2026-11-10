@@ -102,9 +102,9 @@ class DeliveryService:
             summary_list.append(f"+{len(items) - 2} more")
         summary_str = ", ".join(summary_list) if summary_list else "Single Malt & Craft Beverages"
 
-        # Calculate delivery partner payout: Base 50 + distance incentive
+        # Standard delivery partner payout: Base 50 + distance & statutory handling incentive (₹75)
         dist = 3.2
-        payout = Decimal("65.00")
+        payout = Decimal("75.00")
 
         return AvailableDeliveryOrderOut(
             order_id=order.id,
@@ -288,17 +288,21 @@ class DeliveryService:
                 detail="Mandatory Telangana Excise compliance: You must inspect and verify customer government ID proof (21+ age) before handing over alcoholic beverages."
             )
 
-        # Actual OTP Verification - strictly requires the order's actual OTP (or deterministic order code) without leaks
+        # Actual OTP Verification - strictly requires the order's actual OTP without leaks
         expected_otp = (order.delivery_otp or "").strip()
         cleaned_otp = (payload.otp or "").strip()
-        legacy_otp = str(abs(sum(ord(c) for c in (order.order_number or "")) or 4892) % 9000 + 1000)
 
-        is_valid_otp = bool(
-            cleaned_otp and (
-                (expected_otp and cleaned_otp == expected_otp) or
-                (legacy_otp and cleaned_otp == legacy_otp)
-            )
-        )
+        if expected_otp:
+            # New orders with assigned OTP must match the actual random OTP only; no predictable fallback allowed
+            is_valid_otp = bool(cleaned_otp and cleaned_otp == expected_otp)
+        else:
+            # Safe explicit migration path for legacy orders without an OTP:
+            # Accepts deterministic order hash code and migrates/persists it as the order's delivery_otp
+            legacy_otp = str(abs(sum(ord(c) for c in (order.order_number or "")) or 4892) % 9000 + 1000)
+            is_valid_otp = bool(cleaned_otp and cleaned_otp == legacy_otp)
+            if is_valid_otp:
+                order.delivery_otp = legacy_otp
+
         if not is_valid_otp:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,

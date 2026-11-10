@@ -35,7 +35,7 @@ class CartService:
         items = (
             db.query(CartItem)
             .options(
-                joinedload(CartItem.inventory).joinedload(Inventory.retailer),
+                joinedload(CartItem.inventory).joinedload(Inventory.retailer).joinedload(Retailer.licenses),
                 joinedload(CartItem.inventory).joinedload(Inventory.product).joinedload(Product.images),
             )
             .filter(CartItem.cart_id == cart.id)
@@ -79,7 +79,7 @@ class CartService:
                     image_url=primary_img.image_url if primary_img else "https://images.unsplash.com/photo-1527061011665-3652c757a4d4?auto=format&fit=crop&w=600&q=80",
                     retailer_id=retailer.id,
                     retailer_name=retailer.shop_name,
-                    is_available=(inv.is_available and inv.stock_quantity >= item.quantity and retailer.status == RetailerStatus.APPROVED)
+                    is_available=bool(inv.is_available and inv.stock_quantity >= item.quantity and retailer.status == RetailerStatus.APPROVED and retailer.has_valid_license())
                 )
             )
 
@@ -108,11 +108,11 @@ class CartService:
         if not inv:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Inventory listing not found")
 
-        retailer = db.query(Retailer).filter(Retailer.id == inv.retailer_id).first()
-        if not retailer or retailer.status != RetailerStatus.APPROVED:
+        retailer = db.query(Retailer).options(joinedload(Retailer.licenses)).filter(Retailer.id == inv.retailer_id).first()
+        if not retailer or retailer.status != RetailerStatus.APPROVED or not retailer.has_valid_license():
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Products can only be selected from licensed and verified retailers"
+                detail="Products can only be selected from licensed and verified retailers with active excise compliance."
             )
 
         if not inv.is_available or inv.stock_quantity < item_in.quantity:
