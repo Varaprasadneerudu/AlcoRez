@@ -1,5 +1,6 @@
-from app.api.deps import get_current_user
+from app.api.deps import get_current_user, get_current_user_optional
 from app.core.database import get_db
+from app.core.security import decode_token
 from app.models.user import User
 from app.schemas.auth import (
     LogoutRequest,
@@ -10,7 +11,7 @@ from app.schemas.auth import (
     UserRegister,
 )
 from app.services.auth_service import AuthService
-from fastapi import APIRouter, Depends, Request, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy.orm import Session
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
@@ -39,9 +40,19 @@ def get_current_profile(current_user: User = Depends(get_current_user)):
 @router.post("/logout")
 def logout(
     logout_in: LogoutRequest | None = None,
-    current_user: User = Depends(get_current_user),
+    current_user: User | None = Depends(get_current_user_optional),
     db: Session = Depends(get_db)
 ):
+    user_id = current_user.id if current_user else None
     refresh_tok = logout_in.refresh_token if logout_in else None
-    AuthService.revoke_tokens(db, user_id=current_user.id, refresh_token=refresh_tok)
+    if not user_id and refresh_tok:
+        payload = decode_token(refresh_tok)
+        if payload and payload.get("type") == "refresh":
+            user_id = payload.get("sub")
+    if not user_id:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Authentication credentials or valid refresh token required to log out"
+        )
+    AuthService.revoke_tokens(db, user_id=user_id, refresh_token=refresh_tok)
     return {"message": "Successfully logged out. Client should discard token."}

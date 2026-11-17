@@ -164,7 +164,7 @@ The frontend is now running at `http://127.0.0.1:5173`.
 
 ## 🔑 Pre-Seeded Demonstration Accounts
 
-The navigation bar features a **Quick Demo Switcher** dropdown allowing you to switch personas with a single click:
+Development builds include demonstration personas. Production builds do not include their credentials or a demo account switcher:
 
 | Role | Email | Password | Details |
 | :--- | :--- | :--- | :--- |
@@ -203,7 +203,7 @@ python -m pytest backend/app/tests/ -v
 - `/orders/:id`: Real-time simulated order tracker with state machine progression and snapshotted prices.
 - `/orders`: Customer's past simulated orders.
 - `/compliance-info`: Statutory regulatory disclosure under Telangana Excise Act.
-- `/login`: User login with 1-click demo persona switcher.
+- `/login`: User login.
 - `/register`: 21+ customer registration with birthdate verification.
 
 ### Retailer Portal
@@ -230,3 +230,15 @@ Services started:
 - `alcodelivery_postgres`: PostgreSQL 16 on port 5432
 - `alcodelivery_backend`: FastAPI backend on port 8000
 - `alcodelivery_frontend`: React Vite frontend on port 5173
+
+## Production setup
+
+The production backend requires a persistent PostgreSQL `DATABASE_URL` and a strong `JWT_SECRET_KEY`. The Render blueprint asks for the database URL and runs `alembic upgrade head` before starting the API. Production startup does not seed demo users or catalog records.
+
+After applying migrations to a new production database, create the first administrator once with `ADMIN_BOOTSTRAP_EMAIL` and `ADMIN_BOOTSTRAP_PASSWORD` set in the process environment:
+
+```bash
+python bootstrap_admin.py
+```
+
+Use a unique password of at least 12 characters, then remove it from the process environment. Provision retailer accounts through the admin portal. If an earlier deployment already contains demo users, rotate or remove those accounts before exposing it publicly. Keep `ALCOHOL_TRANSACTIONS_ENABLED=false` until the necessary authorization and implementation are in place.

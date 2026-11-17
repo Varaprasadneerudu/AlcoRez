@@ -161,10 +161,17 @@ class CartService:
             return CartService.get_cart_view(db, user)
 
         inv = db.query(Inventory).filter(Inventory.id == item.inventory_id).first()
-        if not inv or inv.stock_quantity < quantity:
+        if not inv or not inv.is_available or inv.stock_quantity < quantity:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Requested quantity exceeds currently available stock"
+                detail="Requested quantity exceeds currently available stock or product is unavailable"
+            )
+
+        retailer = db.query(Retailer).options(joinedload(Retailer.licenses)).filter(Retailer.id == inv.retailer_id).first()
+        if not retailer or retailer.status != RetailerStatus.APPROVED or not retailer.has_valid_license():
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Products can only be updated from licensed and verified retailers with active excise compliance."
             )
 
         item.quantity = quantity

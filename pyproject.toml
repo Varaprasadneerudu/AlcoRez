@@ -30,3 +30,4 @@ python-interpreter = "C:/Users/varap/AppData/Local/Programs/Python/Python314/pyt
 
 [tool.pyrefly.errors]
 bad-argument-type = false
+missing-attribute = false

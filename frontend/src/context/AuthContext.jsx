@@ -1,9 +1,9 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef, useMemo } from 'react';
-import { api, setStoredToken, getStoredToken, getStoredRole, getStoredUser, invalidateCache } from '../services/api';
+import { api, setStoredToken, getStoredToken, getStoredRefreshToken, getStoredRole, getStoredUser, invalidateCache } from '../services/api';
 
 const AuthContext = createContext(null);
 
-export const DEMO_ACCOUNTS = {
+export const DEMO_ACCOUNTS = import.meta.env.DEV ? {
   customer: {
     email: 'customer@demo.com',
     password: 'Customer@123456',
@@ -22,7 +22,7 @@ export const DEMO_ACCOUNTS = {
     label: 'Excise Admin (Govt of Telangana)',
     role: 'admin'
   }
-};
+} : {};
 
 export function AuthProvider({ children }) {
   const [token, setToken] = useState(() => getStoredToken());
@@ -39,33 +39,71 @@ export function AuthProvider({ children }) {
     }
   });
   const [loading, setLoading] = useState(false);
+  const [sessionError, setSessionError] = useState(null);
+  const [validationAttempt, setValidationAttempt] = useState(0);
   const initialValidationDone = useRef(false);
 
   const logout = useCallback(() => {
+    const refreshToken = getStoredRefreshToken();
+    if (getStoredToken()) {
+      api.logout(refreshToken).catch(() => {});
+    }
     setToken(null);
     setUser(null);
     setRole('customer');
     setStoredToken(null);
     invalidateCache();
+    setSessionError(null);
     initialValidationDone.current = false;
   }, []);
 
   useEffect(() => {
+    window.addEventListener('alco_session_expired', logout);
+    return () => window.removeEventListener('alco_session_expired', logout);
+  }, [logout]);
+
+  useEffect(() => {
+    let active = true;
     // Validate session on app load to guarantee client role strictly matches backend token
     if (token && !initialValidationDone.current) {
       initialValidationDone.current = true;
-      api.getMe()
-        .then((userData) => {
+      const validate = async () => {
+        try {
+          let userData;
+          let refreshedToken = null;
+          try {
+            userData = await api.getMe();
+          } catch (error) {
+            if (error.status !== 401) throw error;
+            refreshedToken = await api.refreshSession();
+            if (!refreshedToken) {
+              if (active) logout();
+              return;
+            }
+            userData = await api.getMe();
+          }
+          if (!active) return;
           const userProfile = { id: userData.id, email: userData.email, full_name: userData.full_name, role: userData.role };
           setUser(userProfile);
           setRole(userData.role);
-          setStoredToken(token, userData.role, userProfile);
-        })
-        .catch(() => {
-          logout();
-        });
+          setStoredToken(getStoredToken(), userData.role, userProfile);
+          if (refreshedToken) setToken(refreshedToken);
+          setSessionError(null);
+        } catch (error) {
+          if (!active) return;
+          if (error.status === 401) logout();
+          else setSessionError('Could not verify your session. Check your connection and retry.');
+        }
+      };
+      validate();
     }
-  }, [token, logout]);
+    return () => { active = false; };
+  }, [token, logout, validationAttempt]);
+
+  const retrySession = useCallback(() => {
+    initialValidationDone.current = false;
+    setValidationAttempt((attempt) => attempt + 1);
+  }, []);
 
   const login = useCallback(async (email, password) => {
     setLoading(true);
@@ -75,8 +113,9 @@ export function AuthProvider({ children }) {
       const userProfile = { id: data.user_id, email: data.email, full_name: data.full_name, role: data.role };
       setUser(userProfile);
       setRole(data.role);
-      setStoredToken(data.access_token, data.role, userProfile);
+      setStoredToken(data.access_token, data.role, userProfile, data.refresh_token);
       setToken(data.access_token);
+      setSessionError(null);
       setAgeVerified(true);
       try {
         sessionStorage.setItem('alco_age_verified', 'true');
@@ -131,8 +170,10 @@ export function AuthProvider({ children }) {
       logout,
       switchDemoAccount,
       loading,
+      sessionError,
+      retrySession,
     }),
-    [token, user, role, ageVerified, confirmAge, login, register, logout, switchDemoAccount, loading]
+    [token, user, role, ageVerified, confirmAge, login, register, logout, switchDemoAccount, loading, sessionError, retrySession]
   );
 
   return (

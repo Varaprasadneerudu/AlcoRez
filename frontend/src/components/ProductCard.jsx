@@ -227,16 +227,16 @@ export default function ProductCard({ product }) {
           </div>
 
           <Link to={`/products/${product.id}`} className="block group-hover:text-amber-800 dark:group-hover:text-amber-400 transition">
-            <h3 className="font-bold text-stone-900 dark:text-stone-100 text-xs sm:text-sm leading-snug line-clamp-2 min-h-[2rem] sm:min-h-[2.5rem]" title={tp(product.name)}>
+            <h3 className="font-bold text-stone-900 dark:text-stone-100 text-sm leading-snug line-clamp-2 min-h-[2.5rem]" title={tp(product.name)}>
               {tp(product.name)}
             </h3>
           </Link>
 
           {/* Direction 3 Retailer Availability Radar */}
-          <div className="flex items-center gap-1.5 text-[10px] text-emerald-700 dark:text-emerald-400 font-semibold mt-1 min-w-0">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse shrink-0"></span>
+          <div className={`flex items-center gap-1.5 text-xs font-semibold mt-1 min-w-0 ${product.in_stock ? 'text-emerald-700 dark:text-emerald-400' : 'text-stone-500 dark:text-stone-400'}`}>
+            <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${product.in_stock ? 'bg-emerald-500' : 'bg-stone-400'}`}></span>
             <span className="truncate">
-              {product.in_stock ? 'In Stock at Madhapur Retailers' : 'Currently Unavailable'}
+              {product.in_stock ? 'Available at listed retailers' : 'Currently unavailable'}
             </span>
           </div>
 
@@ -254,7 +254,7 @@ export default function ProductCard({ product }) {
                       e.stopPropagation();
                       setSelectedSize(sz);
                     }}
-                    className={`text-[10px] font-medium px-1.5 py-0.5 rounded transition ${
+                    className={`min-h-8 text-xs font-medium px-2 py-1 rounded transition ${
                       isSelected
                         ? 'bg-amber-100 dark:bg-amber-950/80 text-amber-900 dark:text-amber-300 font-bold border border-amber-300 dark:border-amber-700 shadow-xs'
                         : 'bg-stone-100 dark:bg-stone-800 text-stone-600 dark:text-stone-300 hover:bg-stone-200 dark:hover:bg-stone-700 border border-transparent'
@@ -279,7 +279,7 @@ export default function ProductCard({ product }) {
             <span className="hidden sm:block text-[9px] sm:text-[10px] text-stone-400 dark:text-stone-500 truncate">
               {t('product.demoPriceLabel')}
             </span>
-            <span className="font-extrabold text-stone-900 dark:text-stone-100 text-xs sm:text-base whitespace-nowrap block">
+            <span className="font-extrabold text-stone-900 dark:text-stone-100 text-sm sm:text-base whitespace-nowrap block">
               {displayPrice ? `₹${Number(displayPrice).toLocaleString('en-IN')}` : t('product.priceOnRequest')}
             </span>
           </div>
@@ -320,7 +320,7 @@ export default function ProductCard({ product }) {
                 type="button"
                 onClick={handleAddToCart}
                 disabled={isAdding || !product.in_stock}
-                className={`w-8 h-8 sm:w-9 sm:h-9 rounded-xl font-bold transition-all duration-200 flex items-center justify-center shadow-sm active:scale-90 ${
+                className={`w-10 h-10 rounded-xl font-bold transition-all duration-200 flex items-center justify-center shadow-sm active:scale-90 ${
                   isAdded
                     ? 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-emerald-600/30 ring-2 ring-emerald-500/30'
                     : 'bg-gradient-to-r from-amber-600 to-amber-700 hover:from-amber-700 hover:to-amber-800 text-white shadow-amber-700/20 hover:shadow-amber-700/40'

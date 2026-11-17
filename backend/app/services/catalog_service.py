@@ -11,7 +11,7 @@ from app.schemas.catalog import (
     ProductInventorySummary,
     ProductOut,
 )
-from sqlalchemy import and_, or_
+from sqlalchemy import func, or_
 from sqlalchemy.orm import Session, joinedload
 
 
@@ -104,7 +104,7 @@ class CatalogService:
             if max_price is not None:
                 query = query.filter(Inventory.price <= max_price)
 
-            query = query.distinct()
+            query = query.group_by(Product.id) if sort_by in ("price_asc", "price_desc") else query.distinct()
 
         # Product IDs filter (for favorites or specific selection)
         if product_ids is not None:
@@ -132,12 +132,12 @@ class CatalogService:
             query = query.order_by(Product.name.desc())
         elif sort_by == "price_asc":
             if needs_inventory_join:
-                query = query.order_by(Inventory.price.asc())
+                query = query.order_by(func.min(Inventory.price).asc(), Product.name.asc())
             else:
                 query = query.order_by(Product.name.asc())
         elif sort_by == "price_desc":
             if needs_inventory_join:
-                query = query.order_by(Inventory.price.desc())
+                query = query.order_by(func.max(Inventory.price).desc(), Product.name.asc())
             else:
                 query = query.order_by(Product.name.desc())
         else:

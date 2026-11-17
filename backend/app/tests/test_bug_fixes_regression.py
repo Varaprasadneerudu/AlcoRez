@@ -1,21 +1,14 @@
-import csv
-import io
 import uuid
-from datetime import date, datetime, timedelta, timezone
 from decimal import Decimal
 
 import pytest
 from app.models.compliance import Notification
-from app.models.order import Cart, CartItem, Order, OrderItem, OrderStatus
-from app.models.product import Category, Inventory, InventoryMovement, Product
-from app.models.retailer import (
-    Retailer,
-    RetailerInvitation,
-    RetailerLicense,
-    RetailerMembership,
-    RetailerStatus,
-)
-from app.models.user import Address, CustomerProfile, RefreshToken, User, UserRole
+from app.models.order import Cart, CartItem, Order
+from app.models.product import Inventory, InventoryMovement, Product
+from app.models.retailer import Retailer
+from app.models.user import User, UserRole
+from app.schemas.catalog import InventoryCsvRowPreview
+from app.services.retailer_service import RetailerService
 from app.tests.conftest import TestSessionLocal
 from sqlalchemy.exc import IntegrityError
 
@@ -266,8 +259,10 @@ def test_bug_4_refresh_token_rotation_and_revocation(client):
     _, _, active_refresh = _login(client, email, "Password@123")
     with TestSessionLocal() as session:
         u = session.query(User).filter(User.email == email).first()
-        u.is_active = False
-        session.commit()
+        assert u is not None
+        if u is not None:
+            u.is_active = False
+            session.commit()
 
     inactive_res = client.post("/api/v1/auth/refresh", json={"refresh_token": active_refresh})
     assert inactive_res.status_code == 401
@@ -321,7 +316,8 @@ def test_bug_6_cancelling_out_for_delivery_restores_stock(client):
 
     with TestSessionLocal() as session:
         initial_inv = session.query(Inventory).filter(Inventory.id == inv_id).first()
-        initial_stock = initial_inv.stock_quantity
+        assert initial_inv is not None
+        initial_stock = initial_inv.stock_quantity if initial_inv is not None else 0
 
     client.post("/api/v1/cart/items", json={"inventory_id": inv_id, "quantity": 3}, headers=cust_headers)
     order_res = client.post("/api/v1/test-orders", json={"simulate_payment_success": True}, headers=cust_headers)
@@ -330,7 +326,10 @@ def test_bug_6_cancelling_out_for_delivery_restores_stock(client):
     # Progress to CONFIRMED (stock decreases by 3)
     client.patch(f"/api/v1/retailer/orders/{order_id}/status", json={"status": "confirmed"}, headers=ret_headers)
     with TestSessionLocal() as session:
-        assert session.query(Inventory).filter(Inventory.id == inv_id).first().stock_quantity == initial_stock - 3
+        inv_confirmed = session.query(Inventory).filter(Inventory.id == inv_id).first()
+        assert inv_confirmed is not None
+        if inv_confirmed is not None:
+            assert inv_confirmed.stock_quantity == initial_stock - 3
 
     # Progress to READY and OUT_FOR_DELIVERY
     client.patch(f"/api/v1/retailer/orders/{order_id}/status", json={"status": "ready"}, headers=ret_headers)
@@ -347,14 +346,17 @@ def test_bug_6_cancelling_out_for_delivery_restores_stock(client):
     assert cancel_res.json()["status"] == "cancelled"
 
     with TestSessionLocal() as session:
-        restored_stock = session.query(Inventory).filter(Inventory.id == inv_id).first().stock_quantity
+        inv_restored = session.query(Inventory).filter(Inventory.id == inv_id).first()
+        assert inv_restored is not None
+        restored_stock = inv_restored.stock_quantity if inv_restored is not None else 0
         assert restored_stock == initial_stock
         movement = session.query(InventoryMovement).filter(
             InventoryMovement.inventory_id == inv_id,
             InventoryMovement.reason == "ORDER_CANCELLED_RESTOCK"
         ).order_by(InventoryMovement.created_at.desc()).first()
         assert movement is not None
-        assert movement.change_quantity == 3
+        if movement is not None:
+            assert movement.change_quantity == 3
 
     # Repeated cancellation request is rejected and does NOT add stock again
     repeat_cancel = client.patch(
@@ -365,7 +367,10 @@ def test_bug_6_cancelling_out_for_delivery_restores_stock(client):
     assert repeat_cancel.status_code == 400
 
     with TestSessionLocal() as session:
-        assert session.query(Inventory).filter(Inventory.id == inv_id).first().stock_quantity == initial_stock
+        inv_final = session.query(Inventory).filter(Inventory.id == inv_id).first()
+        assert inv_final is not None
+        if inv_final is not None:
+            assert inv_final.stock_quantity == initial_stock
 
 
 # ---------------------------------------------------------------------------
@@ -457,7 +462,8 @@ def test_bug_9_bulk_import_atomicity_rolls_back(client):
     # Get retailer user id to check notifications
     with TestSessionLocal() as session:
         u = session.query(User).filter(User.email == "retailer@madhapurwines.mock").first()
-        r_user_id = u.id
+        assert u is not None
+        r_user_id = u.id if u is not None else ""
         initial_notif_count = session.query(Notification).filter(Notification.user_id == r_user_id).count()
 
     unique_prod_name = f"Atomic Spirits {uuid.uuid4().hex[:6]}"
@@ -465,9 +471,6 @@ def test_bug_9_bulk_import_atomicity_rolls_back(client):
     # Row 1: Low-stock item (triggers low-stock alert)
     # Row 2: Invalid item causing an error (e.g. Price <= 0 or Database Integrity constraint)
     # Using apply_inventory_csv with an item that causes an unhandled error inside loop
-    from app.services.retailer_service import RetailerService
-    from app.schemas.catalog import InventoryCsvRowPreview
-
     row1 = InventoryCsvRowPreview(
         row_number=1,
         product_name=unique_prod_name,
@@ -501,8 +504,11 @@ def test_bug_9_bulk_import_atomicity_rolls_back(client):
     with TestSessionLocal() as session:
         retailer = session.query(Retailer).filter(Retailer.user_id == r_user_id).first()
         actor = session.query(User).filter(User.id == r_user_id).first()
-        with pytest.raises(Exception):
-            RetailerService.apply_inventory_csv(session, retailer, actor, [row1, row2])
+        assert retailer is not None
+        assert actor is not None
+        if retailer is not None and actor is not None:
+            with pytest.raises(IntegrityError):
+                RetailerService.apply_inventory_csv(session, retailer, actor, [row1, row2])
 
     # Verify that atomicity holds: row 1 was rolled back and NO notification was committed
     with TestSessionLocal() as session:
@@ -665,16 +671,17 @@ def test_bug_12_sqlite_foreign_keys_enforced(client):
         session.flush()
 
         inv = session.query(Inventory).first()
+        assert inv is not None
+        inv_id_val = inv.id if inv is not None else ""
         cart_item = CartItem(
             cart_id=test_cart.id,
-            inventory_id=inv.id,
+            inventory_id=inv_id_val,
             quantity=1,
             unit_price=Decimal("100.00")
         )
         session.add(cart_item)
         session.commit()
 
-        cart_id = test_cart.id
         item_id = cart_item.id
 
         # Verify item exists
@@ -795,5 +802,174 @@ def test_delivery_payout_and_order_route_consistency(client):
     admin_orders_res = client.get("/api/v1/orders", headers=admin_headers)
     assert admin_orders_res.status_code == 200
     assert isinstance(admin_orders_res.json(), list)
+
+
+def test_order_cancellation_from_ready_restores_stock(client):
+    ret_headers, _, _ = _login(client, "retailer@madhapurwines.mock", "Retailer@123456")
+    cust_headers, _, _ = _login(client, "customer@demo.com", "Customer@123456")
+
+    client.delete("/api/v1/cart", headers=cust_headers)
+    cat_res = client.get("/api/v1/products?search=Kingfisher")
+    inv_id = cat_res.json()["items"][0]["inventories"][0]["id"]
+
+    with TestSessionLocal() as session:
+        initial_inv = session.query(Inventory).filter(Inventory.id == inv_id).first()
+        assert initial_inv is not None
+        initial_stock = initial_inv.stock_quantity if initial_inv is not None else 0
+
+    add_res = client.post("/api/v1/cart/items", json={"inventory_id": inv_id, "quantity": 2}, headers=cust_headers)
+    assert add_res.status_code in [200, 201]
+
+    order_res = client.post("/api/v1/test-orders", json={"simulate_payment_success": True}, headers=cust_headers)
+    assert order_res.status_code in [200, 201]
+    order_id = order_res.json()[0]["id"]
+
+    # Confirm order -> stock decreases by 2
+    conf_res = client.patch(f"/api/v1/retailer/orders/{order_id}/status", json={"status": "confirmed"}, headers=ret_headers)
+    assert conf_res.status_code == 200
+    with TestSessionLocal() as session:
+        inv_confirmed = session.query(Inventory).filter(Inventory.id == inv_id).first()
+        assert inv_confirmed is not None
+        if inv_confirmed is not None:
+            assert inv_confirmed.stock_quantity == initial_stock - 2
+
+    # Advance to preparing then ready
+    prep_res = client.patch(f"/api/v1/retailer/orders/{order_id}/status", json={"status": "preparing"}, headers=ret_headers)
+    assert prep_res.status_code == 200
+    ready_res = client.patch(f"/api/v1/retailer/orders/{order_id}/status", json={"status": "ready"}, headers=ret_headers)
+    assert ready_res.status_code == 200
+
+    # Cancel order directly while in READY state -> stock restored by 2
+    cancel_res = client.patch(
+        f"/api/v1/retailer/orders/{order_id}/status",
+        json={"status": "cancelled", "notes": "Customer cancelled during pickup readiness"},
+        headers=ret_headers
+    )
+    assert cancel_res.status_code == 200
+    assert cancel_res.json()["status"] == "cancelled"
+
+    with TestSessionLocal() as session:
+        inv_restored = session.query(Inventory).filter(Inventory.id == inv_id).first()
+        assert inv_restored is not None
+        restored_stock = inv_restored.stock_quantity if inv_restored is not None else 0
+        assert restored_stock == initial_stock
+
+    # Terminal state check: cannot be transitioned again
+    repeat = client.patch(f"/api/v1/retailer/orders/{order_id}/status", json={"status": "ready"}, headers=ret_headers)
+    assert repeat.status_code == 400
+
+
+def test_admin_delete_user_owning_store_with_orders_protected(client):
+    admin_headers, _, _ = _login(client, "admin@telanganaliquor.gov.mock", "Admin@123456")
+
+    # Target retailer owner
+    with TestSessionLocal() as session:
+        retailer = session.query(Retailer).filter(Retailer.email == "retailer@madhapurwines.mock").first()
+        assert retailer is not None
+        user_id = retailer.user_id if retailer is not None else ""
+        ret_id = retailer.id if retailer is not None else ""
+        # Ensure there is at least one order for this retailer
+        existing_order = session.query(Order).filter(Order.retailer_id == ret_id).first()
+        assert existing_order is not None
+
+    # Admin attempts to delete retailer owner whose store has orders -> 400 Bad Request
+    del_res = client.delete(f"/api/v1/admin/users/{user_id}", headers=admin_headers)
+    assert del_res.status_code == 400
+    assert "existing orders" in del_res.json()["detail"].lower()
+
+
+def test_cart_update_quantity_validates_availability(client):
+    cust_headers, _, _ = _login(client, "customer@demo.com", "Customer@123456")
+
+    client.delete("/api/v1/cart", headers=cust_headers)
+    cat_res = client.get("/api/v1/products?search=Kingfisher")
+    inv_id = cat_res.json()["items"][0]["inventories"][0]["id"]
+
+    add_res = client.post("/api/v1/cart/items", json={"inventory_id": inv_id, "quantity": 1}, headers=cust_headers)
+    assert add_res.status_code in [200, 201]
+
+    cart_res = client.get("/api/v1/cart", headers=cust_headers)
+    item_id = cart_res.json()["items"][0]["id"]
+
+    try:
+        # Mark inventory unavailable in database
+        with TestSessionLocal() as session:
+            inv = session.query(Inventory).filter(Inventory.id == inv_id).first()
+            assert inv is not None
+            if inv is not None:
+                inv.is_available = False
+                session.commit()
+
+        # Update cart quantity should now be rejected because item is unavailable
+        upd_res = client.patch(f"/api/v1/cart/items/{item_id}", json={"quantity": 2}, headers=cust_headers)
+        assert upd_res.status_code == 400
+        assert "unavailable" in upd_res.json()["detail"].lower()
+    finally:
+        with TestSessionLocal() as session:
+            inv = session.query(Inventory).filter(Inventory.id == inv_id).first()
+            if inv:
+                inv.is_available = True
+                session.commit()
+
+
+def test_logout_with_refresh_token_without_access_token(client):
+    # Register fresh test user
+    test_email = f"logout_{uuid.uuid4().hex[:6]}@demo.mock"
+    reg_res = client.post("/api/v1/auth/register", json={
+        "email": test_email,
+        "password": "Password@123",
+        "full_name": "Logout Tester",
+        "role": "customer",
+        "date_of_birth": "1995-05-15"
+    })
+    assert reg_res.status_code == 201
+
+    _, _, refresh_token = _login(client, test_email, "Password@123")
+
+    # Logout WITHOUT Authorization header, providing only refresh_token
+    logout_res = client.post("/api/v1/auth/logout", json={"refresh_token": refresh_token})
+    assert logout_res.status_code == 200
+
+    # Refresh should now be rejected as revoked
+    ref_res = client.post("/api/v1/auth/refresh", json={"refresh_token": refresh_token})
+    assert ref_res.status_code == 401
+    assert "revoked" in ref_res.json()["detail"].lower()
+
+
+def test_customer_can_cancel_own_unfulfilled_order(client):
+    # 1. Login as customer and create an order
+    cust_headers, _, _ = _login(client, "customer@demo.com", "Customer@123456")
+    cat_res = client.get("/api/v1/products?search=Amrut")
+    prod_id = cat_res.json()["items"][0]["id"]
+    inv_id = client.get(f"/api/v1/products/{prod_id}").json()["inventories"][0]["id"]
+
+    client.post("/api/v1/cart/items", json={"inventory_id": inv_id, "quantity": 1}, headers=cust_headers)
+    order_res = client.post("/api/v1/test-orders", json={"simulate_payment_success": True}, headers=cust_headers)
+    assert order_res.status_code == 201
+    order_id = order_res.json()[0]["id"]
+
+    # 2. Another customer cannot cancel this customer's order (403 Forbidden)
+    other_email = f"other_{uuid.uuid4().hex[:6]}@demo.mock"
+    client.post("/api/v1/auth/register", json={
+        "email": other_email,
+        "password": "Password@123",
+        "full_name": "Other Customer",
+        "role": "customer",
+        "date_of_birth": "1995-05-15"
+    })
+    other_headers, _, _ = _login(client, other_email, "Password@123")
+    unauth_cancel = client.post(f"/api/v1/orders/{order_id}/cancel", headers=other_headers)
+    assert unauth_cancel.status_code == 403
+
+    # 3. Order owner successfully cancels their order
+    cancel_res = client.post(f"/api/v1/orders/{order_id}/cancel", headers=cust_headers)
+    assert cancel_res.status_code == 200
+    cancelled_order = cancel_res.json()
+    assert cancelled_order["status"] == "cancelled"
+
+    # 4. Attempting to cancel an already cancelled order returns 400
+    repeat_cancel = client.post(f"/api/v1/orders/{order_id}/cancel", headers=cust_headers)
+    assert repeat_cancel.status_code == 400
+
 
 

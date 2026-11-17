@@ -45,6 +45,15 @@
 
 @custom-variant dark (&:where(.dark, .dark *));
 
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
 @layer base {
   html {
     touch-action: manipulation;
@@ -72,6 +81,11 @@
     font-family: 'Plus Jakarta Sans', 'Noto Sans Telugu', Inter, system-ui, sans-serif;
     min-height: 100vh;
     transition: background-color 0.2s ease, color 0.2s ease;
+  }
+
+  :where(button, a, input, select, textarea):focus-visible {
+    outline: 2px solid #DE3500;
+    outline-offset: 2px;
   }
 
   .dark body {

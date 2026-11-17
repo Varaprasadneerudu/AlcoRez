@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import {
   ShieldCheck,
@@ -17,46 +17,46 @@ export default function HomePage() {
   const [featuredProducts, setFeaturedProducts] = useState([]);
   const [retailers, setRetailers] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [retryKey, setRetryKey] = useState(0);
   const [filterByZone, setFilterByZone] = useState(false);
   const { t, tc, language } = useLanguage();
   const { selectedZone, postalCode } = useGeoLocation();
-  const isFirstMount = useRef(true);
-
   useEffect(() => {
+    let active = true;
     async function loadData() {
       try {
-        if (isFirstMount.current) {
-          setLoading(true);
-        }
+        setLoading(true);
+        setError(null);
         const retailerParams = filterByZone ? { postal_code: postalCode } : {};
         const [cats, prods, rets] = await Promise.all([
           api.getCategories(),
           api.getProducts({ limit: 8, postal_code: filterByZone ? postalCode : undefined }),
           api.getRetailers(retailerParams),
         ]);
+        if (!active) return;
         setCategories(cats || []);
         setFeaturedProducts(prods?.items || []);
         const approvedStores = (rets || []).filter((r) => r.status === 'approved');
         const uniqueStores = Array.from(new Map(approvedStores.map((item) => [item.shop_name, item])).values());
         setRetailers(uniqueStores);
       } catch (err) {
-        console.error('Failed to load homepage data:', err);
+        if (active) setError(err.message || 'Could not load the marketplace.');
       } finally {
-        isFirstMount.current = false;
-        setLoading(false);
+        if (active) setLoading(false);
       }
     }
     loadData();
-  }, [filterByZone, postalCode]);
+    return () => { active = false; };
+  }, [filterByZone, postalCode, retryKey]);
 
   return (
     <div className="space-y-8 sm:space-y-12 pb-16 transition-colors duration-200 w-full overflow-hidden">
       
       {/* Hero Section */}
       <section className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 mt-4 sm:mt-6">
-        <div className="relative overflow-hidden bg-gradient-to-br from-[#12141c] via-[#1a0f0a] to-[#2b0c03] dark:from-[#0a0c12] dark:via-[#140b07] dark:to-[#1f0902] text-white rounded-2xl sm:rounded-3xl p-5 sm:p-10 lg:p-14 border border-[#FF4500]/30 shadow-2xl">
-          <div className="absolute -right-20 -top-20 w-96 h-96 bg-[#FF4500]/20 rounded-full blur-3xl pointer-events-none" />
-          <div className="absolute -left-20 -bottom-20 w-80 h-80 bg-[#FFE500]/15 rounded-full blur-3xl pointer-events-none" />
+        <div className="relative overflow-hidden bg-[#12141c] text-white rounded-2xl sm:rounded-3xl p-6 sm:p-10 lg:p-14 border border-white/10 shadow-xl">
+          <div className="absolute -right-20 -top-20 w-96 h-96 bg-[#FF4500]/15 rounded-full blur-3xl pointer-events-none" />
           
           <div className="max-w-3xl space-y-4 sm:space-y-5 relative z-10">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#FFE500]/15 border border-[#FFE500]/40 text-[#FFE500] text-xs font-black tracking-wide uppercase">
@@ -64,24 +64,24 @@ export default function HomePage() {
               {t('home.heroBadge')}
             </div>
 
-            <h1 className="text-2xl sm:text-5xl font-extrabold tracking-tight leading-tight">
+            <h1 className="text-3xl sm:text-5xl font-extrabold tracking-tight leading-tight">
               {language === 'en' ? (
                 <>
-                  Discover Premium Spirits & Verified <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#FF4500] via-[#FFE500] to-[#FF6600]">Wine Retailers</span> in Telangana
+                  Discover Premium Spirits & Verified <span className="text-[#FF8C66]">Wine Retailers</span> in Telangana
                 </>
               ) : (
                 <>
-                  తెలంగాణలో ప్రీమియం లిక్కర్ మరియు అధీకృత <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#FF4500] via-[#FFE500] to-[#FF6600]">వైన్ షాపులను</span> అన్వేషించండి
+                  తెలంగాణలో ప్రీమియం లిక్కర్ మరియు అధీకృత <span className="text-[#FF8C66]">వైన్ షాపులను</span> అన్వేషించండి
                 </>
               )}
             </h1>
 
-            <p className="text-stone-300 dark:text-stone-300 text-xs sm:text-base leading-relaxed max-w-2xl">
+            <p className="text-stone-300 text-sm sm:text-base leading-relaxed max-w-2xl">
               {t('home.heroDesc')}
             </p>
 
             {/* Demonstration Notice Box */}
-            <div className="bg-white/10 dark:bg-stone-900/60 backdrop-blur-md rounded-2xl p-3.5 sm:p-4 border border-[#FF4500]/30 text-xs text-stone-200 flex items-start gap-3">
+            <div className="bg-white/5 rounded-2xl p-4 border border-white/15 text-sm text-stone-200 flex items-start gap-3">
               <AlertTriangle className="w-5 h-5 text-[#FFE500] shrink-0 mt-0.5" />
               <div>
                 <strong className="text-white block font-semibold mb-0.5">{t('home.disclosureTitle')}</strong>
@@ -92,7 +92,7 @@ export default function HomePage() {
             <div className="pt-2 flex flex-wrap gap-2.5 sm:gap-3">
               <Link
                 to="/products"
-                className="py-2.5 sm:py-3 px-5 sm:px-6 rounded-xl font-black text-xs sm:text-sm bg-gradient-to-r from-[#FF4500] via-[#FF5A1F] to-[#FF7700] hover:from-[#DE3500] hover:to-[#FF4500] text-white shadow-lg shadow-orange-600/30 flex items-center gap-2 transition active:scale-95"
+                className="py-3 px-6 rounded-xl font-bold text-sm bg-amber-600 hover:bg-amber-700 text-white flex items-center gap-2 transition active:scale-95"
               >
                 <span>{t('home.exploreBtn')}</span>
                 <ArrowRight className="w-4 h-4" />
@@ -107,6 +107,16 @@ export default function HomePage() {
           </div>
         </div>
       </section>
+
+      {error && (
+        <div role="alert" className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
+          <div className="rounded-2xl border border-rose-200 bg-white p-5 text-sm dark:border-rose-900 dark:bg-stone-900">
+            <strong className="block text-base">Marketplace data could not load</strong>
+            <p className="mt-1 text-stone-600 dark:text-stone-300">{error}</p>
+            <button type="button" onClick={() => setRetryKey((key) => key + 1)} className="mt-3 rounded-xl bg-amber-600 px-5 py-2.5 font-semibold text-white">Retry</button>
+          </div>
+        </div>
+      )}
 
       {/* Category Navigation Horizontal Scroll / Grid */}
       <section className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 space-y-4">

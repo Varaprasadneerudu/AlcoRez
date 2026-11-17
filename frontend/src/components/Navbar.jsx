@@ -109,6 +109,7 @@ export default function Navbar() {
             <form onSubmit={handleSearchSubmit} className="relative">
               <input
                 type="text"
+                aria-label="Search products"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder={t('nav.searchPlaceholder')}
@@ -418,6 +419,7 @@ export default function Navbar() {
             <form onSubmit={handleSearchSubmit} className="relative">
               <input
                 type="text"
+                aria-label="Search products"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder={t('nav.searchPlaceholder')}

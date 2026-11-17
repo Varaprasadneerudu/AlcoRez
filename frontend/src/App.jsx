@@ -1,7 +1,7 @@
 import React from 'react';
 import { BrowserRouter } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { AuthProvider } from './context/AuthContext';
+import { AuthProvider, useAuth } from './context/AuthContext';
 import { CartProvider } from './context/CartContext';
 import { ThemeProvider } from './context/ThemeContext';
 import { LanguageProvider } from './context/LanguageContext';
@@ -23,6 +23,16 @@ const queryClient = new QueryClient({
     },
   },
 });
+
+function SessionNotice() {
+  const { sessionError, retrySession } = useAuth();
+  if (!sessionError) return null;
+  return (
+    <div role="alert" className="border-b border-amber-300 bg-amber-50 px-4 py-3 text-center text-sm text-amber-950 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-100">
+      {sessionError} <button type="button" onClick={retrySession} className="ml-2 font-bold underline underline-offset-2">Retry</button>
+    </div>
+  );
+}
 
 export default function App() {
   return (
@@ -46,6 +56,7 @@ export default function App() {
                         <StatutoryBanner />
                         <Navbar />
                       </div>
+                      <SessionNotice />
 
                       {/* Direction 3 Quick-Reserve Cart Drawer */}
                       <CartDrawer />

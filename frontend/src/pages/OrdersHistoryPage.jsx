@@ -71,6 +71,23 @@ export default function OrdersHistoryPage() {
   const [rating, setRating] = useState(5);
   const [reviewComment, setReviewComment] = useState('');
   const [reviewSubmitted, setReviewSubmitted] = useState(false);
+  const [actionLoading, setActionLoading] = useState(null);
+
+  const handleCancelOrder = async (orderId) => {
+    const confirmMsg = language === 'te'
+      ? 'మీరు ఖచ్చితంగా ఈ ఆర్డర్‌ను రద్దు చేయాలనుకుంటున్నారా?'
+      : 'Are you sure you want to cancel this order?';
+    if (!window.confirm(confirmMsg)) return;
+    try {
+      setActionLoading(orderId);
+      await api.cancelOrder(orderId);
+      await fetchOrders();
+    } catch (err) {
+      alert(err.message || 'Failed to cancel order');
+    } finally {
+      setActionLoading(null);
+    }
+  };
 
   const fetchOrders = useCallback(() => {
     if (isAuthenticated && (role === 'customer' || role === 'admin')) {
@@ -575,6 +592,17 @@ export default function OrdersHistoryPage() {
                           <Star className="w-3.5 h-3.5 text-amber-600 fill-amber-500" />
                           <span>{t('ordersHistory.rateReview', 'Rate & Review Experience')}</span>
                         </button>
+
+                        {['created', 'confirmed', 'preparing', 'ready'].includes(ord.status?.toLowerCase()) && (
+                          <button
+                            onClick={() => handleCancelOrder(ord.id)}
+                            disabled={actionLoading === ord.id}
+                            className="px-3.5 py-2 rounded-xl text-xs font-bold text-rose-700 dark:text-rose-400 hover:text-rose-800 dark:hover:text-rose-300 bg-rose-50 dark:bg-rose-950/40 hover:bg-rose-100 dark:hover:bg-rose-900/40 border border-rose-200 dark:border-rose-800 flex items-center gap-1.5 transition disabled:opacity-50 cursor-pointer"
+                          >
+                            <X className="w-3.5 h-3.5 text-rose-500" />
+                            <span>{actionLoading === ord.id ? (language === 'te' ? 'రద్దు చేస్తోంది...' : 'Cancelling...') : (language === 'te' ? 'ఆర్డర్ రద్దు చేయండి' : 'Cancel Order')}</span>
+                          </button>
+                        )}
                       </div>
 
                       <div className="flex items-center justify-between sm:justify-end gap-4 text-xs">

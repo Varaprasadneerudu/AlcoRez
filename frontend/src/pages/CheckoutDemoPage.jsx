@@ -112,7 +112,8 @@ export default function CheckoutDemoPage() {
       window.dispatchEvent(new CustomEvent('alco_notification_refresh'));
 
       if (orders && orders.length > 0) {
-        navigate(`/orders/${orders[0].id}`, { state: { justPlaced: true } });
+        const ids = orders.map((order) => order.id).join(',');
+        navigate(`/orders/placed?${new URLSearchParams({ ids })}`, { replace: true, state: { orders } });
       } else {
         navigate('/orders');
       }

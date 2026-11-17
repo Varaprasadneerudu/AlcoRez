@@ -91,7 +91,7 @@ export default function RetailerDashboard() {
         </p>
 
         <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-3">
-          <button
+          {import.meta.env.DEV && <button
             type="button"
             onClick={handleQuickSwitchToRetailer}
             disabled={switching}
@@ -99,7 +99,7 @@ export default function RetailerDashboard() {
           >
             {switching ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Store className="w-3.5 h-3.5" />}
             <span>{language === 'te' ? 'డెమో రిటైలర్‌గా మారండి (మాదాపూర్ వైన్స్)' : 'Sign in as Demo Retailer (Madhapur Wines)'}</span>
-          </button>
+          </button>}
           <Link
             to="/login"
             className="w-full sm:w-auto py-3 px-6 rounded-xl font-bold text-xs bg-stone-100 dark:bg-stone-800 hover:bg-stone-200 dark:hover:bg-stone-700 text-stone-800 dark:text-stone-200 border border-stone-200 dark:border-stone-700 transition cursor-pointer text-center"
@@ -153,14 +153,14 @@ export default function RetailerDashboard() {
           >
             {language === 'te' ? 'మళ్లీ ప్రయత్నించండి' : 'Retry'}
           </button>
-          <button
+          {import.meta.env.DEV && <button
             type="button"
             onClick={handleQuickSwitchToRetailer}
             disabled={switching}
             className="py-2.5 px-5 rounded-xl text-xs font-bold bg-stone-100 dark:bg-stone-800 hover:bg-stone-200 dark:hover:bg-stone-700 text-stone-800 dark:text-stone-200 border border-stone-200 dark:border-stone-700 transition cursor-pointer disabled:opacity-50"
           >
             {language === 'te' ? 'డెమో రిటైలర్‌గా మారండి' : 'Switch to Demo Retailer'}
-          </button>
+          </button>}
         </div>
       </div>
     );

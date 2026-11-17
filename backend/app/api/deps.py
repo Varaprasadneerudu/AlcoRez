@@ -1,7 +1,7 @@
 from app.core.database import get_db
 from app.core.security import decode_token
 from app.models.retailer import Retailer, RetailerMembership
-from app.models.user import CustomerProfile, User, UserRole
+from app.models.user import CustomerProfile, User
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session
@@ -113,7 +113,7 @@ def get_current_admin(current_user: User = Depends(get_current_user)) -> User:
 
 def get_current_delivery_partner(current_user: User = Depends(get_current_user)) -> User:
     dp_role = getattr(current_user.role, "value", str(current_user.role)).lower()
-    if dp_role not in ("delivery_partner", "admin"):
+    if dp_role != "delivery_partner":
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Access forbidden: Verified Delivery Partner privileges required"

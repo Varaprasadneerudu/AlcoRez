@@ -34,7 +34,7 @@ export default function Footer() {
                   <span className="text-white font-extrabold">Rez</span>
                 </div>
                 <span className="text-[10px] text-stone-400 font-medium tracking-wide mt-0.5">
-                  Reserve. Verify. Collect.
+                  Discovery and test orders.
                 </span>
               </div>
             </div>

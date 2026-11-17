@@ -77,7 +77,7 @@ export default function RegisterPage() {
         <p className="text-xs text-stone-500 dark:text-stone-400">
           {language === 'te'
             ? 'రిజర్వ్ చేయండి • ధృవీకరించండి • సేకరించండి • 21+ వయస్సు తెలంగాణ మార్కెట్‌ప్లేస్'
-            : 'Reserve. Verify. Collect. • 21+ Verified Telangana Marketplace'}
+            : 'Discover licensed retailers • 21+ demo marketplace'}
         </p>
       </div>
 

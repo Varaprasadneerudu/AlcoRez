@@ -1,5 +1,5 @@
 
-from app.api.deps import get_current_customer, get_current_user, get_current_verified_customer
+from app.api.deps import get_current_user, get_current_verified_customer
 from app.core.compliance import ComplianceEngine
 from app.core.database import get_db
 from app.models.user import User
@@ -35,6 +35,20 @@ def get_user_orders(current_user: User = Depends(get_current_user), db: Session 
 @router.get("/orders/{order_id}", response_model=OrderOut)
 def get_order_details(order_id: str, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     return OrderService.get_order_by_id(db, order_id, current_user)
+
+@router.post("/orders/{order_id}/cancel", response_model=OrderOut)
+def cancel_order(
+    order_id: str,
+    request: Request,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Allows a customer to cancel their own unfulfilled reservation or simulated order.
+    Restores inventory stock if the order was confirmed/prepared.
+    """
+    ip = request.client.host if request.client else None
+    return OrderService.cancel_customer_order(db, order_id, current_user, ip_address=ip)
 
 @router.post("/orders/live-payment-attempt")
 def attempt_live_payment(payment_in: LivePaymentAttemptRequest):

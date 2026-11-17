@@ -333,15 +333,15 @@ def test_production_settings_validation():
     with pytest.raises(ValueError, match="Production requires a secure"):
         Settings(
             ENVIRONMENT="production",
-            DEBUG=False,
+            ALCOREZ_DEBUG=False,
             JWT_SECRET_KEY="insecure_dev_key_telangana_alcomarket_secret_min_32_characters"
         )
 
-    # Production with DEBUG=True must fail
-    with pytest.raises(ValueError, match="DEBUG mode must be False"):
+    # Production with app debug enabled must fail
+    with pytest.raises(ValueError, match="ALCOREZ_DEBUG must be False"):
         Settings(
             ENVIRONMENT="production",
-            DEBUG=True,
+            ALCOREZ_DEBUG=True,
             JWT_SECRET_KEY="a_very_secure_high_entropy_prod_secret_1234567890_!@#"
         )
 
@@ -349,7 +349,7 @@ def test_production_settings_validation():
     with pytest.raises(ValueError, match="Wildcard CORS origin"):
         Settings(
             ENVIRONMENT="production",
-            DEBUG=False,
+            ALCOREZ_DEBUG=False,
             JWT_SECRET_KEY="a_very_secure_high_entropy_prod_secret_1234567890_!@#",
             CORS_ORIGINS=["*"]
         )
@@ -357,12 +357,19 @@ def test_production_settings_validation():
     # Valid production settings must succeed
     valid_prod = Settings(
         ENVIRONMENT="production",
-        DEBUG=False,
+        ALCOREZ_DEBUG=False,
         JWT_SECRET_KEY="a_very_secure_high_entropy_prod_secret_1234567890_!@#",
         CORS_ORIGINS=["https://alcodelivery.telangana.gov.in"]
     )
     assert valid_prod.ENVIRONMENT == "production"
-    assert valid_prod.DEBUG is False
+    assert valid_prod.ALCOREZ_DEBUG is False
+
+
+def test_unrelated_debug_environment_does_not_block_startup(monkeypatch):
+    monkeypatch.setenv("DEBUG", "release")
+    monkeypatch.setenv("ALCOREZ_DEBUG", "false")
+
+    assert Settings().ALCOREZ_DEBUG is False
 
 def test_unauthorized_role_access_blocked(client):
     cust_token = get_customer_token(client)

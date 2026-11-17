@@ -307,6 +307,12 @@ class AdminService:
         # If user owns a retailer
         retailer = db.query(Retailer).filter(Retailer.user_id == target.id).first()
         if retailer:
+            existing_store_orders = db.query(Order).filter(Order.retailer_id == retailer.id).first()
+            if existing_store_orders:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Cannot delete user whose retail store has existing orders. Store orders must be archived or handled first."
+                )
             db.delete(retailer)
 
         db.delete(target)

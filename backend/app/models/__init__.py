@@ -24,11 +24,12 @@ from app.models.product import (
 )
 from app.models.retailer import (
     Retailer,
+    RetailerInvitation,
     RetailerLicense,
     RetailerMembership,
     RetailerStatus,
 )
-from app.models.user import Address, CustomerProfile, User, UserRole
+from app.models.user import Address, CustomerProfile, DeliveryPartnerProfile, RefreshToken, User, UserRole
 
 __all__ = [
     "Address",
@@ -39,6 +40,7 @@ __all__ = [
     "Category",
     "ComplianceApproval",
     "CustomerProfile",
+    "DeliveryPartnerProfile",
     "FavoriteProduct",
     "FavoriteRetailer",
     "Inventory",
@@ -52,9 +54,11 @@ __all__ = [
     "ProductImage",
     "Retailer",
     "RetailerLicense",
+    "RetailerInvitation",
     "RetailerMembership",
     "RetailerStatus",
     "ServiceArea",
+    "RefreshToken",
     "TimeStampedUUIDModel",
     "User",
     "UserRole"

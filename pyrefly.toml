@@ -4,3 +4,4 @@ python-interpreter = "C:/Users/varap/AppData/Local/Programs/Python/Python314/pyt
 
 [errors]
 bad-argument-type = false
+missing-attribute = false

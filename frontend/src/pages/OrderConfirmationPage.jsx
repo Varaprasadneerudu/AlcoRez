@@ -6,6 +6,7 @@ import {
   MapPin,
   ShieldCheck,
   FileText,
+  KeyRound,
   ArrowLeft
 } from 'lucide-react';
 import { api } from '../services/api';
@@ -211,7 +212,34 @@ export default function OrderConfirmationPage() {
           </div>
         </div>
 
-        {/* Direction 3 Secure OTP Pickup Code & Excise QR Verification Card */}
+        {order.is_simulated ? (
+          <div className="space-y-4">
+            <div className="rounded-2xl border border-amber-300 bg-amber-50 p-5 text-sm leading-relaxed text-amber-950 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-200">
+              <strong className="block font-bold">{language === 'te' ? 'ఇది డెమో రికార్డు మాత్రమే' : 'Demonstration record only'}</strong>
+              {language === 'te'
+                ? 'క్రింద ఉన్న ఆర్డర్ స్థితి మరియు చిరునామా పరీక్షా డేటా మాత్రమే. ఇది డెలివరీ సూచన, చెల్లింపు రసీదు లేదా ఎక్సైజ్ అనుమతి పత్రం కాదు.'
+                : 'The order status and address below are test data. This page is not a delivery instruction, payment receipt, or excise clearance document.'}
+            </div>
+            {order.delivery_otp && (
+              <div className="rounded-2xl border border-amber-300 bg-amber-50/70 p-5 dark:border-amber-800 dark:bg-amber-950/20">
+                <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-amber-900 dark:text-amber-300">
+                  <KeyRound className="h-4 w-4" aria-hidden="true" />
+                  {language === 'te' ? 'టెస్ట్ హ్యాండ్‌ఓవర్ OTP' : 'Test handover OTP'}
+                </div>
+                <div className="mt-3 flex flex-wrap items-center gap-3">
+                  <span className="rounded-xl border border-amber-300 bg-white px-4 py-2 font-mono text-3xl font-black tracking-widest text-amber-950 dark:border-amber-700 dark:bg-stone-900 dark:text-amber-200">
+                    {order.delivery_otp}
+                  </span>
+                  <p className="max-w-md text-xs leading-relaxed text-stone-600 dark:text-stone-300">
+                    {language === 'te'
+                      ? 'ఇది సిమ్యులేటెడ్ ఆర్డర్ కోసం మాత్రమే. నిజమైన హ్యాండ్‌ఓవర్ జరగదు.'
+                      : 'For this simulated order only. No real handover takes place.'}
+                  </p>
+                </div>
+              </div>
+            )}
+          </div>
+        ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="p-5 rounded-2xl bg-gradient-to-br from-amber-500/10 via-amber-500/5 to-transparent border border-amber-300 dark:border-amber-700/80 space-y-2">
             <span className="text-[10px] font-bold uppercase tracking-wider text-amber-800 dark:text-amber-400 block">
@@ -249,6 +277,7 @@ export default function OrderConfirmationPage() {
             </div>
           </div>
         </div>
+        )}
 
         {/* Retailer & Address Details */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">

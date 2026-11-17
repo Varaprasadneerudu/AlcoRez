@@ -6,7 +6,7 @@ class Settings(BaseSettings):
     PROJECT_NAME: str = "AlcoRez"
     API_V1_STR: str = "/api/v1"
     ENVIRONMENT: str = "development"
-    DEBUG: bool = True
+    ALCOREZ_DEBUG: bool = True
 
     # Critical Legal Compliance Gate:
     # Under Telangana Excise Act, alcohol retail and delivery are strictly regulated.
@@ -46,8 +46,8 @@ class Settings(BaseSettings):
         env = self.ENVIRONMENT.lower().strip()
         if env in ["production", "prod"]:
             # 1. Enforce debug mode disabled in production
-            if self.DEBUG:
-                raise ValueError("Security violation: DEBUG mode must be False in production.")
+            if self.ALCOREZ_DEBUG:
+                raise ValueError("Security violation: ALCOREZ_DEBUG must be False in production.")
 
             # 2. Enforce secure production JWT secret
             dev_patterns = [

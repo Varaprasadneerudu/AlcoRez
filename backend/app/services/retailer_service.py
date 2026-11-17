@@ -217,12 +217,11 @@ class RetailerService:
                 RetailerMembership.retailer_id == store.id,
                 RetailerMembership.user_id == current_user.id
             ).first()
-            if not mem or mem.role_in_retailer not in ("OWNER", "MANAGER"):
-                if store.user_id != current_user.id:
-                    raise HTTPException(
-                        status_code=status.HTTP_403_FORBIDDEN,
-                        detail="Only the retailer owner or managers can invite new staff members."
-                    )
+            if (not mem or mem.role_in_retailer not in ("OWNER", "MANAGER")) and store.user_id != current_user.id:
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="Only the retailer owner or managers can invite new staff members."
+                )
 
         code = f"INV-{secrets.token_hex(6).upper()}"
         expires_at = datetime.now(timezone.utc) + timedelta(days=inv_in.expires_in_days or 7)

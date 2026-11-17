@@ -18,7 +18,7 @@ export function AlcoRezIcon({ className = "h-10 w-auto" }) {
 /**
  * AlcoRez Full Brand Lockup with Title and Description
  */
-export function AlcoRezBrandLockup({ subtitle = "Reserve. Verify. Collect." }) {
+export function AlcoRezBrandLockup({ subtitle = "Discovery and test orders" }) {
   return (
     <div className="flex items-center gap-3 group">
       <div className="group-hover:scale-105 transition-transform duration-200 shrink-0">

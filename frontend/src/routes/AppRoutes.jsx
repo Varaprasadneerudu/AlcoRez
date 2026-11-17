@@ -10,6 +10,7 @@ const ProductDetailPage = lazy(() => import('../pages/ProductDetailPage'));
 const CartPage = lazy(() => import('../pages/CartPage'));
 const CheckoutDemoPage = lazy(() => import('../pages/CheckoutDemoPage'));
 const OrderConfirmationPage = lazy(() => import('../pages/OrderConfirmationPage'));
+const OrdersPlacedPage = lazy(() => import('../pages/OrdersPlacedPage'));
 const OrdersHistoryPage = lazy(() => import('../pages/OrdersHistoryPage'));
 const ComplianceInfoPage = lazy(() => import('../pages/ComplianceInfoPage'));
 const LoginPage = lazy(() => import('../pages/LoginPage'));
@@ -56,6 +57,7 @@ export default function AppRoutes() {
         <Route path="/favorites" element={<FavoritesPage />} />
         <Route path="/retailers/:id" element={<RetailerDetailPage />} />
         <Route path="/checkout-demo" element={<CheckoutDemoPage />} />
+        <Route path="/orders/placed" element={<OrdersPlacedPage />} />
         <Route path="/orders/:id" element={<OrderConfirmationPage />} />
         <Route path="/orders" element={<OrdersHistoryPage />} />
         <Route path="/compliance-info" element={<ComplianceInfoPage />} />

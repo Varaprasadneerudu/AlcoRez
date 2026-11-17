@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
 import { Filter, SlidersHorizontal, Search, ArrowLeft, X } from 'lucide-react';
 import { api } from '../services/api';
@@ -17,6 +17,9 @@ export default function CatalogPage() {
   const [retailers, setRetailers] = useState([]);
   const [brands, setBrands] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [filterError, setFilterError] = useState(null);
+  const [retryKey, setRetryKey] = useState(0);
 
   // Filter states from URL or defaults
   const search = searchParams.get('search') || '';
@@ -26,27 +29,31 @@ export default function CatalogPage() {
   const selectedBottleSize = searchParams.get('bottle_size') || '';
   const selectedPostalCode = searchParams.get('postal_code') || '';
   const sortBy = searchParams.get('sort_by') || 'name_asc';
-  const page = parseInt(searchParams.get('page') || '1', 10);
+  const requestedPage = Number.parseInt(searchParams.get('page') || '1', 10);
+  const page = Number.isFinite(requestedPage) && requestedPage > 0 ? requestedPage : 1;
 
   const [mobileFilterOpen, setMobileFilterOpen] = useState(false);
-  const isFirstMount = useRef(true);
 
   useEffect(() => {
+    let active = true;
+    setFilterError(null);
     Promise.all([api.getCategories(), api.getRetailers(), api.getBrands()]).then(([cats, rets, brs]) => {
+      if (!active) return;
       setCategories(cats || []);
       const approvedStores = (rets || []).filter((r) => r.status === 'approved');
       const uniqueStores = Array.from(new Map(approvedStores.map((item) => [item.shop_name, item])).values());
       setRetailers(uniqueStores);
       setBrands(brs || []);
-    });
-  }, []);
+    }).catch((err) => { if (active) setFilterError(err.message || 'Could not load filters.'); });
+    return () => { active = false; };
+  }, [retryKey]);
 
   useEffect(() => {
+    let active = true;
     async function fetchCatalog() {
       try {
-        if (isFirstMount.current) {
-          setLoading(true);
-        }
+        setLoading(true);
+        setError(null);
         const res = await api.getProducts({
           search,
           category: selectedCategory,
@@ -58,17 +65,20 @@ export default function CatalogPage() {
           page,
           limit: 20
         });
+        if (!active) return;
         setProducts(res.items || []);
         setTotal(res.total || 0);
       } catch (err) {
-        console.error('Catalog fetch failed:', err);
+        if (active) setError(err.message || 'Could not load products.');
       } finally {
-        isFirstMount.current = false;
-        setLoading(false);
+        if (active) {
+          setLoading(false);
+        }
       }
     }
     fetchCatalog();
-  }, [search, selectedCategory, selectedBrand, selectedRetailer, selectedBottleSize, selectedPostalCode, sortBy, page]);
+    return () => { active = false; };
+  }, [search, selectedCategory, selectedBrand, selectedRetailer, selectedBottleSize, selectedPostalCode, sortBy, page, retryKey]);
 
   const updateParam = (key, value) => {
     const next = new URLSearchParams(searchParams);
@@ -83,6 +93,13 @@ export default function CatalogPage() {
 
   const clearAllFilters = () => {
     setSearchParams(new URLSearchParams());
+  };
+
+  const goToPage = (nextPage) => {
+    const next = new URLSearchParams(searchParams);
+    next.set('page', String(nextPage));
+    setSearchParams(next);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const hasActiveFilters = Boolean(search || selectedCategory || selectedBrand || selectedRetailer || selectedBottleSize || selectedPostalCode);
@@ -126,6 +143,7 @@ export default function CatalogPage() {
           <div className="flex items-center gap-1.5">
             <select
               value={selectedCategory}
+              aria-label="Filter by category"
               onChange={(e) => updateParam('category', e.target.value)}
               className="py-2 px-3 rounded-xl bg-white dark:bg-stone-800 border border-stone-200 dark:border-stone-700 text-xs font-semibold text-stone-800 dark:text-stone-200 outline-none focus:ring-2 focus:ring-amber-500/20 max-w-[130px] sm:max-w-xs truncate"
               title="Filter by Category"
@@ -143,6 +161,7 @@ export default function CatalogPage() {
           <div className="flex items-center gap-1.5">
             <select
               value={selectedBrand}
+              aria-label="Filter by brand"
               onChange={(e) => updateParam('brand', e.target.value)}
               className="py-2 px-3 rounded-xl bg-white dark:bg-stone-800 border border-stone-200 dark:border-stone-700 text-xs font-semibold text-stone-800 dark:text-stone-200 outline-none focus:ring-2 focus:ring-amber-500/20 max-w-[120px] sm:max-w-xs truncate"
               title="Filter by Brand"
@@ -160,6 +179,7 @@ export default function CatalogPage() {
           <div className="flex items-center gap-1.5">
             <select
               value={sortBy}
+              aria-label="Sort products"
               onChange={(e) => updateParam('sort_by', e.target.value)}
               className="py-2 px-3 rounded-xl bg-white dark:bg-stone-800 border border-stone-200 dark:border-stone-700 text-xs font-semibold text-stone-800 dark:text-stone-200 outline-none focus:ring-2 focus:ring-amber-500/20 max-w-[120px] sm:max-w-xs truncate"
               title="Sort products"
@@ -173,7 +193,25 @@ export default function CatalogPage() {
         </div>
       </div>
 
+      {hasActiveFilters && (
+        <div className="flex flex-wrap items-center gap-2" aria-label="Active filters">
+          {[
+            ['search', search, `Search: ${search}`],
+            ['category', selectedCategory, `Category: ${selectedCategory}`],
+            ['brand', selectedBrand, `Brand: ${selectedBrand}`],
+            ['retailer_id', selectedRetailer, `Retailer: ${retailers.find((r) => r.id === selectedRetailer)?.shop_name || selectedRetailer}`],
+            ['bottle_size', selectedBottleSize, `Size: ${selectedBottleSize}`],
+            ['postal_code', selectedPostalCode, `Area: ${selectedPostalCode}`],
+          ].filter(([, value]) => value).map(([key, , label]) => (
+            <button key={key} type="button" onClick={() => updateParam(key, '')} className="inline-flex min-h-9 items-center gap-1 rounded-full border border-amber-300 bg-amber-50 px-3 text-sm font-medium text-amber-950 dark:border-amber-800 dark:bg-amber-950/50 dark:text-amber-200">
+              {label} <X className="h-3.5 w-3.5" aria-hidden="true" />
+            </button>
+          ))}
+        </div>
+      )}
+
       {/* Main Layout: Filters Sidebar + Products Grid */}
+      {filterError && <div role="alert" className="mb-4 rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm dark:border-rose-900 dark:bg-rose-950/30">Filters could not load: {filterError} <button type="button" onClick={() => setRetryKey((key) => key + 1)} className="ml-2 font-semibold underline">Retry</button></div>}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
         
         {/* Filters Sidebar */}
@@ -393,6 +431,12 @@ export default function CatalogPage() {
                 <div key={i} className="bg-white dark:bg-stone-900 rounded-2xl h-80 border border-stone-200 dark:border-stone-800 animate-pulse" />
               ))}
             </div>
+          ) : error ? (
+            <div role="alert" className="rounded-2xl border border-rose-200 bg-white p-8 text-center dark:border-rose-900 dark:bg-stone-900">
+              <h3 className="text-lg font-bold">Could not load the catalog</h3>
+              <p className="mt-2 text-sm text-stone-600 dark:text-stone-300">{error}</p>
+              <button onClick={() => setRetryKey((key) => key + 1)} className="mt-4 rounded-xl bg-amber-600 px-5 py-3 text-sm font-semibold text-white">Retry</button>
+            </div>
           ) : products.length === 0 ? (
             <div className="bg-white dark:bg-stone-900 rounded-3xl border border-stone-200 dark:border-stone-800 p-8 sm:p-12 text-center space-y-4">
               <div className="w-16 h-16 rounded-full bg-amber-50 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 flex items-center justify-center mx-auto">
@@ -415,6 +459,13 @@ export default function CatalogPage() {
                 <ProductCard key={p.id} product={p} />
               ))}
             </div>
+          )}
+          {!loading && !error && total > 20 && (
+            <nav className="flex items-center justify-center gap-4" aria-label="Catalog pages">
+              <button type="button" disabled={page <= 1} onClick={() => goToPage(page - 1)} className="rounded-xl border border-stone-300 px-4 py-2 text-sm font-semibold disabled:opacity-40 dark:border-stone-700">Previous</button>
+              <span className="text-sm text-stone-600 dark:text-stone-300">Page {page} of {Math.ceil(total / 20)}</span>
+              <button type="button" disabled={page >= Math.ceil(total / 20)} onClick={() => goToPage(page + 1)} className="rounded-xl border border-stone-300 px-4 py-2 text-sm font-semibold disabled:opacity-40 dark:border-stone-700">Next</button>
+            </nav>
           )}
         </main>
 

@@ -8,13 +8,15 @@ from sqlalchemy import engine_from_config, pool
 # Add backend directory to sys.path
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
+import app.models  # noqa: F401 - register all mapped tables for autogenerate
 from app.core.config import settings
 from app.core.database import Base
 
 config = context.config
 
-# Set sqlalchemy.url dynamically from settings
-config.set_main_option("sqlalchemy.url", settings.DATABASE_URL)
+# Set sqlalchemy.url dynamically from settings, including provider URLs that use postgres://.
+database_url = settings.DATABASE_URL.replace("postgres://", "postgresql://", 1) if settings.DATABASE_URL.startswith("postgres://") else settings.DATABASE_URL
+config.set_main_option("sqlalchemy.url", database_url.replace("%", "%%"))
 
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)

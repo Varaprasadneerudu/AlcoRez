@@ -1,5 +1,6 @@
 from decimal import Decimal
 
+from app.core.compliance import ComplianceEngine
 from app.models.order import Order, OrderStatus
 from app.models.retailer import Retailer
 from app.models.user import DeliveryPartnerProfile, User, UserRole
@@ -18,23 +19,35 @@ from sqlalchemy.orm import Session, joinedload
 
 class DeliveryService:
     @staticmethod
+    def require_verified_partner(db: Session, user: User) -> DeliveryPartnerProfile:
+        profile = db.query(DeliveryPartnerProfile).filter(DeliveryPartnerProfile.user_id == user.id).first()
+        if not profile or not profile.is_verified:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="A verified delivery partner profile is required.")
+        return profile
+
+    @staticmethod
+    def assert_simulation_or_dispatch_allowed(order: Order) -> None:
+        if not order.is_simulated:
+            ComplianceEngine.assert_alcohol_dispatch_allowed()
+
+    @staticmethod
     def get_or_create_profile(db: Session, user: User) -> DeliveryPartnerProfileOut:
         profile = db.query(DeliveryPartnerProfile).filter(DeliveryPartnerProfile.user_id == user.id).first()
         if not profile:
             profile = DeliveryPartnerProfile(
                 user_id=user.id,
-                vehicle_type="Honda Activa 6G (EV/Petrol)",
-                vehicle_number="TS 09 EB 4821",
-                driving_license_number="DL-TS-2022-987654",
-                is_online=True,
-                current_zone="Madhapur & HITEC City",
-                rating=Decimal("4.92"),
-                total_trips=42,
-                today_trips=6,
-                today_earnings=Decimal("620.00"),
-                total_earnings=Decimal("18450.00"),
-                is_verified=True,
-                compliance_permit_no="TS-EXCISE-DP-2024-0982"
+                vehicle_type="Motorcycle",
+                vehicle_number="",
+                driving_license_number="",
+                is_online=False,
+                current_zone="",
+                rating=Decimal("0.00"),
+                total_trips=0,
+                today_trips=0,
+                today_earnings=Decimal("0.00"),
+                total_earnings=Decimal("0.00"),
+                is_verified=False,
+                compliance_permit_no=""
             )
             db.add(profile)
             db.commit()
@@ -45,7 +58,7 @@ class DeliveryService:
             user_id=user.id,
             full_name=user.full_name,
             email=user.email,
-            phone=user.phone or "+91-9876501234",
+            phone=user.phone,
             vehicle_type=profile.vehicle_type,
             vehicle_number=profile.vehicle_number,
             driving_license_number=profile.driving_license_number,
@@ -67,6 +80,8 @@ class DeliveryService:
             DeliveryService.get_or_create_profile(db, user)
             profile = db.query(DeliveryPartnerProfile).filter(DeliveryPartnerProfile.user_id == user.id).first()
 
+        if status_update.is_online and not profile.is_verified:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Profile verification is required before going online.")
         profile.is_online = status_update.is_online
         if status_update.current_zone:
             profile.current_zone = status_update.current_zone
@@ -126,35 +141,41 @@ class DeliveryService:
 
     @staticmethod
     def get_available_orders(db: Session, user: User) -> list[AvailableDeliveryOrderOut]:
-        orders = (
+        DeliveryService.require_verified_partner(db, user)
+        query = (
             db.query(Order)
             .options(joinedload(Order.items))
             .filter(
                 Order.delivery_partner_id.is_(None),
                 Order.status.in_([OrderStatus.READY, OrderStatus.CONFIRMED, OrderStatus.PREPARING])
             )
-            .order_by(Order.created_at.desc())
-            .all()
         )
+        if not ComplianceEngine.is_alcohol_transaction_enabled():
+            query = query.filter(Order.is_simulated.is_(True))
+        orders = query.order_by(Order.created_at.desc()).all()
         return [DeliveryService._order_to_available_out(o, db) for o in orders]
 
     @staticmethod
     def get_active_order(db: Session, user: User) -> AvailableDeliveryOrderOut | None:
-        order = (
+        DeliveryService.require_verified_partner(db, user)
+        query = (
             db.query(Order)
             .options(joinedload(Order.items))
             .filter(
                 Order.delivery_partner_id == user.id,
                 Order.status.in_([OrderStatus.READY, OrderStatus.OUT_FOR_DELIVERY, OrderStatus.PREPARING])
             )
-            .first()
         )
+        if not ComplianceEngine.is_alcohol_transaction_enabled():
+            query = query.filter(Order.is_simulated.is_(True))
+        order = query.first()
         if not order:
             return None
         return DeliveryService._order_to_available_out(order, db)
 
     @staticmethod
     def accept_order(db: Session, user: User, order_id: str, ip_address: str | None = None) -> AvailableDeliveryOrderOut:
+        DeliveryService.require_verified_partner(db, user)
         # Check if already has an active order
         active = DeliveryService.get_active_order(db, user)
         if active and active.order_id != order_id:
@@ -166,6 +187,7 @@ class DeliveryService:
         order = db.query(Order).filter(Order.id == order_id).first()
         if not order:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Order not found")
+        DeliveryService.assert_simulation_or_dispatch_allowed(order)
 
         # Validate order status transition for acceptance
         if order.status == OrderStatus.CANCELLED:
@@ -213,9 +235,11 @@ class DeliveryService:
 
     @staticmethod
     def pickup_order(db: Session, user: User, order_id: str, ip_address: str | None = None) -> AvailableDeliveryOrderOut:
+        DeliveryService.require_verified_partner(db, user)
         order = db.query(Order).filter(Order.id == order_id).first()
         if not order:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Order not found")
+        DeliveryService.assert_simulation_or_dispatch_allowed(order)
 
         # Enforce assignment check
         if not order.delivery_partner_id or (order.delivery_partner_id != user.id and user.role != UserRole.ADMIN):
@@ -259,9 +283,11 @@ class DeliveryService:
         payload: DeliveryCompleteRequest,
         ip_address: str | None = None
     ) -> AvailableDeliveryOrderOut:
+        DeliveryService.require_verified_partner(db, user)
         order = db.query(Order).filter(Order.id == order_id).first()
         if not order:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Order not found")
+        DeliveryService.assert_simulation_or_dispatch_allowed(order)
 
         # Enforce assignment check
         if not order.delivery_partner_id or (order.delivery_partner_id != user.id and user.role != UserRole.ADMIN):

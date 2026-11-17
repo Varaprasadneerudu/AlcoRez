@@ -8,6 +8,7 @@ backend_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if backend_dir not in sys.path:
     sys.path.insert(0, backend_dir)
 
+import app.models  # Ensure all model tables are registered with Base.metadata
 from app.api.v1.api_router import api_router
 from app.core.compliance import ComplianceViolationException
 from app.core.config import settings
@@ -25,30 +26,32 @@ logger = logging.getLogger("alcodelivery")
 async def lifespan(app: FastAPI):
     # Skip heavy startup and seeding during automated tests
     if os.getenv("TESTING") != "1":
-        logger.info("Initializing database schemas...")
-        Base.metadata.create_all(bind=engine)
-        try:
-            from sqlalchemy import text
-            with engine.connect() as conn:
-                res = conn.execute(text("PRAGMA table_info(orders)")).fetchall()
-                cols = [r[1] for r in res]
-                if "delivery_partner_id" not in cols:
-                    conn.execute(text("ALTER TABLE orders ADD COLUMN delivery_partner_id VARCHAR(36)"))
-                if "delivery_otp" not in cols:
-                    conn.execute(text("ALTER TABLE orders ADD COLUMN delivery_otp VARCHAR(6)"))
-                conn.commit()
-        except Exception as mig_err:
-            logger.warning(f"Auto-column check: {mig_err}")
+        if settings.ENVIRONMENT.lower().strip() not in {"production", "prod"}:
+            logger.info("Initializing development database schemas...")
+            Base.metadata.create_all(bind=engine)
+            try:
+                from sqlalchemy import text
+                with engine.connect() as conn:
+                    res = conn.execute(text("PRAGMA table_info(orders)")).fetchall()
+                    cols = [r[1] for r in res]
+                    if "delivery_partner_id" not in cols:
+                        conn.execute(text("ALTER TABLE orders ADD COLUMN delivery_partner_id VARCHAR(36)"))
+                    if "delivery_otp" not in cols:
+                        conn.execute(text("ALTER TABLE orders ADD COLUMN delivery_otp VARCHAR(6)"))
+                    conn.commit()
+            except Exception as mig_err:
+                logger.warning(f"Auto-column check: {mig_err}")
         logger.info(
             f"Alco Telangana Marketplace initialized. "
             f"Alcohol Transactions Enabled: {settings.ALCOHOL_TRANSACTIONS_ENABLED} (FAIL-CLOSED)."
         )
-        try:
-            from seed_data import seed_database
-            seed_database()
-            logger.info("Demo database verified/seeded successfully.")
-        except Exception as e:
-            logger.warning(f"Auto-seed notification: {e}")
+        if settings.DEMO_MODE and settings.ENVIRONMENT.lower().strip() not in {"production", "prod"}:
+            try:
+                from seed_data import seed_database
+                seed_database()
+                logger.info("Development demo database verified/seeded successfully.")
+            except Exception as e:
+                logger.warning(f"Auto-seed notification: {e}")
 
     yield
     logger.info("Application shutting down...")
@@ -112,4 +115,4 @@ if __name__ == "__main__":
     import uvicorn
     port = int(os.environ.get("PORT", "8000"))
     host = os.environ.get("HOST", "0.0.0.0")
-    uvicorn.run("app.main:app", host=host, port=port, reload=settings.DEBUG)
+    uvicorn.run("app.main:app", host=host, port=port, reload=settings.ALCOREZ_DEBUG)

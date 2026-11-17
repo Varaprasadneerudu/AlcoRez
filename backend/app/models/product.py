@@ -5,6 +5,7 @@ from sqlalchemy import (
     Boolean,
     CheckConstraint,
     ForeignKey,
+    Index,
     Integer,
     Numeric,
     String,
@@ -73,6 +74,7 @@ class Inventory(TimeStampedUUIDModel):
 
 class InventoryMovement(TimeStampedUUIDModel):
     __tablename__ = "inventory_movements"
+    __table_args__ = (Index("ix_inventory_movements_created_at", "created_at"),)
 
     inventory_id: Mapped[str] = mapped_column(String(36), ForeignKey("inventory.id", ondelete="CASCADE"), nullable=False, index=True)
     retailer_id: Mapped[str] = mapped_column(String(36), ForeignKey("retailers.id", ondelete="CASCADE"), nullable=False, index=True)

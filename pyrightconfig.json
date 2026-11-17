@@ -1,5 +1,7 @@
 {
-  "include": ["backend"],
+  "include": [
+    "backend"
+  ],
   "extraPaths": [
     "backend",
     "C:/Users/varap/AppData/Local/Programs/Python/Python314/Lib/site-packages"

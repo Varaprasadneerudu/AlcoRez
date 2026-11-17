@@ -25,6 +25,14 @@ export function getStoredToken() {
   return null;
 }
 
+export function getStoredRefreshToken() {
+  try {
+    return sessionStorage.getItem('alco_refresh_token');
+  } catch {
+    return null;
+  }
+}
+
 export function getStoredRole() {
   try {
     const sessionRole = sessionStorage.getItem('alco_user_role');
@@ -71,11 +79,12 @@ export function getStoredUser() {
   return null;
 }
 
-export function setStoredToken(token, role, user) {
+export function setStoredToken(token, role, user, refreshToken) {
   try {
     if (token) {
       sessionStorage.removeItem('alco_session_cleared');
       sessionStorage.setItem('alco_access_token', token);
+      if (refreshToken) sessionStorage.setItem('alco_refresh_token', refreshToken);
       sessionStorage.setItem('alco_user_role', role || 'customer');
       if (user) {
         sessionStorage.setItem('alco_user_profile', JSON.stringify(user));
@@ -89,6 +98,7 @@ export function setStoredToken(token, role, user) {
       const currentToken = sessionStorage.getItem('alco_access_token');
       sessionStorage.setItem('alco_session_cleared', '1');
       sessionStorage.removeItem('alco_access_token');
+      sessionStorage.removeItem('alco_refresh_token');
       sessionStorage.removeItem('alco_user_role');
       sessionStorage.removeItem('alco_user_profile');
       if (localStorage.getItem('alco_access_token') === currentToken) {
@@ -100,6 +110,29 @@ export function setStoredToken(token, role, user) {
   } catch (err) {
     console.warn('Error setting stored token:', err);
   }
+}
+
+let refreshInFlight = null;
+
+async function refreshAccessToken() {
+  if (refreshInFlight) return refreshInFlight;
+  const refreshToken = getStoredRefreshToken();
+  if (!refreshToken) return null;
+  refreshInFlight = fetch(`${API_BASE}/auth/refresh`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ refresh_token: refreshToken }),
+  }).then(async (response) => {
+    if (!response.ok) return null;
+    const data = await response.json();
+    if (getStoredRefreshToken() !== refreshToken) return null;
+    setStoredToken(data.access_token, data.role, {
+      id: data.user_id, email: data.email, full_name: data.full_name, role: data.role,
+    }, data.refresh_token);
+    invalidateCache();
+    return data.access_token;
+  }).finally(() => { refreshInFlight = null; });
+  return refreshInFlight;
 }
 
 export async function apiRequest(endpoint, options = {}) {
@@ -122,6 +155,24 @@ export async function apiRequest(endpoint, options = {}) {
     );
   }
 
+  if (response.status === 401 && !endpoint.startsWith('/auth/')) {
+    let freshToken = null;
+    try {
+      freshToken = await refreshAccessToken();
+    } catch {
+      // Preserve the original unauthorized response if refresh is unavailable.
+    }
+    if (freshToken) {
+      response = await fetch(`${API_BASE}${endpoint}`, {
+        ...options,
+        headers: { ...headers, Authorization: `Bearer ${freshToken}` },
+      });
+    }
+    if (response.status === 401 && getStoredToken() === (freshToken || token)) {
+      window.dispatchEvent(new Event('alco_session_expired'));
+    }
+  }
+
   if (response.status === 204) {
     return null;
   }
@@ -134,7 +185,7 @@ export async function apiRequest(endpoint, options = {}) {
       if (response.status === 404) {
         errorMsg = `API route not found (404) at ${API_BASE}${endpoint}`;
       } else if (response.status === 401) {
-        errorMsg = 'Incorrect email or password.';
+        errorMsg = endpoint === '/auth/login' ? 'Incorrect email or password.' : 'Your session has expired. Please sign in again.';
       } else if (response.status === 502 || response.status === 503) {
         errorMsg = 'Backend server is starting up. Please try again in 15 seconds.';
       } else {
@@ -153,6 +204,7 @@ export async function apiRequest(endpoint, options = {}) {
 // In-memory cache & in-flight promise deduplication to eliminate redundant network roundtrips
 const requestCache = new Map();
 const inflightRequests = new Map();
+let cacheEpoch = 0;
 
 export async function cachedApiRequest(endpoint, ttlMs = 60000) {
   const now = Date.now();
@@ -166,14 +218,15 @@ export async function cachedApiRequest(endpoint, ttlMs = 60000) {
     return inflightRequests.get(endpoint);
   }
 
+  const epoch = cacheEpoch;
   const promise = apiRequest(endpoint)
     .then((data) => {
-      requestCache.set(endpoint, { data, timestamp: Date.now() });
-      inflightRequests.delete(endpoint);
+      if (epoch === cacheEpoch) requestCache.set(endpoint, { data, timestamp: Date.now() });
+      if (inflightRequests.get(endpoint) === promise) inflightRequests.delete(endpoint);
       return data;
     })
     .catch((err) => {
-      inflightRequests.delete(endpoint);
+      if (inflightRequests.get(endpoint) === promise) inflightRequests.delete(endpoint);
       throw err;
     });
 
@@ -183,7 +236,9 @@ export async function cachedApiRequest(endpoint, ttlMs = 60000) {
 
 export function invalidateCache(endpointPrefix) {
   if (!endpointPrefix) {
+    cacheEpoch += 1;
     requestCache.clear();
+    inflightRequests.clear();
     return;
   }
   for (const key of requestCache.keys()) {
@@ -208,6 +263,29 @@ export const api = {
     return apiRequest('/auth/register', { method: 'POST', body: JSON.stringify(userData) });
   },
   getMe: () => apiRequest('/auth/me'),
+  refreshSession: refreshAccessToken,
+  logout: async (refreshToken) => {
+    const accessToken = getStoredToken();
+    const revoke = (token, rotatingToken) => fetch(`${API_BASE}/auth/logout`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ refresh_token: rotatingToken }),
+    });
+    if (!accessToken) return;
+    let response = await revoke(accessToken, refreshToken);
+    if (response.status === 401 && refreshToken) {
+      const refreshed = await fetch(`${API_BASE}/auth/refresh`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ refresh_token: refreshToken }),
+      });
+      if (refreshed.ok) {
+        const data = await refreshed.json();
+        response = await revoke(data.access_token, data.refresh_token);
+      }
+    }
+    if (!response.ok) throw new Error('Server logout failed');
+  },
 
   // Catalog
   getCategories: () => cachedApiRequest('/categories', 120000), // 2 min cache
@@ -314,6 +392,7 @@ export const api = {
   },
   getOrders: () => apiRequest('/orders'),
   getOrder: (id) => apiRequest(`/orders/${id}`),
+  cancelOrder: (id) => apiRequest(`/orders/${id}/cancel`, { method: 'POST' }),
   attemptLivePayment: (payload) => apiRequest('/orders/live-payment-attempt', {
     method: 'POST',
     body: JSON.stringify(payload),

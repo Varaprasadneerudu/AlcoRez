@@ -62,7 +62,7 @@ export default function LoginPage() {
           {t('auth.signInTitle', 'Sign In to Your Account')}
         </h1>
         <p className="text-xs text-stone-500 dark:text-stone-400 font-medium tracking-wide">
-          Reserve. Verify. Collect.
+          Discovery and test orders.
         </p>
       </div>
 

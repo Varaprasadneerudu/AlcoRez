@@ -30,7 +30,7 @@ VALID_ORDER_TRANSITIONS = {
     OrderStatus.CREATED: [OrderStatus.CONFIRMED, OrderStatus.REJECTED, OrderStatus.CANCELLED],
     OrderStatus.CONFIRMED: [OrderStatus.PREPARING, OrderStatus.CANCELLED],
     OrderStatus.PREPARING: [OrderStatus.READY, OrderStatus.CANCELLED],
-    OrderStatus.READY: [OrderStatus.OUT_FOR_DELIVERY, OrderStatus.COMPLETED, OrderStatus.FAILED],
+    OrderStatus.READY: [OrderStatus.OUT_FOR_DELIVERY, OrderStatus.COMPLETED, OrderStatus.FAILED, OrderStatus.CANCELLED],
     OrderStatus.OUT_FOR_DELIVERY: [OrderStatus.COMPLETED, OrderStatus.FAILED, OrderStatus.CANCELLED],
     OrderStatus.COMPLETED: [],
     OrderStatus.REJECTED: [],
@@ -478,3 +478,36 @@ class OrderService:
     def to_order_out(db: Session, order: Order) -> OrderOut:
         batch = OrderService.to_order_out_batch(db, [order])
         return batch[0]
+
+    @staticmethod
+    def cancel_customer_order(
+        db: Session,
+        order_id: str,
+        current_user: User,
+        notes: str | None = None,
+        ip_address: str | None = None
+    ) -> OrderOut:
+        """
+        Allows a customer to cancel their own unfulfilled reservation or order.
+        Restores reserved inventory stock if previously confirmed/prepared.
+        """
+        order = db.query(Order).filter(Order.id == order_id).first()
+        if not order:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Order not found")
+        if order.user_id != current_user.id and current_user.role != UserRole.ADMIN:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="You do not have permission to cancel this order."
+            )
+        if order.status in [OrderStatus.COMPLETED, OrderStatus.REJECTED, OrderStatus.CANCELLED, OrderStatus.FAILED]:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Cannot cancel order in '{order.status.value}' status."
+            )
+
+        status_in = OrderStatusUpdate(
+            status=OrderStatus.CANCELLED,
+            notes=notes or "Order cancelled by customer"
+        )
+        return OrderService.update_order_status(db, order_id, status_in, actor_user=current_user, ip_address=ip_address)
+

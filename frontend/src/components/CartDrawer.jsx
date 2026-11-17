@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { X, ShoppingBag, Plus, Minus, Trash2, ShieldCheck, ArrowRight, Store } from 'lucide-react';
 import { useCart } from '../context/CartContext';
@@ -24,17 +24,41 @@ export default function CartDrawer() {
   const navigate = useNavigate();
 
   const [ageConfirmed, setAgeConfirmed] = useState(true);
+  const drawerRef = useRef(null);
 
   // Lock body scroll when cart drawer is active to prevent catalogue page scrolling in the background
   useEffect(() => {
     if (isDrawerOpen) {
       const prevOverflow = document.body.style.overflow;
+      const previousFocus = document.activeElement;
       document.body.style.overflow = 'hidden';
+      drawerRef.current?.querySelector('button')?.focus();
+      const handleKeyDown = (event) => {
+        if (event.key === 'Escape') {
+          closeDrawer();
+          return;
+        }
+        if (event.key !== 'Tab') return;
+        const controls = [...(drawerRef.current?.querySelectorAll('a[href], button:not([disabled]), input:not([disabled])') || [])];
+        if (controls.length === 0) return;
+        const first = controls[0];
+        const last = controls[controls.length - 1];
+        if (event.shiftKey && document.activeElement === first) {
+          event.preventDefault();
+          last.focus();
+        } else if (!event.shiftKey && document.activeElement === last) {
+          event.preventDefault();
+          first.focus();
+        }
+      };
+      document.addEventListener('keydown', handleKeyDown);
       return () => {
         document.body.style.overflow = prevOverflow;
+        document.removeEventListener('keydown', handleKeyDown);
+        previousFocus?.focus?.();
       };
     }
-  }, [isDrawerOpen]);
+  }, [isDrawerOpen, closeDrawer]);
 
   // Cart drawer is strictly disabled for Super Admin and Retailers
   if (!isDrawerOpen || role === 'admin' || role === 'retailer') return null;
@@ -65,6 +89,10 @@ export default function CartDrawer() {
 
       <div className="fixed inset-y-0 right-0 max-w-full flex pl-0 sm:pl-10 z-50">
         <div
+          ref={drawerRef}
+          role="dialog"
+          aria-modal="true"
+          aria-label="Your test cart"
           className="w-screen max-w-md bg-white dark:bg-stone-900 border-l border-stone-200 dark:border-stone-800 shadow-2xl flex flex-col h-full overflow-hidden overscroll-contain"
           onClick={(e) => e.stopPropagation()}
         >
@@ -75,7 +103,7 @@ export default function CartDrawer() {
               <img src="/alcorez_logo.png" alt="AlcoRez" className="h-8 w-auto rounded object-contain shadow-xs shrink-0" />
               <div>
                 <h2 className="font-extrabold text-base text-stone-900 dark:text-stone-100 flex items-center gap-2">
-                  <span>{language === 'te' ? 'మీ కార్ట్' : 'Your Reserve Cart'}</span>
+                  <span>{language === 'te' ? 'మీ డెమో కార్ట్' : 'Your Test Cart'}</span>
                   <span className="text-xs bg-amber-100 dark:bg-amber-950/80 text-amber-800 dark:text-amber-300 font-bold px-2 py-0.5 rounded-full border border-amber-300 dark:border-amber-800">
                     {itemCount}
                   </span>
@@ -104,7 +132,7 @@ export default function CartDrawer() {
                 </div>
                 <div className="space-y-1">
                   <h3 className="font-bold text-stone-800 dark:text-stone-200 text-sm">
-                    {language === 'te' ? 'మీ కార్ట్ ఖాళీగా ఉంది' : 'Your Reserve Cart is Empty'}
+                    {language === 'te' ? 'మీ డెమో కార్ట్ ఖాళీగా ఉంది' : 'Your Test Cart is Empty'}
                   </h3>
                   <p className="text-xs text-stone-500 max-w-xs mx-auto">
                     {language === 'te' ? 'కార్ట్‌కు జోడించడానికి కేటలాగ్‌ను బ్రౌజ్ చేయండి.' : 'Explore verified spirits from authorized wine stores near you.'}
@@ -209,11 +237,11 @@ export default function CartDrawer() {
           {items.length > 0 && (
             <div className="p-4 sm:p-5 border-t border-stone-200 dark:border-stone-800 bg-stone-50/70 dark:bg-stone-950/60 space-y-3.5 shrink-0 overflow-y-auto max-h-[50vh] overscroll-contain">
               
-              {/* Pickup SLA Notice */}
+              {/* Demonstration notice */}
               <div className="p-2.5 rounded-xl bg-amber-100/60 dark:bg-amber-950/60 border border-amber-300 dark:border-amber-800/80 text-[11px] text-amber-900 dark:text-amber-200 flex items-center gap-2">
                 <Store className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0" />
                 <span>
-                  <strong>{language === 'te' ? 'స్టోర్ పికప్' : 'Store Pickup'}:</strong> {language === 'te' ? '30 నిమిషాల్లో కౌంటర్‌లో సిద్ధం' : 'Ready at licensed wine shop counter in ~30 mins'}
+                  <strong>{language === 'te' ? 'డెమో మాత్రమే' : 'Demo only'}:</strong> {language === 'te' ? 'ఈ కార్ట్ పరీక్ష ఆర్డర్ల కోసం మాత్రమే. విక్రయం లేదా పికప్ జరగదు.' : 'This cart creates test orders only. No sale or pickup takes place.'}
                 </span>
               </div>
 
@@ -240,7 +268,7 @@ export default function CartDrawer() {
                 <span>
                   {language === 'te'
                     ? 'నేను 21 సంవత్సరాలు లేదా అంతకంటే ఎక్కువ వయస్సు కలిగి ఉన్నానని నిర్ధారిస్తున్నాను.'
-                    : 'I confirm that I am 21+ years of age and hold legal permit as per Telangana Excise Law.'}
+                    : 'I confirm that I am 21 years of age or older.'}
                 </span>
               </label>
 
@@ -253,7 +281,7 @@ export default function CartDrawer() {
                   className="w-full py-3.5 px-4 rounded-xl font-bold text-sm bg-gradient-to-r from-amber-600 via-amber-600 to-amber-700 hover:from-amber-700 hover:to-amber-800 text-white shadow-lg shadow-amber-700/25 flex items-center justify-center gap-2 transition disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
                 >
                   <span>
-                    {language === 'te' ? 'ఆర్డర్ రిజర్వ్ చేయండి' : 'Proceed to Reserve'}
+                    {language === 'te' ? 'డెమో చెకౌట్‌కు వెళ్లండి' : 'Continue to Demo Checkout'}
                   </span>
                   <span>(₹{Math.round(totalAmount).toLocaleString('en-IN')})</span>
                   <ArrowRight className="w-4 h-4" />
@@ -270,7 +298,7 @@ export default function CartDrawer() {
 
                   <span className="text-[10px] text-stone-400 flex items-center gap-1">
                     <ShieldCheck className="w-3 h-3 text-emerald-500" />
-                    {language === 'te' ? 'ఎక్సైజ్ రక్షణతో' : 'Excise Compliant'}
+                    {language === 'te' ? 'పరీక్ష ఆర్డర్ మాత్రమే' : 'Test order only'}
                   </span>
                 </div>
               </div>
