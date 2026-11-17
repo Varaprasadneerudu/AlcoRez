@@ -60,8 +60,8 @@ export default function CartDrawer() {
     }
   }, [isDrawerOpen, closeDrawer]);
 
-  // Cart drawer is strictly disabled for Super Admin and Retailers
-  if (!isDrawerOpen || role === 'admin' || role === 'retailer') return null;
+  // Cart drawer is strictly disabled for non-customers (Admin, Retailer, Delivery Partner)
+  if (!isDrawerOpen || role === 'admin' || role === 'retailer' || role === 'delivery_partner') return null;
 
   const items = cart?.items || [];
   const numSubtotal = Number(subtotal || 0);
@@ -237,14 +237,6 @@ export default function CartDrawer() {
           {items.length > 0 && (
             <div className="p-4 sm:p-5 border-t border-stone-200 dark:border-stone-800 bg-stone-50/70 dark:bg-stone-950/60 space-y-3.5 shrink-0 overflow-y-auto max-h-[50vh] overscroll-contain">
               
-              {/* Demonstration notice */}
-              <div className="p-2.5 rounded-xl bg-amber-100/60 dark:bg-amber-950/60 border border-amber-300 dark:border-amber-800/80 text-[11px] text-amber-900 dark:text-amber-200 flex items-center gap-2">
-                <Store className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0" />
-                <span>
-                  <strong>{language === 'te' ? 'డెమో మాత్రమే' : 'Demo only'}:</strong> {language === 'te' ? 'ఈ కార్ట్ పరీక్ష ఆర్డర్ల కోసం మాత్రమే. విక్రయం లేదా పికప్ జరగదు.' : 'This cart creates test orders only. No sale or pickup takes place.'}
-                </span>
-              </div>
-
               {/* Order Summary */}
               <div className="space-y-2 text-xs">
                 <div className="flex justify-between text-stone-600 dark:text-stone-400">
@@ -281,7 +273,7 @@ export default function CartDrawer() {
                   className="w-full py-3.5 px-4 rounded-xl font-bold text-sm bg-gradient-to-r from-amber-600 via-amber-600 to-amber-700 hover:from-amber-700 hover:to-amber-800 text-white shadow-lg shadow-amber-700/25 flex items-center justify-center gap-2 transition disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
                 >
                   <span>
-                    {language === 'te' ? 'డెమో చెకౌట్‌కు వెళ్లండి' : 'Continue to Demo Checkout'}
+                    {language === 'te' ? 'చెకౌట్‌కు వెళ్లండి' : 'Continue to Checkout'}
                   </span>
                   <span>(₹{Math.round(totalAmount).toLocaleString('en-IN')})</span>
                   <ArrowRight className="w-4 h-4" />

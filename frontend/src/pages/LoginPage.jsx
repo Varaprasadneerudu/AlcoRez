@@ -14,6 +14,8 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState(null);
 
+  const partnerUrl = import.meta.env.VITE_PARTNER_APP_URL || (typeof window !== 'undefined' ? `http://${window.location.hostname}:5174` : 'http://localhost:5174');
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError(null);
@@ -22,7 +24,6 @@ export default function LoginPage() {
       if (data.role === 'retailer') navigate('/retailer');
       else if (data.role === 'admin') navigate('/admin');
       else if (data.role === 'delivery_partner') {
-        const partnerUrl = import.meta.env.VITE_PARTNER_APP_URL || `http://${window.location.hostname}:5174`;
         window.location.href = partnerUrl;
       }
       else navigate('/');
@@ -129,7 +130,7 @@ export default function LoginPage() {
           </p>
           <div className="pt-2 border-t border-stone-100 dark:border-stone-800">
             <a
-              href="http://localhost:5174"
+              href={partnerUrl}
               className="inline-flex items-center gap-1.5 text-xs font-bold text-amber-700 dark:text-amber-400 hover:underline"
             >
               <span>🚚 Delivery Partner Portal (Port 5174)</span>

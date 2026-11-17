@@ -266,14 +266,18 @@ export const api = {
   refreshSession: refreshAccessToken,
   logout: async (refreshToken) => {
     const accessToken = getStoredToken();
-    const revoke = (token, rotatingToken) => fetch(`${API_BASE}/auth/logout`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-      body: JSON.stringify({ refresh_token: rotatingToken }),
-    });
-    if (!accessToken) return;
+    const revoke = (token, rotatingToken) => {
+      const headers = { 'Content-Type': 'application/json' };
+      if (token) headers.Authorization = `Bearer ${token}`;
+      return fetch(`${API_BASE}/auth/logout`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({ refresh_token: rotatingToken }),
+      });
+    };
+    if (!accessToken && !refreshToken) return;
     let response = await revoke(accessToken, refreshToken);
-    if (response.status === 401 && refreshToken) {
+    if (response.status === 401 && refreshToken && accessToken) {
       const refreshed = await fetch(`${API_BASE}/auth/refresh`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -284,7 +288,7 @@ export const api = {
         response = await revoke(data.access_token, data.refresh_token);
       }
     }
-    if (!response.ok) throw new Error('Server logout failed');
+    if (!response.ok && response.status !== 401) throw new Error('Server logout failed');
   },
 
   // Catalog

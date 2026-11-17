@@ -45,6 +45,11 @@ const STATUS_THEMES = {
     text: 'text-purple-900 dark:text-purple-300',
     border: 'border-purple-300 dark:border-purple-800'
   },
+  out_for_delivery: {
+    bg: 'bg-amber-100 dark:bg-amber-950',
+    text: 'text-amber-900 dark:text-amber-300',
+    border: 'border-amber-300 dark:border-amber-800'
+  },
   completed: {
     bg: 'bg-emerald-100 dark:bg-emerald-950',
     text: 'text-emerald-900 dark:text-emerald-300',
@@ -134,7 +139,7 @@ export default function OrdersHistoryPage() {
       // Status filter
       if (statusFilter !== 'ALL') {
         if (statusFilter === 'ACTIVE') {
-          if (!['created', 'confirmed', 'preparing', 'ready'].includes(ord.status)) return false;
+          if (!['created', 'confirmed', 'preparing', 'ready', 'out_for_delivery'].includes(ord.status)) return false;
         } else if (statusFilter === 'COMPLETED') {
           if (ord.status !== 'completed') return false;
         } else if (statusFilter === 'CANCELLED') {
@@ -165,7 +170,7 @@ export default function OrdersHistoryPage() {
   }, [orders]);
 
   const activeCount = useMemo(() => {
-    return orders.filter((o) => ['created', 'confirmed', 'preparing', 'ready'].includes(o.status)).length;
+    return orders.filter((o) => ['created', 'confirmed', 'preparing', 'ready', 'out_for_delivery'].includes(o.status)).length;
   }, [orders]);
 
   if (!isAuthenticated) {
@@ -423,11 +428,6 @@ export default function OrdersHistoryPage() {
                       <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full border ${theme.bg} ${theme.text} ${theme.border}`}>
                         {localizedStatus}
                       </span>
-                      {ord.is_simulated && (
-                        <span className="text-[10px] font-semibold bg-stone-200 dark:bg-stone-800 text-stone-700 dark:text-stone-300 px-1.5 py-0.5 rounded">
-                          {t('ordersHistory.simulatedBadge', 'SIMULATED')}
-                        </span>
-                      )}
                       {['created', 'confirmed', 'preparing', 'ready', 'out_for_delivery'].includes(ord.status?.toLowerCase()) && (
                         <span className="text-[11px] font-extrabold bg-amber-50 dark:bg-amber-950/70 text-amber-900 dark:text-amber-200 border border-amber-300 dark:border-amber-700/80 px-2 py-0.5 rounded-lg flex items-center gap-1.5 shadow-xs">
                           <KeyRound className="w-3 h-3 text-amber-700 dark:text-amber-400" />

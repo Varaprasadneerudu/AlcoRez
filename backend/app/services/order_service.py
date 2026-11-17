@@ -229,9 +229,18 @@ class OrderService:
             if not retailer or order.retailer_id != retailer.id:
                 raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access to other retailers' orders is forbidden")
 
-        # Delivery partner can only view orders assigned to them or unassigned
-        if requesting_user.role == UserRole.DELIVERY_PARTNER and order.delivery_partner_id and order.delivery_partner_id != requesting_user.id:
-            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access to other delivery partners' orders is forbidden")
+        # Delivery partner can only view orders assigned to them, or unassigned dispatchable orders if verified
+        if requesting_user.role == UserRole.DELIVERY_PARTNER:
+            if order.delivery_partner_id:
+                if order.delivery_partner_id != requesting_user.id:
+                    raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access to other delivery partners' orders is forbidden")
+            else:
+                from app.services.delivery_service import DeliveryService
+                DeliveryService.require_verified_partner(db, requesting_user)
+                if order.status not in [OrderStatus.READY, OrderStatus.CONFIRMED, OrderStatus.PREPARING]:
+                    raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access to unassigned orders in this status is forbidden")
+                if not order.is_simulated and not ComplianceEngine.is_alcohol_transaction_enabled():
+                    raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access to live unassigned orders is currently restricted")
 
         order_out = OrderService.to_order_out(db, order)
         if requesting_user.role == UserRole.DELIVERY_PARTNER:

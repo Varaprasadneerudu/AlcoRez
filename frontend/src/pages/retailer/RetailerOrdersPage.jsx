@@ -30,6 +30,11 @@ const STATUS_THEMES = {
     text: 'text-purple-900 dark:text-purple-300',
     border: 'border-purple-300 dark:border-purple-800'
   },
+  out_for_delivery: {
+    bg: 'bg-amber-100 dark:bg-amber-950/80',
+    text: 'text-amber-900 dark:text-amber-300',
+    border: 'border-amber-300 dark:border-amber-800'
+  },
   completed: {
     bg: 'bg-emerald-100 dark:bg-emerald-950/80',
     text: 'text-emerald-900 dark:text-emerald-300',
@@ -188,7 +193,7 @@ export default function RetailerOrdersPage() {
                   </div>
 
                   <div className="text-left sm:text-right">
-                    <span className="text-stone-500 dark:text-stone-400 text-[10px] block uppercase">Demonstration Value</span>
+                    <span className="text-stone-500 dark:text-stone-400 text-[10px] block uppercase">Total Value</span>
                     <span className="font-extrabold text-stone-900 dark:text-stone-100 text-base">
                       ₹{Number(ord.total_amount).toLocaleString('en-IN')}
                     </span>
@@ -269,8 +274,15 @@ export default function RetailerOrdersPage() {
                         className="py-1.5 px-3 rounded-lg text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white shadow flex items-center gap-1"
                       >
                         <CheckCircle2 className="w-3.5 h-3.5" />
-                        Mark Completed (Simulated)
+                        Mark Completed
                       </button>
+                    )}
+
+                    {ord.status === 'out_for_delivery' && (
+                      <span className="text-xs font-semibold text-amber-700 dark:text-amber-400 flex items-center gap-1.5">
+                        <Clock className="w-3.5 h-3.5" />
+                        {language === 'te' ? 'డెలివరీ ఏజెంట్ ద్వారా రవాణాలో ఉంది' : 'En route with Delivery Partner'}
+                      </span>
                     )}
 
                     {['completed', 'rejected', 'cancelled'].includes(ord.status) && (

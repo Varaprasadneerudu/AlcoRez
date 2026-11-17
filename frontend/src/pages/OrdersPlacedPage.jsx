@@ -46,11 +46,11 @@ export default function OrdersPlacedPage() {
     <div className="max-w-3xl mx-auto px-4 py-10 space-y-6">
       <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-6 dark:border-emerald-800 dark:bg-emerald-950/40">
         <CheckCircle2 className="h-9 w-9 text-emerald-700 dark:text-emerald-300" aria-hidden="true" />
-        <h1 className="mt-3 text-2xl font-bold text-stone-950 dark:text-white">{language === 'te' ? 'డెమో ఆర్డర్లు సృష్టించబడ్డాయి' : 'Simulated orders created'}</h1>
+        <h1 className="mt-3 text-2xl font-bold text-stone-950 dark:text-white">{language === 'te' ? 'ఆర్డర్లు విజయవంతంగా సృష్టించబడ్డాయి' : 'Orders successfully placed'}</h1>
         <p className="mt-2 text-sm text-stone-700 dark:text-stone-200">
           {language === 'te'
-            ? `${orders.length} డెమో ఆర్డర్లు సృష్టించబడ్డాయి. చెల్లింపు లేదా నిజమైన డెలివరీ ప్రారంభించబడలేదు.`
-            : `${orders.length} ${orders.length === 1 ? 'test order was' : 'test orders were'} created across ${orders.length} ${orders.length === 1 ? 'retailer' : 'retailers'}. No payment or physical delivery was initiated.`}
+            ? `${orders.length} ఆర్డర్లు విజయవంతంగా సృష్టించబడ్డాయి.`
+            : `${orders.length} ${orders.length === 1 ? 'order was' : 'orders were'} created across ${orders.length} ${orders.length === 1 ? 'retailer' : 'retailers'}.`}
         </p>
       </div>
       <div className="space-y-3" aria-label="Created orders">
@@ -66,7 +66,7 @@ export default function OrdersPlacedPage() {
         ))}
       </div>
       <div className="flex flex-wrap items-center justify-between gap-4 border-t border-stone-200 pt-5 dark:border-stone-800">
-        <p className="text-base font-bold">{language === 'te' ? 'డెమో మొత్తం' : 'Total demonstration value'}: ₹{total.toLocaleString('en-IN')}</p>
+        <p className="text-base font-bold">{language === 'te' ? 'మొత్తం విలువ' : 'Total amount'}: ₹{total.toLocaleString('en-IN')}</p>
         <Link to="/orders" className="text-sm font-semibold text-amber-800 underline underline-offset-4 dark:text-amber-300">{language === 'te' ? 'అన్ని ఆర్డర్లను చూడండి' : 'View all orders'}</Link>
       </div>
     </div>

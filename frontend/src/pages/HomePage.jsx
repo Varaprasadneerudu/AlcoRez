@@ -198,9 +198,6 @@ export default function HomePage() {
           <div className="min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
               <h2 className="text-lg sm:text-xl font-extrabold text-stone-900 dark:text-stone-100 tracking-tight">{t('home.featuredTitle')}</h2>
-              <span className="hidden sm:inline-flex bg-amber-100 dark:bg-amber-950/80 text-amber-800 dark:text-amber-300 font-bold text-[10px] px-2 py-0.5 rounded-full border border-amber-300 dark:border-amber-800">
-                {t('home.featuredBadge')}
-              </span>
             </div>
             <p className="text-xs text-stone-500 dark:text-stone-400 font-medium">{t('home.featuredSubtitle')}</p>
           </div>

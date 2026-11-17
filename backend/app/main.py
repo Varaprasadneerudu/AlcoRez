@@ -30,10 +30,14 @@ async def lifespan(app: FastAPI):
             logger.info("Initializing development database schemas...")
             Base.metadata.create_all(bind=engine)
             try:
-                from sqlalchemy import text
+                from sqlalchemy import inspect, text
                 with engine.connect() as conn:
-                    res = conn.execute(text("PRAGMA table_info(orders)")).fetchall()
-                    cols = [r[1] for r in res]
+                    if engine.dialect.name == "sqlite":
+                        res = conn.execute(text("PRAGMA table_info(orders)")).fetchall()
+                        cols = [r[1] for r in res]
+                    else:
+                        inspector = inspect(engine)
+                        cols = [col["name"] for col in inspector.get_columns("orders")]
                     if "delivery_partner_id" not in cols:
                         conn.execute(text("ALTER TABLE orders ADD COLUMN delivery_partner_id VARCHAR(36)"))
                     if "delivery_otp" not in cols:

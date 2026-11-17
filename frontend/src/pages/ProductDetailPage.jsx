@@ -263,18 +263,24 @@ export default function ProductDetailPage() {
           </div>
 
           {/* Quantity & Add to Cart (Customer only) */}
-          {role === 'admin' || role === 'retailer' ? (
+          {role === 'admin' || role === 'retailer' || role === 'delivery_partner' ? (
             <div className="p-4 rounded-2xl bg-stone-100 dark:bg-stone-900 border border-stone-200 dark:border-stone-800 space-y-2">
               <div className="flex items-center gap-2 font-bold text-xs text-stone-800 dark:text-stone-200">
                 <Store className="w-4 h-4 text-amber-600 dark:text-amber-400" />
                 <span>
-                  {role === 'admin' ? 'Super Admin Inspection Mode' : 'Retailer Catalogue Mode'}
+                  {role === 'admin'
+                    ? 'Super Admin Inspection Mode'
+                    : role === 'retailer'
+                    ? 'Retailer Catalogue Mode'
+                    : 'Delivery Partner Portal Mode'}
                 </span>
               </div>
               <p className="text-[11px] text-stone-500 dark:text-stone-400 leading-relaxed">
                 {role === 'admin'
                   ? 'Cart reservations are reserved for customer consumers. As Super Admin, you can inspect SKU compliance, stock levels, and retailer pricing across Telangana.'
-                  : 'Cart reservations are reserved for consumer accounts. To modify your shop stock, pricing, or availability for this SKU, visit the Retailer Inventory portal.'}
+                  : role === 'retailer'
+                  ? 'Cart reservations are reserved for consumer accounts. To modify your shop stock, pricing, or availability for this SKU, visit the Retailer Inventory portal.'
+                  : 'Cart reservations are reserved for consumer accounts. To accept delivery dispatches, access your Delivery Partner app.'}
               </p>
               {role === 'retailer' && (
                 <Link

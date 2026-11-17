@@ -286,9 +286,9 @@ export default function ProductCard({ product }) {
 
           <div className="flex items-center gap-1 sm:gap-1.5 shrink-0">
             {/* Direct Add to Cart (Only for customers and prospective visitors) */}
-            {role === 'admin' || role === 'retailer' ? (
+            {role === 'admin' || role === 'retailer' || role === 'delivery_partner' ? (
               <span className="text-[10px] font-bold text-stone-500 dark:text-stone-400 bg-stone-100 dark:bg-stone-800/80 px-2 py-1 rounded-lg select-none">
-                {role === 'admin' ? 'Inspection' : 'Retailer'}
+                {role === 'admin' ? 'Inspection' : role === 'retailer' ? 'Retailer' : 'Partner'}
               </span>
             ) : cartItem ? (
               <div className="flex items-center border border-amber-300 dark:border-amber-700/80 rounded-xl bg-amber-50/80 dark:bg-amber-950/50 shadow-xs overflow-hidden h-8 sm:h-9">

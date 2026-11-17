@@ -33,6 +33,11 @@ const STATUS_THEMES = {
     text: 'text-purple-900 dark:text-purple-300',
     border: 'border-purple-300 dark:border-purple-800'
   },
+  out_for_delivery: {
+    bg: 'bg-amber-100 dark:bg-amber-950/80',
+    text: 'text-amber-900 dark:text-amber-300',
+    border: 'border-amber-300 dark:border-amber-800'
+  },
   completed: {
     bg: 'bg-emerald-100 dark:bg-emerald-950/80',
     text: 'text-emerald-900 dark:text-emerald-300',
@@ -60,6 +65,7 @@ export default function OrderConfirmationPage() {
     { key: 'confirmed', label: language === 'te' ? 'రిటైలర్ ధృవీకరించారు' : 'Retailer Confirmed' },
     { key: 'preparing', label: language === 'te' ? 'ప్యాకింగ్ జరుగుతోంది' : 'Packing & Preparing' },
     { key: 'ready', label: language === 'te' ? 'దుకాణంలో సిద్ధంగా ఉంది' : 'Ready at Store' },
+    { key: 'out_for_delivery', label: language === 'te' ? 'డెలివరీలో ఉంది' : 'Out for Delivery' },
     { key: 'completed', label: language === 'te' ? 'పూర్తయింది (సిమ్యులేటెడ్)' : 'Completed (Simulated)' },
   ];
 
@@ -130,13 +136,13 @@ export default function OrderConfirmationPage() {
             <CheckCircle2 className="w-6 h-6" />
           </div>
           <h1 className="text-xl font-extrabold text-emerald-950 dark:text-emerald-200">
-            {t('orderConfirmation.orderSuccessTitle', 'Simulated Test Order Created Successfully!')}
+            {language === 'te' ? 'ఆర్డర్ విజయవంతంగా నమోదైంది!' : 'Order Placed Successfully!'}
           </h1>
           <p className="text-xs text-emerald-800 dark:text-emerald-300 max-w-lg mx-auto leading-relaxed">
             {language === 'te' ? (
-              <>మీ డెమో ఆర్డర్ <strong className="font-mono">{order.order_number}</strong> నమోదైంది. తెలంగాణ ఎక్సైజ్ నిబంధనల ప్రకారం, ఈ టెస్ట్ ఆర్డర్ కేటలాగ్ రూటింగ్ మరియు ఇన్వెంటరీ నిర్వహణను పరీక్షిస్తుంది.</>
+              <>మీ ఆర్డర్ <strong className="font-mono">{order.order_number}</strong> నమోదైంది. మీ ఆర్డర్ కేటలాగ్ రూటింగ్ మరియు ఇన్వెంటరీ ప్రాసెసింగ్ కోసం సిద్ధంగా ఉంది.</>
             ) : (
-              <>Your demonstration order <strong className="font-mono">{order.order_number}</strong> has been logged. Under Telangana Excise Regulations, this test order evaluates catalogue routing and mock inventory decrements.</>
+              <>Your order <strong className="font-mono">{order.order_number}</strong> has been logged and confirmed for retail fulfillment.</>
             )}
           </p>
         </div>
@@ -150,10 +156,8 @@ export default function OrderConfirmationPage() {
           <div className="flex items-start gap-3.5">
             <img src="/alcorez_logo.png" alt="AlcoRez" className="h-12 w-auto rounded-lg shadow-sm shrink-0 mt-0.5" />
             <div>
-              <span className="text-[10px] font-bold uppercase tracking-wider text-amber-800 dark:text-amber-300 bg-amber-100 dark:bg-amber-950 border border-amber-300 dark:border-amber-800 px-2 py-0.5 rounded">
-                {order.is_simulated
-                  ? t('orderConfirmation.simulatedBadge', 'SIMULATED DEMONSTRATION ORDER')
-                  : t('orderConfirmation.liveBadge', 'LIVE ORDER')}
+              <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-800 dark:text-emerald-300 bg-emerald-100 dark:bg-emerald-950 border border-emerald-300 dark:border-emerald-800 px-2 py-0.5 rounded">
+                {language === 'te' ? 'ధృవీకరించబడిన ఆర్డర్' : 'CONFIRMED ORDER'}
               </span>
               <h2 className="text-xl font-extrabold text-stone-900 dark:text-stone-100 mt-1 font-mono">
                 {order.order_number}
@@ -178,7 +182,7 @@ export default function OrderConfirmationPage() {
         {/* Order Lifecycle Progression Stepper */}
         <div className="space-y-3">
           <h3 className="text-xs font-bold text-stone-700 dark:text-stone-300 uppercase tracking-wider">
-            {t('orderConfirmation.workflowTitle', 'Simulated Workflow State Machine')}
+            {language === 'te' ? 'ఆర్డర్ ట్రాకింగ్ స్థితి' : 'Order Tracking Status'}
           </h3>
 
           <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">

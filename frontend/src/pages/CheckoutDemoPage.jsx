@@ -25,6 +25,8 @@ export default function CheckoutDemoPage() {
       navigate('/admin', { replace: true });
     } else if (role === 'retailer') {
       navigate('/retailer', { replace: true });
+    } else if (role === 'delivery_partner') {
+      navigate('/', { replace: true });
     }
   }, [role, navigate]);
 

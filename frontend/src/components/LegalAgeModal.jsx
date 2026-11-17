@@ -70,11 +70,6 @@ export default function LegalAgeModal() {
               : t('age.legalNotice')}
           </p>
 
-          <div className="bg-amber-50 dark:bg-amber-950/50 rounded-xl p-3 text-xs text-amber-900 dark:text-amber-200 border border-amber-200/80 dark:border-amber-800/60 text-left">
-            <p className="font-semibold mb-1">{t('age.demoNoticeTitle')}</p>
-            {t('age.demoNoticeText')}
-          </div>
-
           {!declined && <div className="pt-2 flex flex-col sm:flex-row gap-3">
             <button
               onClick={confirmAge}

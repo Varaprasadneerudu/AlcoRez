@@ -211,7 +211,7 @@ export function CartProvider({ children }) {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
 
   const openDrawer = useCallback(() => {
-    if (role === 'admin' || role === 'retailer') return;
+    if (role === 'admin' || role === 'retailer' || role === 'delivery_partner') return;
     setIsDrawerOpen(true);
   }, [role]);
 
@@ -220,7 +220,7 @@ export function CartProvider({ children }) {
   }, []);
 
   const toggleDrawer = useCallback(() => {
-    if (role === 'admin' || role === 'retailer') return;
+    if (role === 'admin' || role === 'retailer' || role === 'delivery_partner') return;
     setIsDrawerOpen(prev => !prev);
   }, [role]);
 

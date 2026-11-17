@@ -46,6 +46,7 @@ export default function Navbar() {
   const userMenuRef = useRef(null);
 
   const [mobileUserExpanded, setMobileUserExpanded] = useState(false);
+  const partnerUrl = import.meta.env.VITE_PARTNER_APP_URL || (typeof window !== 'undefined' ? `http://${window.location.hostname}:5174` : 'http://localhost:5174');
 
   useEffect(() => {
     function handleClickOutside(event) {
@@ -333,7 +334,7 @@ export default function Navbar() {
                     {role === 'delivery_partner' && (
                       <div className="py-1.5 border-b border-stone-100 dark:border-stone-800">
                         <a
-                          href="http://localhost:5174"
+                          href={partnerUrl}
                           className="flex items-center justify-between px-3.5 py-2 text-xs font-bold text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-950/40 rounded-xl mx-1.5 transition"
                         >
                           <div className="flex items-center gap-2">
@@ -539,7 +540,7 @@ export default function Navbar() {
               )}
               {role === 'delivery_partner' && (
                 <a
-                  href="http://localhost:5174"
+                  href={partnerUrl}
                   onClick={() => setMobileMenuOpen(false)}
                   className="p-2 bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/30 rounded-lg text-center font-bold flex items-center justify-center gap-2"
                 >
