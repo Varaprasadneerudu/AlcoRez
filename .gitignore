@@ -56,3 +56,11 @@ Thumbs.db
 # Postman
 .postman/
 postman/
+
+# Tests & Test Databases
+tests/
+backend/app/tests/
+test_*.py
+*_test.py
+test_*.db
+test_alcodelivery.db
