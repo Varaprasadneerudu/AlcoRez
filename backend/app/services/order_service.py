@@ -31,7 +31,7 @@ VALID_ORDER_TRANSITIONS = {
     OrderStatus.CONFIRMED: [OrderStatus.PREPARING, OrderStatus.CANCELLED],
     OrderStatus.PREPARING: [OrderStatus.READY, OrderStatus.CANCELLED],
     OrderStatus.READY: [OrderStatus.OUT_FOR_DELIVERY, OrderStatus.COMPLETED, OrderStatus.FAILED, OrderStatus.CANCELLED],
-    OrderStatus.OUT_FOR_DELIVERY: [OrderStatus.COMPLETED, OrderStatus.FAILED, OrderStatus.CANCELLED],
+    OrderStatus.OUT_FOR_DELIVERY: [OrderStatus.COMPLETED, OrderStatus.FAILED],
     OrderStatus.COMPLETED: [],
     OrderStatus.REJECTED: [],
     OrderStatus.CANCELLED: [],
@@ -237,7 +237,7 @@ class OrderService:
             else:
                 from app.services.delivery_service import DeliveryService
                 DeliveryService.require_verified_partner(db, requesting_user)
-                if order.status not in [OrderStatus.READY, OrderStatus.CONFIRMED, OrderStatus.PREPARING]:
+                if order.status != OrderStatus.READY:
                     raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access to unassigned orders in this status is forbidden")
                 if not order.is_simulated and not ComplianceEngine.is_alcohol_transaction_enabled():
                     raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access to live unassigned orders is currently restricted")
@@ -307,7 +307,7 @@ class OrderService:
             )
 
         allowed_transitions = VALID_ORDER_TRANSITIONS.get(current_status, [])
-        if status_in.status not in allowed_transitions and actor_user.role.value != "admin":
+        if status_in.status not in allowed_transitions:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail=f"Invalid order transition from {current_status.value} to {status_in.status.value}"
@@ -347,9 +347,9 @@ class OrderService:
                         )
                         db.add(movement)
 
-        # Automatic Inventory Stock Restoration if an accepted order is cancelled or rejected (including after pickup)
+        # Automatic Inventory Stock Restoration if an accepted order is cancelled or rejected
         elif status_in.status in [OrderStatus.CANCELLED, OrderStatus.REJECTED] and current_status in [
-            OrderStatus.CONFIRMED, OrderStatus.PREPARING, OrderStatus.READY, OrderStatus.OUT_FOR_DELIVERY
+            OrderStatus.CONFIRMED, OrderStatus.PREPARING, OrderStatus.READY
         ]:
             for item in order.items:
                 if item.inventory_id:
@@ -507,6 +507,11 @@ class OrderService:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="You do not have permission to cancel this order."
+            )
+        if order.status == OrderStatus.OUT_FOR_DELIVERY:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Cannot cancel order once it is out for delivery. An explicit return workflow is required."
             )
         if order.status in [OrderStatus.COMPLETED, OrderStatus.REJECTED, OrderStatus.CANCELLED, OrderStatus.FAILED]:
             raise HTTPException(

@@ -96,6 +96,18 @@ def test_full_delivery_order_lifecycle(client):
         headers=ret_headers
     )
     assert confirm_res.status_code == 200
+    prep_res = client.patch(
+        f"/api/v1/retailer/orders/{order_id}/status",
+        json={"status": "preparing"},
+        headers=ret_headers
+    )
+    assert prep_res.status_code == 200
+    ready_res = client.patch(
+        f"/api/v1/retailer/orders/{order_id}/status",
+        json={"status": "ready"},
+        headers=ret_headers
+    )
+    assert ready_res.status_code == 200
 
     # 3. Delivery partner fetches available orders
     dp_login = client.post("/api/v1/auth/login", json={
@@ -113,7 +125,7 @@ def test_full_delivery_order_lifecycle(client):
     # 4. Delivery partner accepts the order pickup - verify delivery_otp is NOT exposed
     accept_res = client.post(f"/api/v1/delivery/orders/{order_id}/accept", headers=dp_headers)
     assert accept_res.status_code == 200
-    assert accept_res.json()["status"] in ["ready", "confirmed"]
+    assert accept_res.json()["status"] == "ready"
     assert "delivery_otp" not in accept_res.json()
 
     # Active order query should now return this order - verify delivery_otp is NOT exposed
@@ -226,6 +238,8 @@ def test_delivery_otp_security_and_strict_verification(client):
     })
     ret_headers = {"Authorization": f"Bearer {ret_login.json()['access_token']}"}
     client.patch(f"/api/v1/retailer/orders/{order_id}/status", json={"status": "confirmed"}, headers=ret_headers)
+    client.patch(f"/api/v1/retailer/orders/{order_id}/status", json={"status": "preparing"}, headers=ret_headers)
+    client.patch(f"/api/v1/retailer/orders/{order_id}/status", json={"status": "ready"}, headers=ret_headers)
 
     # 3. Delivery partner flow
     dp_login = client.post("/api/v1/auth/login", json={
@@ -318,6 +332,8 @@ def test_delivery_completion_repeated_request_safe_idempotent(client):
     })
     ret_headers = {"Authorization": f"Bearer {ret_login.json()['access_token']}"}
     client.patch(f"/api/v1/retailer/orders/{order_id}/status", json={"status": "confirmed"}, headers=ret_headers)
+    client.patch(f"/api/v1/retailer/orders/{order_id}/status", json={"status": "preparing"}, headers=ret_headers)
+    client.patch(f"/api/v1/retailer/orders/{order_id}/status", json={"status": "ready"}, headers=ret_headers)
 
     # 3. Delivery partner accepts and picks up
     dp_login = client.post("/api/v1/auth/login", json={
@@ -387,10 +403,10 @@ def test_delivery_status_transitions_and_cancelled_orders_enforced(client):
     })
     dp_headers = {"Authorization": f"Bearer {dp_login.json()['access_token']}"}
 
-    # Cannot accept order in CREATED status before retailer confirmation
+    # Cannot accept order in CREATED status before retailer marks ready
     fail_accept_created = client.post(f"/api/v1/delivery/orders/{order_id}/accept", headers=dp_headers)
     assert fail_accept_created.status_code == 400
-    assert "confirmed by retailer" in fail_accept_created.json()["detail"].lower()
+    assert "ready" in fail_accept_created.json()["detail"].lower()
 
     # Retailer confirms order -> CONFIRMED
     ret_login = client.post("/api/v1/auth/login", json={
@@ -399,6 +415,8 @@ def test_delivery_status_transitions_and_cancelled_orders_enforced(client):
     })
     ret_headers = {"Authorization": f"Bearer {ret_login.json()['access_token']}"}
     client.patch(f"/api/v1/retailer/orders/{order_id}/status", json={"status": "confirmed"}, headers=ret_headers)
+    client.patch(f"/api/v1/retailer/orders/{order_id}/status", json={"status": "preparing"}, headers=ret_headers)
+    client.patch(f"/api/v1/retailer/orders/{order_id}/status", json={"status": "ready"}, headers=ret_headers)
 
     # Cannot pickup order without accepting first (unassigned)
     fail_pickup_unassigned = client.post(f"/api/v1/delivery/orders/{order_id}/pickup", headers=dp_headers)
@@ -474,6 +492,8 @@ def test_customer_handover_otp_end_to_end(client):
     client.patch(f"/api/v1/retailer/orders/{order_id}/status", json={"status": "confirmed"}, headers=ret_headers)
     client.patch(f"/api/v1/retailer/orders/{order_id}/status", json={"status": "preparing"}, headers=ret_headers)
     client.patch(f"/api/v1/retailer/orders/{order_id}/status", json={"status": "ready"}, headers=ret_headers)
+    client.patch(f"/api/v1/retailer/orders/{order_id}/status", json={"status": "preparing"}, headers=ret_headers)
+    client.patch(f"/api/v1/retailer/orders/{order_id}/status", json={"status": "ready"}, headers=ret_headers)
 
     # 3. Delivery partner accepts and picks up
     dp_login = client.post("/api/v1/auth/login", json={
@@ -522,6 +542,7 @@ def test_customer_handover_otp_end_to_end(client):
     computed_legacy_otp = str(abs(sum(ord(c) for c in legacy_num) or 4892) % 9000 + 1000)
 
     client.patch(f"/api/v1/retailer/orders/{legacy_id}/status", json={"status": "confirmed"}, headers=ret_headers)
+    client.patch(f"/api/v1/retailer/orders/{legacy_id}/status", json={"status": "preparing"}, headers=ret_headers)
     client.patch(f"/api/v1/retailer/orders/{legacy_id}/status", json={"status": "ready"}, headers=ret_headers)
     client.post(f"/api/v1/delivery/orders/{legacy_id}/accept", headers=dp_headers)
     client.post(f"/api/v1/delivery/orders/{legacy_id}/pickup", headers=dp_headers)

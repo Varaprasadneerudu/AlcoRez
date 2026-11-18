@@ -193,6 +193,7 @@ def test_bug_3_predictable_delivery_otp_rejected(client):
 
     # Progress order to OUT_FOR_DELIVERY
     client.patch(f"/api/v1/retailer/orders/{order_id}/status", json={"status": "confirmed"}, headers=ret_headers)
+    client.patch(f"/api/v1/retailer/orders/{order_id}/status", json={"status": "preparing"}, headers=ret_headers)
     client.patch(f"/api/v1/retailer/orders/{order_id}/status", json={"status": "ready"}, headers=ret_headers)
     client.post(f"/api/v1/delivery/orders/{order_id}/accept", headers=dp_headers)
     client.post(f"/api/v1/delivery/orders/{order_id}/pickup", headers=dp_headers)
@@ -332,45 +333,28 @@ def test_bug_6_cancelling_out_for_delivery_restores_stock(client):
             assert inv_confirmed.stock_quantity == initial_stock - 3
 
     # Progress to READY and OUT_FOR_DELIVERY
+    client.patch(f"/api/v1/retailer/orders/{order_id}/status", json={"status": "preparing"}, headers=ret_headers)
     client.patch(f"/api/v1/retailer/orders/{order_id}/status", json={"status": "ready"}, headers=ret_headers)
     client.post(f"/api/v1/delivery/orders/{order_id}/accept", headers=dp_headers)
     client.post(f"/api/v1/delivery/orders/{order_id}/pickup", headers=dp_headers)
 
-    # Cancel order while in OUT_FOR_DELIVERY -> Stock must be restored by 3
+    # An OUT_FOR_DELIVERY order must NOT be cancelled through normal cancellation or status update paths
     cancel_res = client.patch(
         f"/api/v1/retailer/orders/{order_id}/status",
         json={"status": "cancelled", "notes": "Customer cancelled at doorstep"},
         headers=ret_headers
     )
-    assert cancel_res.status_code == 200
-    assert cancel_res.json()["status"] == "cancelled"
+    assert cancel_res.status_code == 400
 
+    # Customer cancellation must also be rejected
+    cust_cancel_res = client.post(f"/api/v1/orders/{order_id}/cancel", headers=cust_headers)
+    assert cust_cancel_res.status_code == 400
+
+    # Stock must NOT be returned to sellable stock; it must remain deducted
     with TestSessionLocal() as session:
-        inv_restored = session.query(Inventory).filter(Inventory.id == inv_id).first()
-        assert inv_restored is not None
-        restored_stock = inv_restored.stock_quantity if inv_restored is not None else 0
-        assert restored_stock == initial_stock
-        movement = session.query(InventoryMovement).filter(
-            InventoryMovement.inventory_id == inv_id,
-            InventoryMovement.reason == "ORDER_CANCELLED_RESTOCK"
-        ).order_by(InventoryMovement.created_at.desc()).first()
-        assert movement is not None
-        if movement is not None:
-            assert movement.change_quantity == 3
-
-    # Repeated cancellation request is rejected and does NOT add stock again
-    repeat_cancel = client.patch(
-        f"/api/v1/retailer/orders/{order_id}/status",
-        json={"status": "cancelled"},
-        headers=ret_headers
-    )
-    assert repeat_cancel.status_code == 400
-
-    with TestSessionLocal() as session:
-        inv_final = session.query(Inventory).filter(Inventory.id == inv_id).first()
-        assert inv_final is not None
-        if inv_final is not None:
-            assert inv_final.stock_quantity == initial_stock
+        inv_check = session.query(Inventory).filter(Inventory.id == inv_id).first()
+        assert inv_check is not None
+        assert inv_check.stock_quantity == initial_stock - 3
 
 
 # ---------------------------------------------------------------------------

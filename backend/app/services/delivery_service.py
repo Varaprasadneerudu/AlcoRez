@@ -147,7 +147,7 @@ class DeliveryService:
             .options(joinedload(Order.items))
             .filter(
                 Order.delivery_partner_id.is_(None),
-                Order.status.in_([OrderStatus.READY, OrderStatus.CONFIRMED, OrderStatus.PREPARING])
+                Order.status == OrderStatus.READY
             )
         )
         if not ComplianceEngine.is_alcohol_transaction_enabled():
@@ -163,7 +163,7 @@ class DeliveryService:
             .options(joinedload(Order.items))
             .filter(
                 Order.delivery_partner_id == user.id,
-                Order.status.in_([OrderStatus.READY, OrderStatus.OUT_FOR_DELIVERY, OrderStatus.PREPARING])
+                Order.status.in_([OrderStatus.READY, OrderStatus.OUT_FOR_DELIVERY])
             )
         )
         if not ComplianceEngine.is_alcohol_transaction_enabled():
@@ -189,21 +189,11 @@ class DeliveryService:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Order not found")
         DeliveryService.assert_simulation_or_dispatch_allowed(order)
 
-        # Validate order status transition for acceptance
-        if order.status == OrderStatus.CANCELLED:
+        # Validate order status: delivery partner may accept only an order already marked READY by retailer
+        if order.status != OrderStatus.READY:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Cannot accept a cancelled order."
-            )
-        if order.status == OrderStatus.CREATED:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Order must be confirmed by retailer before delivery pickup."
-            )
-        if order.status in [OrderStatus.COMPLETED, OrderStatus.REJECTED, OrderStatus.FAILED, OrderStatus.OUT_FOR_DELIVERY]:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Cannot accept order in '{order.status.value}' status."
+                detail=f"Only orders marked 'READY' by the retailer can be accepted for delivery. Current status: '{order.status.value}'."
             )
 
         # Assignment check
@@ -214,8 +204,6 @@ class DeliveryService:
             )
 
         order.delivery_partner_id = user.id
-        if order.status in [OrderStatus.CONFIRMED, OrderStatus.PREPARING]:
-            order.status = OrderStatus.READY
 
         db.commit()
         db.refresh(order)

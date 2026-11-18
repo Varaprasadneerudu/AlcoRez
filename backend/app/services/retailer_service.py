@@ -527,10 +527,25 @@ class RetailerService:
         new_quantity = adj_in.new_quantity
         change = new_quantity - old_quantity
 
-        # Update inventory
-        inv.stock_quantity = new_quantity
-        inv.version = inv.version + 1
-        db.flush()
+        expected_ver = adj_in.expected_version if adj_in.expected_version is not None else inv.version
+
+        # Atomic update with version check so concurrent updates cannot both succeed
+        rows_updated = db.query(Inventory).filter(
+            Inventory.id == inv.id,
+            Inventory.version == expected_ver
+        ).update(
+            {
+                Inventory.stock_quantity: new_quantity,
+                Inventory.version: Inventory.version + 1
+            },
+            synchronize_session=False
+        )
+
+        if rows_updated == 0:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="Concurrent modification detected: this inventory item was updated by another request. Please reload and try again."
+            )
 
         # Record structured movement history
         movement = InventoryMovement(
@@ -636,14 +651,47 @@ class RetailerService:
         old_price = inv.price
         old_stock = inv.stock_quantity
 
+        if inv_update.price is not None and inv_update.price <= 0:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Price must be strictly positive")
+
+        if inv_update.stock_quantity is not None and inv_update.stock_quantity < 0:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Stock quantity cannot be negative")
+
+        if inv_update.low_stock_threshold is not None and inv_update.low_stock_threshold < 0:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Threshold cannot be negative")
+
+        expected_ver = inv_update.expected_version if inv_update.expected_version is not None else inv.version
+
+        update_values = {
+            Inventory.version: Inventory.version + 1
+        }
+        if inv_update.bottle_size is not None:
+            update_values[Inventory.bottle_size] = inv_update.bottle_size
         if inv_update.price is not None:
-            if inv_update.price <= 0:
-                raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Price must be strictly positive")
-            inv.price = inv_update.price
+            update_values[Inventory.price] = inv_update.price
+        if inv_update.stock_quantity is not None:
+            update_values[Inventory.stock_quantity] = inv_update.stock_quantity
+        if inv_update.is_available is not None:
+            update_values[Inventory.is_available] = inv_update.is_available
+        if inv_update.low_stock_threshold is not None:
+            update_values[Inventory.low_stock_threshold] = inv_update.low_stock_threshold
+
+        # Atomic update with version check so concurrent updates cannot both succeed
+        rows_updated = db.query(Inventory).filter(
+            Inventory.id == inv.id,
+            Inventory.version == expected_ver
+        ).update(
+            update_values,
+            synchronize_session=False
+        )
+
+        if rows_updated == 0:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="Concurrent modification detected: this inventory item was updated by another request. Please reload and try again."
+            )
 
         if inv_update.stock_quantity is not None:
-            if inv_update.stock_quantity < 0:
-                raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Stock quantity cannot be negative")
             diff = inv_update.stock_quantity - old_stock
             if diff != 0:
                 movement = InventoryMovement(
@@ -659,16 +707,7 @@ class RetailerService:
                     actor_role=actor_user.role.value
                 )
                 db.add(movement)
-            inv.stock_quantity = inv_update.stock_quantity
 
-        if inv_update.is_available is not None:
-            inv.is_available = inv_update.is_available
-        if inv_update.low_stock_threshold is not None:
-            if inv_update.low_stock_threshold < 0:
-                raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Threshold cannot be negative")
-            inv.low_stock_threshold = inv_update.low_stock_threshold
-
-        inv.version = inv.version + 1
         db.commit()
         db.refresh(inv)
 
