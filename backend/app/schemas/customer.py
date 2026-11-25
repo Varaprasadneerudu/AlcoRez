@@ -1,8 +1,9 @@
 from datetime import date, datetime
 
+from pydantic import BaseModel, ConfigDict, Field
+
 from app.schemas.catalog import ProductOut
 from app.schemas.retailer import RetailerOut
-from pydantic import BaseModel, ConfigDict, Field
 
 
 class CustomerProfileOut(BaseModel):

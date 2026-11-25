@@ -50,66 +50,57 @@ Under the **Telangana Excise Act, 1968** and applicable state notifications:
 
 ## 📁 Repository Structure
 
+> 💡 **For full architectural diagrams and developer onboarding, see [ARCHITECTURE.md](file:///c:/Users/varap/Projects/individual/AlcoRez/ARCHITECTURE.md).**
+
 ```
-alcodelivery/
-├── backend/
-│   ├── app/
-│   │   ├── main.py                  # FastAPI application entry, CORS & compliance handlers
-│   │   ├── core/
-│   │   │   ├── config.py            # Pydantic BaseSettings & compliance flags
-│   │   │   ├── database.py          # SQLAlchemy 2.0 Engine & SessionLocal
-│   │   │   ├── security.py          # Bcrypt hashing & PyJWT token rotation
-│   │   │   └── compliance.py        # Centralized legal enforcement & fail-closed guards
-│   │   ├── models/                  # SQLAlchemy 2.0 Declarative Models
-│   │   │   ├── base.py              # TimeStampedUUIDModel
-│   │   │   ├── user.py              # User, UserRole, CustomerProfile, Address
-│   │   │   ├── retailer.py          # Retailer, RetailerStatus, RetailerLicense, RetailerMembership
-│   │   │   ├── product.py           # Category, Product, ProductImage, Inventory
-│   │   │   ├── order.py             # Cart, CartItem, Order, OrderItem, PaymentAttempt
-│   │   │   └── compliance.py        # ComplianceApproval, ServiceArea, AuditLog, Notification
-│   │   ├── schemas/                 # Pydantic request / response schemas
-│   │   │   ├── auth.py
-│   │   │   ├── customer.py
-│   │   │   ├── catalog.py
-│   │   │   ├── cart.py
-│   │   │   ├── order.py
-│   │   │   ├── retailer.py
-│   │   │   └── admin.py
-│   │   ├── api/
-│   │   │   ├── deps.py              # Dependency injection & RBAC role checks
-│   │   │   └── v1/
-│   │   │       ├── api_router.py    # Master router
-│   │   │       ├── auth.py          # /auth endpoints
-│   │   │       ├── customer.py      # /customer addresses & profile
-│   │   │       ├── products.py      # /products & /categories
-│   │   │       ├── cart.py          # /cart item management
-│   │   │       ├── orders.py        # /test-orders & simulated checkout
-│   │   │       ├── retailer_portal.py # /retailer onboarding & inventory
-│   │   │       ├── admin.py         # /admin review & audit trails
-│   │   │       └── health.py        # /health & /compliance-status
-│   │   ├── services/                # Business logic services
-│   │   │   ├── auth_service.py
-│   │   │   ├── catalog_service.py
-│   │   │   ├── cart_service.py
-│   │   │   ├── order_service.py
-│   │   │   ├── retailer_service.py
-│   │   │   ├── admin_service.py
-│   │   │   └── audit_service.py
-│   │   └── tests/                   # Automated Pytest Suite
-│   ├── alembic/                     # Database migrations
+AlcoRez/
+├── backend/                         # 🐍 Python FastAPI REST API Backend
+│   ├── alembic/                     # Database schema migrations
+│   │   └── versions/                # Versioned SQL migration scripts
+│   ├── app/                         # Application core package
+│   │   ├── api/                     # HTTP routing & dependencies
+│   │   │   ├── v1/                  # API v1 route controllers
+│   │   │   └── deps.py              # Dependency injection (DB session, RBAC auth)
+│   │   ├── core/                    # Infrastructure configs, security & compliance
+│   │   │   ├── compliance.py        # Statutory fail-closed legal checks
+│   │   │   ├── config.py            # Environment settings (Pydantic BaseSettings)
+│   │   │   ├── database.py          # SQLAlchemy engine & session factory
+│   │   │   └── security.py          # JWT tokens & bcrypt password hashing
+│   │   ├── models/                  # SQLAlchemy 2.0 ORM database tables
+│   │   ├── schemas/                 # Pydantic v2 validation DTOs (Request/Response)
+│   │   ├── services/                # Pure business logic & database transactions
+│   │   └── main.py                  # FastAPI application entry point & middlewares
+│   ├── scripts/                     # Standalone CLI tools & database seeders
+│   │   ├── seed_data.py             # Telangana catalog & mock stores seeder
+│   │   └── bootstrap_admin.py       # First-time Super Admin account provisioning
 │   ├── requirements.txt
-│   └── seed_data.py                 # Seed catalog & Telangana retail fixtures
-├── frontend/
+│   └── Dockerfile
+│
+├── frontend/                        # ⚛️ React 19 + Tailwind CSS Frontend
+│   ├── public/                      # Static assets, logos, excise icons
 │   ├── src/
-│   │   ├── components/              # Navbar, Footer, LegalAgeModal, ProductCard, RetailerCard
-│   │   ├── context/                 # AuthContext & CartContext
-│   │   ├── pages/                   # Customer, Retailer, and Admin pages
-│   │   ├── routes/                  # AppRoutes.jsx
-│   │   ├── services/                # api.js client abstraction
-│   │   ├── App.jsx
-│   │   └── index.css                # Tailwind CSS styling
+│   │   ├── components/              # Reusable UI component library
+│   │   │   ├── layout/              # Structural chrome (Navbar, Footer, Banners)
+│   │   │   ├── cards/               # Presentational cards (ProductCard, RetailerCard)
+│   │   │   ├── modals/              # Overlays (LegalAgeModal, CartDrawer, Notifications)
+│   │   │   └── index.js             # Centralized components barrel export
+│   │   ├── context/                 # Global state providers (Auth, Cart, Language, Theme, Location)
+│   │   ├── pages/                   # Route views grouped by role & domain
+│   │   │   ├── public/              # Informational pages (Home, Compliance info)
+│   │   │   ├── auth/                # Login & Customer Registration
+│   │   │   ├── customer/            # Catalog, Product Detail, Cart, Orders, Checkout
+│   │   │   ├── retailer/            # Retailer Portal (Dashboard, Inventory, Store Orders)
+│   │   │   ├── admin/               # Excise Admin Portal (Approvals, Retailers, Audit Logs)
+│   │   │   └── index.js             # Centralized pages barrel export
+│   │   ├── routes/                  # React Router declarations (AppRoutes.jsx)
+│   │   ├── services/                # HTTP API Client & caching (api.js)
+│   │   ├── utils/                   # Helpers (image sizing, formatting)
+│   │   ├── App.jsx                  # Root layout, providers, global modals
+│   │   └── index.css                # Tailwind CSS v4 styling & theme tokens
 │   ├── package.json
 │   └── vite.config.js
+│
+├── ARCHITECTURE.md                  # 📖 Comprehensive system architecture & onboarding guide
 ├── docker-compose.yml
 ├── .env.example
 ├── .gitignore

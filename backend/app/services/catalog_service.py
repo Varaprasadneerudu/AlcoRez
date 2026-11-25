@@ -1,6 +1,9 @@
 from datetime import datetime, timezone
 from decimal import Decimal
 
+from sqlalchemy import func, or_
+from sqlalchemy.orm import Session, joinedload
+
 from app.models.product import Category, Inventory, Product, ProductImage
 from app.models.retailer import Retailer, RetailerLicense, RetailerStatus
 from app.schemas.catalog import (
@@ -11,8 +14,6 @@ from app.schemas.catalog import (
     ProductInventorySummary,
     ProductOut,
 )
-from sqlalchemy import func, or_
-from sqlalchemy.orm import Session, joinedload
 
 
 class CatalogService:

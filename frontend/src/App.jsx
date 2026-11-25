@@ -7,12 +7,8 @@ import { ThemeProvider } from './context/ThemeContext';
 import { LanguageProvider } from './context/LanguageContext';
 import { LocationProvider } from './context/LocationContext';
 import { FavoritesProvider } from './context/FavoritesContext';
-import Navbar from './components/Navbar';
-import Footer from './components/Footer';
-import StatutoryBanner from './components/StatutoryBanner';
-import LegalAgeModal from './components/LegalAgeModal';
-import CartDrawer from './components/CartDrawer';
-import ScrollToTop from './components/ScrollToTop';
+import { Navbar, Footer, StatutoryBanner, ScrollToTop } from './components/layout';
+import { LegalAgeModal, CartDrawer } from './components/modals';
 import AppRoutes from './routes/AppRoutes';
 
 const queryClient = new QueryClient({

@@ -1,0 +1,9 @@
+export { default as CatalogPage } from './CatalogPage';
+export { default as ProductDetailPage } from './ProductDetailPage';
+export { default as RetailerDetailPage } from './RetailerDetailPage';
+export { default as CartPage } from './CartPage';
+export { default as CheckoutDemoPage } from './CheckoutDemoPage';
+export { default as OrderConfirmationPage } from './OrderConfirmationPage';
+export { default as OrdersHistoryPage } from './OrdersHistoryPage';
+export { default as OrdersPlacedPage } from './OrdersPlacedPage';
+export { default as FavoritesPage } from './FavoritesPage';

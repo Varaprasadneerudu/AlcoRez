@@ -1,4 +1,7 @@
 
+from fastapi import APIRouter, Depends, Query, Request, status
+from sqlalchemy.orm import Session, joinedload
+
 from app.api.deps import get_current_admin
 from app.core.database import get_db
 from app.models.order import Order
@@ -15,8 +18,6 @@ from app.schemas.order import OrderOut
 from app.schemas.retailer import RetailerOut, RetailerReviewRequest
 from app.services.admin_service import AdminService
 from app.services.order_service import OrderService
-from fastapi import APIRouter, Depends, Query, Request, status
-from sqlalchemy.orm import Session, joinedload
 
 router = APIRouter(prefix="/admin", tags=["Administrator Portal"])
 

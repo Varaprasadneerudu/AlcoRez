@@ -1,8 +1,9 @@
 from datetime import datetime
 from decimal import Decimal
 
-from app.models.order import OrderStatus
 from pydantic import BaseModel, ConfigDict
+
+from app.models.order import OrderStatus
 
 
 class SimulatedCheckoutRequest(BaseModel):

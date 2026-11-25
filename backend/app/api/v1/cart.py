@@ -1,10 +1,11 @@
+from fastapi import APIRouter, Depends, status
+from sqlalchemy.orm import Session
+
 from app.api.deps import get_current_customer
 from app.core.database import get_db
 from app.models.user import User
 from app.schemas.cart import CartItemAdd, CartItemUpdate, CartOut
 from app.services.cart_service import CartService
-from fastapi import APIRouter, Depends, status
-from sqlalchemy.orm import Session
 
 router = APIRouter(prefix="/cart", tags=["Shopping Cart"])
 

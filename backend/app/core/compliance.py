@@ -5,8 +5,9 @@ Telangana Excise Act, 1968 & Applicable State Notifications
 from datetime import datetime, timezone
 from typing import Any
 
-from app.core.config import settings
 from fastapi import HTTPException, status
+
+from app.core.config import settings
 
 
 class ComplianceViolationException(HTTPException):

@@ -1,6 +1,9 @@
 
 from datetime import datetime
 
+from fastapi import APIRouter, Depends, HTTPException, status
+from sqlalchemy.orm import Session, joinedload
+
 from app.api.deps import get_current_customer
 from app.core.compliance import ComplianceEngine
 from app.core.database import get_db
@@ -20,8 +23,6 @@ from app.schemas.customer import (
 )
 from app.services.catalog_service import CatalogService
 from app.services.retailer_service import RetailerService
-from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy.orm import Session, joinedload
 
 router = APIRouter(prefix="/customer", tags=["Customer"])
 

@@ -1,6 +1,9 @@
 import contextlib
 from datetime import datetime, timezone
 
+from fastapi import HTTPException, status
+from sqlalchemy.orm import Session
+
 from app.core.compliance import ComplianceEngine
 from app.core.security import hash_password
 from app.models.compliance import AuditLog, ComplianceApproval
@@ -24,8 +27,6 @@ from app.schemas.auth import UserOut
 from app.schemas.retailer import RetailerOut, RetailerReviewRequest
 from app.services.audit_service import AuditService
 from app.services.retailer_service import RetailerService
-from fastapi import HTTPException, status
-from sqlalchemy.orm import Session
 
 
 class AdminService:

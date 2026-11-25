@@ -14,6 +14,8 @@ ignore = [
 "backend/app/main.py" = ["E402"]
 "backend/app/tests/conftest.py" = ["E402"]
 "backend/seed_data.py" = ["E402"]
+"backend/bootstrap_admin.py" = ["E402"]
+"backend/scripts/*" = ["E402"]
 "backend/alembic/env.py" = ["E402"]
 
 [tool.pytest.ini_options]

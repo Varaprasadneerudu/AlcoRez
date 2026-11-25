@@ -3,6 +3,9 @@ import uuid
 from datetime import datetime, timezone
 from decimal import Decimal
 
+from fastapi import HTTPException, status
+from sqlalchemy.orm import Session, joinedload
+
 from app.core.compliance import ComplianceEngine
 from app.models.order import (
     Cart,
@@ -23,8 +26,6 @@ from app.schemas.order import (
 )
 from app.services.audit_service import AuditService
 from app.services.notification_service import NotificationService
-from fastapi import HTTPException, status
-from sqlalchemy.orm import Session, joinedload
 
 VALID_ORDER_TRANSITIONS = {
     OrderStatus.CREATED: [OrderStatus.CONFIRMED, OrderStatus.REJECTED, OrderStatus.CANCELLED],

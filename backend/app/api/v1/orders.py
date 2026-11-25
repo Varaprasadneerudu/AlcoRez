@@ -1,4 +1,7 @@
 
+from fastapi import APIRouter, Depends, Request, status
+from sqlalchemy.orm import Session
+
 from app.api.deps import get_current_user, get_current_verified_customer
 from app.core.compliance import ComplianceEngine
 from app.core.database import get_db
@@ -9,8 +12,6 @@ from app.schemas.order import (
     SimulatedCheckoutRequest,
 )
 from app.services.order_service import OrderService
-from fastapi import APIRouter, Depends, Request, status
-from sqlalchemy.orm import Session
 
 router = APIRouter(tags=["Orders & Checkout Simulation"])
 

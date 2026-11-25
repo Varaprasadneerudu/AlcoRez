@@ -2,21 +2,25 @@ import React, { Suspense, lazy } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 
 // Eagerly loaded for fast first-contentful-paint
-import HomePage from '../pages/HomePage';
+import HomePage from '../pages/public/HomePage';
 
-// Lazy-loaded customer pages
-const CatalogPage = lazy(() => import('../pages/CatalogPage'));
-const ProductDetailPage = lazy(() => import('../pages/ProductDetailPage'));
-const CartPage = lazy(() => import('../pages/CartPage'));
-const CheckoutDemoPage = lazy(() => import('../pages/CheckoutDemoPage'));
-const OrderConfirmationPage = lazy(() => import('../pages/OrderConfirmationPage'));
-const OrdersPlacedPage = lazy(() => import('../pages/OrdersPlacedPage'));
-const OrdersHistoryPage = lazy(() => import('../pages/OrdersHistoryPage'));
-const ComplianceInfoPage = lazy(() => import('../pages/ComplianceInfoPage'));
-const LoginPage = lazy(() => import('../pages/LoginPage'));
-const RegisterPage = lazy(() => import('../pages/RegisterPage'));
-const FavoritesPage = lazy(() => import('../pages/FavoritesPage'));
-const RetailerDetailPage = lazy(() => import('../pages/RetailerDetailPage'));
+// Lazy-loaded public & info pages
+const ComplianceInfoPage = lazy(() => import('../pages/public/ComplianceInfoPage'));
+
+// Lazy-loaded auth pages
+const LoginPage = lazy(() => import('../pages/auth/LoginPage'));
+const RegisterPage = lazy(() => import('../pages/auth/RegisterPage'));
+
+// Lazy-loaded customer discovery & shopping pages
+const CatalogPage = lazy(() => import('../pages/customer/CatalogPage'));
+const ProductDetailPage = lazy(() => import('../pages/customer/ProductDetailPage'));
+const CartPage = lazy(() => import('../pages/customer/CartPage'));
+const CheckoutDemoPage = lazy(() => import('../pages/customer/CheckoutDemoPage'));
+const OrderConfirmationPage = lazy(() => import('../pages/customer/OrderConfirmationPage'));
+const OrdersPlacedPage = lazy(() => import('../pages/customer/OrdersPlacedPage'));
+const OrdersHistoryPage = lazy(() => import('../pages/customer/OrdersHistoryPage'));
+const FavoritesPage = lazy(() => import('../pages/customer/FavoritesPage'));
+const RetailerDetailPage = lazy(() => import('../pages/customer/RetailerDetailPage'));
 
 // Lazy-loaded retailer portal pages
 const RetailerDashboard = lazy(() => import('../pages/retailer/RetailerDashboard'));

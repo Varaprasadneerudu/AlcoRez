@@ -1,13 +1,14 @@
 from datetime import date, datetime, timedelta, timezone
 
+from fastapi import HTTPException, status
+from sqlalchemy import desc, func
+from sqlalchemy.orm import Session
+
 from app.models.compliance import Notification
 from app.models.order import Order, OrderStatus
 from app.models.product import Inventory
 from app.models.retailer import Retailer, RetailerLicense, RetailerStatus
 from app.models.user import User
-from fastapi import HTTPException, status
-from sqlalchemy import desc, func
-from sqlalchemy.orm import Session
 
 
 class NotificationService:

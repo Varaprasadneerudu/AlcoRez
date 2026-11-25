@@ -1,8 +1,9 @@
 from datetime import date, datetime
 
+from pydantic import BaseModel, ConfigDict, EmailStr, Field
+
 from app.models.retailer import RetailerStatus
 from app.schemas.catalog import InventoryMovementOut
-from pydantic import BaseModel, ConfigDict, EmailStr, Field
 
 
 class RetailerApplicationCreate(BaseModel):

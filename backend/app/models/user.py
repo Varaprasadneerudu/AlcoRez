@@ -2,9 +2,10 @@ import enum
 from datetime import date, datetime
 from decimal import Decimal
 
-from app.models.base import TimeStampedUUIDModel
 from sqlalchemy import Boolean, Date, DateTime, Enum, ForeignKey, Integer, Numeric, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
+
+from app.models.base import TimeStampedUUIDModel
 
 
 class UserRole(str, enum.Enum):

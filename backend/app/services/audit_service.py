@@ -1,8 +1,9 @@
 import json
 from typing import Any
 
-from app.models.compliance import AuditLog
 from sqlalchemy.orm import Session
+
+from app.models.compliance import AuditLog
 
 
 class AuditService:

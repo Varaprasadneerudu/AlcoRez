@@ -1,7 +1,8 @@
 from datetime import datetime
 
-from app.models.user import UserRole
 from pydantic import BaseModel, ConfigDict, EmailStr, Field
+
+from app.models.user import UserRole
 
 
 class UserRegister(BaseModel):

@@ -1,3 +1,6 @@
+from fastapi import APIRouter, Depends, Request
+from sqlalchemy.orm import Session
+
 from app.api.deps import get_current_delivery_partner
 from app.core.database import get_db
 from app.models.user import User
@@ -10,8 +13,6 @@ from app.schemas.delivery import (
     DeliveryTripHistoryOut,
 )
 from app.services.delivery_service import DeliveryService
-from fastapi import APIRouter, Depends, Request
-from sqlalchemy.orm import Session
 
 router = APIRouter(prefix="/delivery", tags=["Delivery Partner Operations"])
 

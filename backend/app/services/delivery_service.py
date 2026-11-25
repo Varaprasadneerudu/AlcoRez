@@ -1,5 +1,8 @@
 from decimal import Decimal
 
+from fastapi import HTTPException, status
+from sqlalchemy.orm import Session, joinedload
+
 from app.core.compliance import ComplianceEngine
 from app.models.order import Order, OrderStatus
 from app.models.retailer import Retailer
@@ -13,8 +16,6 @@ from app.schemas.delivery import (
     DeliveryTripHistoryOut,
 )
 from app.services.audit_service import AuditService
-from fastapi import HTTPException, status
-from sqlalchemy.orm import Session, joinedload
 
 
 class DeliveryService:

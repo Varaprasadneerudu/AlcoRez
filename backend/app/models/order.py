@@ -1,9 +1,10 @@
 import enum
 from decimal import Decimal
 
-from app.models.base import TimeStampedUUIDModel
 from sqlalchemy import Boolean, Enum, ForeignKey, Integer, Numeric, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
+
+from app.models.base import TimeStampedUUIDModel
 
 
 class OrderStatus(str, enum.Enum):

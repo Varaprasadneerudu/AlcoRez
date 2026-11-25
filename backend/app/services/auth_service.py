@@ -1,5 +1,8 @@
 from datetime import datetime, timezone
 
+from fastapi import HTTPException, status
+from sqlalchemy.orm import Session
+
 from app.core.compliance import ComplianceEngine
 from app.core.security import (
     create_access_token,
@@ -11,8 +14,6 @@ from app.core.security import (
 from app.models.user import CustomerProfile, RefreshToken, User, UserRole
 from app.schemas.auth import Token, UserLogin, UserRegister
 from app.services.audit_service import AuditService
-from fastapi import HTTPException, status
-from sqlalchemy.orm import Session
 
 
 class AuthService:

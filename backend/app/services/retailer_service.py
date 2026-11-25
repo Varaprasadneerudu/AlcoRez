@@ -2,6 +2,10 @@ import secrets
 from datetime import date, datetime, timedelta, timezone
 from decimal import Decimal
 
+from fastapi import HTTPException, status
+from sqlalchemy import and_, asc, case, desc, func, or_
+from sqlalchemy.orm import Session, joinedload
+
 from app.models.order import Order, OrderItem
 from app.models.product import Category, Inventory, InventoryMovement, Product, ProductImage
 from app.models.retailer import (
@@ -31,9 +35,6 @@ from app.schemas.retailer import (
 )
 from app.services.audit_service import AuditService
 from app.services.notification_service import NotificationService
-from fastapi import HTTPException, status
-from sqlalchemy import and_, asc, case, desc, func, or_
-from sqlalchemy.orm import Session, joinedload
 
 
 class RetailerService:

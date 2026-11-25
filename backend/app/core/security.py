@@ -5,6 +5,7 @@ from typing import Any
 
 import bcrypt
 import jwt
+
 from app.core.config import settings
 
 

@@ -1,9 +1,10 @@
 from datetime import datetime, timezone
 
-from app.core.database import Base
-from app.models.base import TimeStampedUUIDModel, generate_uuid
 from sqlalchemy import Boolean, DateTime, ForeignKey, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
+
+from app.core.database import Base
+from app.models.base import TimeStampedUUIDModel, generate_uuid
 
 
 class ComplianceApproval(TimeStampedUUIDModel):
